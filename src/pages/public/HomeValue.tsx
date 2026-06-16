@@ -5,7 +5,7 @@ function HomeValue() {
   return (
     <PublicLayout>
       <main className="page-main">
-        <section className="page-hero">
+        <section className="page-hero page-hero-home-value">
           <div className="page-hero-content">
             <p className="eyebrow">Home Value Review</p>
             <h1>Find out what your home may be worth.</h1>
@@ -17,7 +17,7 @@ function HomeValue() {
               <a className="button button-primary" href="#home-value-form">Send My Home Value Request</a>
             </div>
           </div>
-          <div className="page-hero-visual" aria-label="Home value visual placeholder" />
+          <div className="page-hero-visual home-value-hero-visual" aria-label="Architectural home value visual" />
         </section>
 
         <section className="page-content split-section" id="home-value-form">
