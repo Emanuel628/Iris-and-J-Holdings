@@ -1,5 +1,5 @@
 import PublicLayout from '../../components/layout/PublicLayout';
-import { sendMailRequest } from '../../lib/emailRequests';
+import { sendWebsiteRequest as sendMailRequest } from '../../lib/formSubmitEmail';
 
 const photoSlots = [
   'Exterior photo',
