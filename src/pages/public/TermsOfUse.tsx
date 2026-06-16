@@ -9,7 +9,8 @@ function TermsOfUse() {
             <p className="eyebrow">Terms of Use</p>
             <h1>General website terms and important disclosures.</h1>
             <p>
-              This page keeps the legal and brokerage language organized instead of crowding the homepage.
+              This page keeps the legal, brokerage, notary, and vacation rental language organized without crowding
+              the homepage.
             </p>
           </div>
           <div className="page-hero-visual" aria-label="Terms of use visual placeholder" />
@@ -35,6 +36,13 @@ function TermsOfUse() {
             <p>
               Home value reviews are estimates based on available market information and are not appraisals.
               Visitors should consult the appropriate professional for legal, financial, tax, or appraisal guidance.
+            </p>
+          </article>
+          <article>
+            <h2>Vacation rentals</h2>
+            <p>
+              Orlando vacation rental services are offered independently through Iris & J Holdings and are not
+              provided through All Star Real Estate Agency.
             </p>
           </article>
         </section>
