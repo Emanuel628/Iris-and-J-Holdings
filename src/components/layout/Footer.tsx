@@ -2,11 +2,11 @@ import { Mail, MapPin, Phone } from 'lucide-react';
 
 function Footer() {
   return (
-    <footer className="site-footer refined-footer compact-footer">
+    <footer className="site-footer compact-footer">
       <div className="footer-main">
-        <div className="footer-column footer-about">
-          <h3>About</h3>
-          <p>Clear real estate guidance, mobile notary appointments, and Orlando rental updates.</p>
+        <div className="footer-column footer-daiana">
+          <h3>Daiana Castro</h3>
+          <p>NJREC license information to be added.</p>
           <a className="footer-about-link" href="/about">About Daiana</a>
         </div>
 
