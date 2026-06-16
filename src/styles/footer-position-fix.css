@@ -1,78 +1,40 @@
 .compact-footer .footer-main {
-  display: grid !important;
-  width: 100% !important;
-  max-width: none !important;
+  display: grid;
+  width: 100%;
+  max-width: none;
   box-sizing: border-box;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  gap: 0 !important;
-  margin: 0 !important;
-  padding: 1.35rem clamp(1rem, 4vw, 4rem) !important;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0;
+  margin: 0;
+  padding: 1.35rem clamp(1rem, 4vw, 4rem);
 }
 
 .compact-footer .footer-column {
-  display: flex !important;
+  display: flex;
   min-width: 0;
+  align-items: center;
   flex-direction: column;
-}
-
-.compact-footer .footer-daiana {
-  grid-column: 1 !important;
-  align-items: center !important;
-  text-align: center !important;
-}
-
-.compact-footer .footer-contact {
-  grid-column: 2 !important;
-  align-items: center !important;
-  text-align: center !important;
+  text-align: center;
 }
 
 .compact-footer .brokerage {
-  grid-column: 3 !important;
-  align-items: flex-end !important;
-  justify-self: stretch !important;
-  text-align: right !important;
+  grid-column: 1;
+}
+
+.compact-footer .footer-contact {
+  grid-column: 2;
+}
+
+.compact-footer .footer-daiana {
+  grid-column: 3;
 }
 
 .compact-footer .footer-column p {
   max-width: 340px;
-}
-
-.compact-footer .footer-daiana p,
-.compact-footer .footer-contact p {
   margin-right: auto;
   margin-left: auto;
 }
 
 .compact-footer .brokerage p {
-  max-width: 440px;
-  margin-right: 0 !important;
-  margin-left: auto !important;
-}
-
-.compact-footer .brokerage .equal-housing {
-  align-self: flex-end !important;
-  text-align: right !important;
-}
-
-@media (max-width: 900px) {
-  .compact-footer .footer-main {
-    grid-template-columns: 1fr !important;
-    gap: 1rem !important;
-  }
-
-  .compact-footer .brokerage,
-  .compact-footer .footer-daiana,
-  .compact-footer .footer-contact {
-    grid-column: 1 !important;
-    align-items: center !important;
-    text-align: center !important;
-  }
-
-  .compact-footer .brokerage p,
-  .compact-footer .brokerage .equal-housing {
-    margin-right: auto !important;
-    margin-left: auto !important;
-    text-align: center !important;
-  }
+  max-width: 420px;
 }
