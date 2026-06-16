@@ -1,22 +1,52 @@
 import PublicLayout from '../../components/layout/PublicLayout';
+import { sendWebsiteRequest as sendMailRequest } from '../../lib/formSubmitEmail';
 
 function Sell() {
   return (
     <PublicLayout>
       <main className="page-main">
-        <section className="page-hero">
+        <section className="page-hero page-hero-seller">
           <div className="page-hero-content">
             <p className="eyebrow">Seller Strategy</p>
             <h1>Selling your home takes more than a listing.</h1>
             <p>Pricing, preparation, timing, and presentation all matter. Daiana helps homeowners understand the market and move forward with a clear plan.</p>
             <div className="page-actions">
-              <a className="button button-primary" href="/book?service=Seller%20Strategy%20Call#contact-form">Request Seller Strategy Call</a>
               <a className="text-link" href="/home-value#home-value-form">Get Home Value Review</a>
             </div>
           </div>
-          <div className="page-hero-visual" aria-label="Seller strategy visual placeholder" />
+          <div className="page-hero-visual seller-hero-visual" aria-label="Bright staged home interior visual" />
         </section>
-        <section className="page-content">
+
+        <section className="page-content split-section seller-intake" id="seller-form">
+          <div>
+            <div className="page-intro">
+              <p className="eyebrow">Seller intake</p>
+              <h2>Start with the details that shape the strategy.</h2>
+              <p>
+                Share the property, timing, and any questions so Daiana can respond with a clearer next step.
+              </p>
+            </div>
+            <div className="notice-box">
+              Submitting this form does not create a brokerage relationship. Required New Jersey disclosures and agreements come before brokerage services begin.
+            </div>
+          </div>
+
+          <form className="info-panel form-shell" onSubmit={(event) => sendMailRequest(event, 'Seller Strategy Request')}>
+            <div className="form-row">
+              <div className="input-group"><label htmlFor="seller-name">Full Name</label><input id="seller-name" name="fullName" required /></div>
+              <div className="input-group"><label htmlFor="seller-email">Email</label><input id="seller-email" name="email" type="email" required /></div>
+            </div>
+            <div className="form-row">
+              <div className="input-group"><label htmlFor="seller-phone">Phone</label><input id="seller-phone" name="phone" type="tel" /></div>
+              <div className="input-group"><label htmlFor="seller-timeline">Selling Timeline</label><input id="seller-timeline" name="sellingTimeline" placeholder="Now, 3-6 months, exploring" /></div>
+            </div>
+            <div className="input-group"><label htmlFor="seller-address">Property Address or Area</label><input id="seller-address" name="propertyAddressOrArea" /></div>
+            <div className="input-group"><label htmlFor="seller-message">Questions or goals</label><textarea id="seller-message" name="questionsOrGoals" required /></div>
+            <button className="button button-primary" type="submit">Send Seller Request</button>
+          </form>
+        </section>
+
+        <section className="page-content seller-support-content">
           <div className="page-intro">
             <p className="eyebrow">Listing with intention</p>
             <h2>A calm plan for pricing, preparation, marketing, and negotiation.</h2>
@@ -27,18 +57,6 @@ function Sell() {
             <article className="content-card"><h3>Preparation</h3><p>Identify what should be cleaned, organized, staged, or improved before going live.</p></article>
             <article className="content-card"><h3>Negotiation</h3><p>Compare offers clearly and move through each decision with steady guidance.</p></article>
           </div>
-          <section className="split-section">
-            <div className="info-panel">
-              <h2>Seller strategy call topics</h2>
-              <ul className="detail-list"><li>Home value conversation</li><li>Pricing strategy</li><li>Listing preparation</li><li>Marketing guidance</li><li>Timeline and offer review</li></ul>
-            </div>
-            <div className="quiet-band">
-              <p className="eyebrow">Homeowners</p>
-              <h2>Not ready to list yet? That is okay.</h2>
-              <p>A strategy call can help you understand your timing, your options, and whether selling now makes sense.</p>
-              <div className="page-actions"><a className="button button-primary" href="/book?service=Seller%20Strategy%20Call#contact-form">Request Seller Strategy Call</a></div>
-            </div>
-          </section>
         </section>
       </main>
     </PublicLayout>
