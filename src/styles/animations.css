@@ -1,0 +1,45 @@
+.service-card {
+  transform: translateY(0) scale(1);
+  transition:
+    transform var(--speed-slow) var(--ease-soft),
+    box-shadow var(--speed-slow) var(--ease-soft),
+    border-color var(--speed) var(--ease-soft),
+    background-color var(--speed) var(--ease-soft);
+}
+
+.service-card:hover {
+  transform: translateY(-10px) scale(1.012);
+  border-color: rgba(193, 144, 69, 0.42);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.service-card:hover .icon-badge {
+  color: var(--color-champagne-dark);
+  background: #f1e4d0;
+}
+
+.icon-badge {
+  transition:
+    color var(--speed) var(--ease-soft),
+    background-color var(--speed) var(--ease-soft),
+    transform var(--speed) var(--ease-soft);
+}
+
+.service-card:hover .icon-badge {
+  transform: translateY(-3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+}
