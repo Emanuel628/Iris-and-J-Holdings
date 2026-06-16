@@ -14,7 +14,7 @@ function Buy() {
               narrow your search, prepare with confidence, and know what to expect before closing.
             </p>
             <div className="page-actions">
-              <a className="button button-primary" href="/book">Schedule Buyer Consultation</a>
+              <a className="button button-primary" href="/book?service=Buyer%20Consultation#contact-form">Schedule Buyer Consultation</a>
               <a className="text-link" href={buildMailto('Buyer Guide Request', 'I would like to request the buyer guide.\n\nName:\nPhone:\nQuestions:')}>Request Buyer Guide</a>
             </div>
           </div>
@@ -65,7 +65,7 @@ function Buy() {
                 Daiana will help you understand where to begin.
               </p>
               <div className="page-actions">
-                <a className="button button-primary" href="/book">Schedule Buyer Consultation</a>
+                <a className="button button-primary" href="/book?service=Buyer%20Consultation#contact-form">Schedule Buyer Consultation</a>
               </div>
             </div>
           </section>
