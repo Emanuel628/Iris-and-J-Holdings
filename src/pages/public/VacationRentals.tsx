@@ -1,4 +1,5 @@
 import PublicLayout from '../../components/layout/PublicLayout';
+import { sendMailRequest } from '../../lib/emailRequests';
 
 const photoSlots = [
   'Exterior photo',
@@ -37,11 +38,11 @@ function VacationRentals() {
                 This page will later include real photos, stay details, availability, and an interest list.
               </p>
             </div>
-            <form className="info-panel form-shell">
-              <div className="input-group"><label>Name</label><input /></div>
-              <div className="input-group"><label>Email</label><input /></div>
-              <div className="input-group"><label>Travel Notes</label><textarea /></div>
-              <button className="button button-primary" type="button">Join Interest List</button>
+            <form className="info-panel form-shell" onSubmit={(event) => sendMailRequest(event, 'Orlando Vacation Rental Interest Request')}>
+              <div className="input-group"><label htmlFor="rental-name">Name</label><input id="rental-name" name="name" required /></div>
+              <div className="input-group"><label htmlFor="rental-email">Email</label><input id="rental-email" name="email" type="email" required /></div>
+              <div className="input-group"><label htmlFor="rental-notes">Travel Notes</label><textarea id="rental-notes" name="travelNotes" /></div>
+              <button className="button button-primary" type="submit">Join Interest List</button>
             </form>
           </div>
 
