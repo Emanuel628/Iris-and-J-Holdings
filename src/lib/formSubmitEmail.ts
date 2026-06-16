@@ -1,8 +1,6 @@
 import type { FormEvent } from 'react';
 
-const CONTACT_ADDRESS = ['listingsbyd', 'gmail.com'].join('@');
-const DIRECT_FORM_ENDPOINT = `https://formsubmit.co/ajax/${CONTACT_ADDRESS}`;
-const FORM_ENDPOINT = import.meta.env.VITE_CONTACT_ENDPOINT ?? DIRECT_FORM_ENDPOINT;
+const FORM_ENDPOINT = '/api/contact';
 
 function formatLabel(key: string) {
   return key
@@ -18,7 +16,7 @@ export async function sendWebsiteRequest(event: FormEvent<HTMLFormElement>, subj
   const submitButton = form.querySelector<HTMLButtonElement>('button[type="submit"]');
   const originalButtonText = submitButton?.textContent ?? 'Send Message';
   const formData = new FormData(form);
-  const payload = Object.fromEntries(
+  const fields = Object.fromEntries(
     Array.from(formData.entries())
       .map(([key, value]) => [formatLabel(key), String(value).trim()] as const)
       .filter(([, value]) => value.length > 0),
@@ -33,12 +31,7 @@ export async function sendWebsiteRequest(event: FormEvent<HTMLFormElement>, subj
     const response = await fetch(FORM_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({
-        _subject: subject,
-        _template: 'table',
-        _captcha: 'false',
-        ...payload,
-      }),
+      body: JSON.stringify({ subject, fields }),
     });
 
     if (!response.ok) {
