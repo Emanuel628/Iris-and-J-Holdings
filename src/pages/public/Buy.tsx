@@ -1,4 +1,5 @@
 import PublicLayout from '../../components/layout/PublicLayout';
+import { buildMailto } from '../../lib/emailRequests';
 
 function Buy() {
   return (
@@ -14,7 +15,7 @@ function Buy() {
             </p>
             <div className="page-actions">
               <a className="button button-primary" href="/book">Schedule Buyer Consultation</a>
-              <a className="text-link" href="/resources">Request Buyer Guide</a>
+              <a className="text-link" href={buildMailto('Buyer Guide Request', 'I would like to request the buyer guide.\n\nName:\nPhone:\nQuestions:')}>Request Buyer Guide</a>
             </div>
           </div>
           <div className="page-hero-visual" aria-label="Buyer consultation visual placeholder" />
