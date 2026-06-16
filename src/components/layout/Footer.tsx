@@ -23,7 +23,7 @@ function Footer() {
 
         <div className="footer-column footer-daiana">
           <h3>About</h3>
-          <p>Daiana Castro · NJREC license information to be added.</p>
+          <p>Daiana Castro, Licensed Real Estate Salesperson. Real estate services provided through All Star Real Estate Agency.</p>
           <a className="footer-about-link" href="/about">About Daiana</a>
         </div>
       </div>
