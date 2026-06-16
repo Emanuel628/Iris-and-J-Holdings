@@ -1,5 +1,4 @@
 import PublicLayout from '../../components/layout/PublicLayout';
-import { buildMailto } from '../../lib/emailRequests';
 
 function Resources() {
   return (
@@ -30,9 +29,9 @@ function Resources() {
           </div>
 
           <div className="content-grid">
-            <article className="content-card"><h3>Buyer Guide</h3><p>For people preparing to buy and trying to understand what happens first.</p><a className="card-link" href={buildMailto('Buyer Guide Request', 'I would like to request the buyer guide.\n\nName:\nPhone:\nQuestions:')}>Request Guide</a></article>
-            <article className="content-card"><h3>Seller Guide</h3><p>For homeowners who want to prepare before listing or scheduling a strategy call.</p><a className="card-link" href={buildMailto('Seller Guide Request', 'I would like to request the seller guide.\n\nName:\nPhone:\nQuestions:')}>Request Guide</a></article>
-            <article className="content-card"><h3>Market Updates</h3><p>For visitors who want occasional local real estate updates and guidance.</p><a className="card-link" href={buildMailto('Market Updates Request', 'I would like to request local market updates.\n\nName:\nPhone:\nArea of interest:')}>Request Updates</a></article>
+            <article className="content-card"><h3>Buyer Guide</h3><p>For people preparing to buy and trying to understand what happens first.</p><a className="card-link" href="/book?service=Buyer%20Guide%20Request&message=I%20would%20like%20to%20request%20the%20buyer%20guide.#contact-form">Request Guide</a></article>
+            <article className="content-card"><h3>Seller Guide</h3><p>For homeowners who want to prepare before listing or scheduling a strategy call.</p><a className="card-link" href="/book?service=Seller%20Guide%20Request&message=I%20would%20like%20to%20request%20the%20seller%20guide.#contact-form">Request Guide</a></article>
+            <article className="content-card"><h3>Market Updates</h3><p>For visitors who want occasional local real estate updates and guidance.</p><a className="card-link" href="/book?service=Market%20Updates%20Request&message=I%20would%20like%20to%20request%20local%20market%20updates.#contact-form">Request Updates</a></article>
           </div>
 
           <section className="quiet-band">
