@@ -1,4 +1,5 @@
 import { Mail, MapPin, Phone } from 'lucide-react';
+import '../../styles/footer-position-fix.css';
 
 function Footer() {
   return (
