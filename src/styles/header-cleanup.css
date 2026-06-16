@@ -1,0 +1,25 @@
+.logo-only-header {
+  display: flex;
+  min-height: 96px;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 1rem clamp(1rem, 5vw, 5rem);
+}
+
+.logo-only-header .brand {
+  justify-self: auto;
+}
+
+.logo-only-header .desktop-nav,
+.logo-only-header .nav-cta,
+.logo-only-header .mobile-nav,
+.logo-only-header .mobile-menu {
+  display: none;
+}
+
+@media (max-width: 680px) {
+  .logo-only-header {
+    min-height: 82px;
+    padding: 0.85rem 1rem;
+  }
+}
