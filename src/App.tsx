@@ -26,6 +26,7 @@ const routes = {
   '/resources': Resources,
   '/about': About,
   '/book': BookContact,
+  '/contact': BookContact,
   '/vacation-rentals': VacationRentals,
   '/privacy': PrivacyPolicy,
   '/terms': TermsOfUse,
