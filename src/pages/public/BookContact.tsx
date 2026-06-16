@@ -17,12 +17,13 @@ const appointmentTypes = [
   },
 ];
 
-function getInitialService() {
-  return new URLSearchParams(window.location.search).get('service') ?? '';
+function getQueryValue(key: string) {
+  return new URLSearchParams(window.location.search).get(key) ?? '';
 }
 
 function BookContact() {
-  const [selectedService, setSelectedService] = useState(getInitialService);
+  const [selectedService, setSelectedService] = useState(() => getQueryValue('service'));
+  const [messageValue, setMessageValue] = useState(() => getQueryValue('message'));
 
   return (
     <PublicLayout>
@@ -97,7 +98,16 @@ function BookContact() {
                   />
                 </div>
               </div>
-              <div className="input-group"><label htmlFor="contact-message">Message</label><textarea id="contact-message" name="message" required /></div>
+              <div className="input-group">
+                <label htmlFor="contact-message">Message</label>
+                <textarea
+                  id="contact-message"
+                  name="message"
+                  onChange={(event) => setMessageValue(event.target.value)}
+                  required
+                  value={messageValue}
+                />
+              </div>
               <button className="button button-primary" type="submit">Send Message</button>
             </form>
           </section>
