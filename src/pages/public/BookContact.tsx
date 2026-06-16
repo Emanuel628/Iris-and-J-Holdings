@@ -1,4 +1,5 @@
 import PublicLayout from '../../components/layout/PublicLayout';
+import { sendMailRequest } from '../../lib/emailRequests';
 
 function BookContact() {
   return (
@@ -24,8 +25,8 @@ function BookContact() {
             <p className="eyebrow">Start here</p>
             <h2>One calm path for calls, questions, and appointment requests.</h2>
             <p>
-              Scheduling will be connected later. For now, this page sets up the clean contact structure and keeps
-              each visitor from guessing where to begin.
+              Scheduling will be connected later. For now, this page sends requests directly to Daiana by email
+              so each visitor has a simple way to reach out.
             </p>
           </div>
 
@@ -44,17 +45,17 @@ function BookContact() {
                 in the right direction.
               </p>
             </div>
-            <form className="info-panel form-shell">
+            <form className="info-panel form-shell" onSubmit={(event) => sendMailRequest(event, 'Iris & J Holdings Contact Request')}>
               <div className="form-row">
-                <div className="input-group"><label>Name</label><input /></div>
-                <div className="input-group"><label>Email</label><input /></div>
+                <div className="input-group"><label htmlFor="contact-name">Name</label><input id="contact-name" name="name" required /></div>
+                <div className="input-group"><label htmlFor="contact-email">Email</label><input id="contact-email" name="email" type="email" required /></div>
               </div>
               <div className="form-row">
-                <div className="input-group"><label>Phone</label><input /></div>
-                <div className="input-group"><label>Service</label><input /></div>
+                <div className="input-group"><label htmlFor="contact-phone">Phone</label><input id="contact-phone" name="phone" type="tel" /></div>
+                <div className="input-group"><label htmlFor="contact-service">Service</label><input id="contact-service" name="service" placeholder="Buyer, seller, notary, rental, or general" /></div>
               </div>
-              <div className="input-group"><label>Message</label><textarea /></div>
-              <button className="button button-primary" type="button">Send Message</button>
+              <div className="input-group"><label htmlFor="contact-message">Message</label><textarea id="contact-message" name="message" required /></div>
+              <button className="button button-primary" type="submit">Send Message</button>
             </form>
           </section>
         </section>
