@@ -10,7 +10,7 @@ function Buy() {
             <h1>Buying a home starts with a clear plan.</h1>
             <p>
               Whether this is your first home or your next move, Daiana helps you understand your budget,
-              narrow your search, prepare your offer, and know what to expect before closing.
+              narrow your search, prepare with confidence, and know what to expect before closing.
             </p>
             <div className="page-actions">
               <a className="button button-primary" href="/book">Schedule Buyer Consultation</a>
@@ -25,23 +25,23 @@ function Buy() {
             <p className="eyebrow">What to expect</p>
             <h2>Guidance before the search gets overwhelming.</h2>
             <p>
-              Buying should not feel like guessing. The goal is to help you move through each step with more
-              clarity, less pressure, and a better sense of what comes next.
+              Buying should not feel like guessing. Start with the basics, understand what matters most,
+              and move through the process with a clear sense of what comes next.
             </p>
           </div>
 
           <div className="content-grid">
             <article className="content-card">
               <h3>Prepare</h3>
-              <p>Review budget, timing, preferred locations, and pre-approval needs before touring homes.</p>
+              <p>Review budget, timing, locations, pre-approval needs, and the kind of home that actually fits.</p>
             </article>
             <article className="content-card">
               <h3>Search</h3>
-              <p>Focus the home search around your real goals instead of chasing every listing online.</p>
+              <p>Focus the home search around your goals instead of chasing every listing that appears online.</p>
             </article>
             <article className="content-card">
               <h3>Move forward</h3>
-              <p>Understand offers, negotiations, inspections, attorney review, and closing steps.</p>
+              <p>Understand offers, negotiations, inspections, attorney review, and the closing timeline.</p>
             </article>
           </div>
 
