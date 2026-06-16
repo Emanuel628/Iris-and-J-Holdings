@@ -15,6 +15,7 @@ import Leads from './pages/admin/Leads';
 import Appointments from './pages/admin/Appointments';
 import MediaLibrary from './pages/admin/MediaLibrary';
 import SiteSettings from './pages/admin/SiteSettings';
+import ViewportModeToggle from './components/ui/ViewportModeToggle';
 
 const routes = {
   '/': Home,
@@ -40,7 +41,12 @@ function App() {
   const path = window.location.pathname as keyof typeof routes;
   const Page = routes[path] ?? Home;
 
-  return <Page />;
+  return (
+    <>
+      <Page />
+      <ViewportModeToggle />
+    </>
+  );
 }
 
 export default App;
