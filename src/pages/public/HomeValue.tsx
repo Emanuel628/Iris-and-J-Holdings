@@ -1,4 +1,5 @@
 import PublicLayout from '../../components/layout/PublicLayout';
+import { sendMailRequest } from '../../lib/emailRequests';
 
 function HomeValue() {
   return (
@@ -33,20 +34,20 @@ function HomeValue() {
             </div>
           </div>
 
-          <form className="info-panel form-shell">
+          <form className="info-panel form-shell" onSubmit={(event) => sendMailRequest(event, 'Home Value Review Request')}>
             <div className="form-row">
-              <div className="input-group"><label>Full Name</label><input /></div>
-              <div className="input-group"><label>Email</label><input /></div>
+              <div className="input-group"><label htmlFor="value-name">Full Name</label><input id="value-name" name="fullName" required /></div>
+              <div className="input-group"><label htmlFor="value-email">Email</label><input id="value-email" name="email" type="email" required /></div>
             </div>
             <div className="form-row">
-              <div className="input-group"><label>Phone</label><input /></div>
-              <div className="input-group"><label>Property Type</label><input /></div>
+              <div className="input-group"><label htmlFor="value-phone">Phone</label><input id="value-phone" name="phone" type="tel" /></div>
+              <div className="input-group"><label htmlFor="value-property-type">Property Type</label><input id="value-property-type" name="propertyType" /></div>
             </div>
-            <div className="input-group"><label>Property Address</label><input /></div>
-            <div className="input-group"><label>City or Town</label><input /></div>
-            <div className="input-group"><label>Timeline</label><input /></div>
-            <div className="input-group"><label>Updates or details</label><textarea /></div>
-            <button className="button button-primary" type="button">Submit Request</button>
+            <div className="input-group"><label htmlFor="value-address">Property Address</label><input id="value-address" name="propertyAddress" required /></div>
+            <div className="input-group"><label htmlFor="value-city">City or Town</label><input id="value-city" name="cityOrTown" required /></div>
+            <div className="input-group"><label htmlFor="value-timeline">Timeline</label><input id="value-timeline" name="timeline" /></div>
+            <div className="input-group"><label htmlFor="value-details">Updates or details</label><textarea id="value-details" name="updatesOrDetails" /></div>
+            <button className="button button-primary" type="submit">Submit Request</button>
           </form>
         </section>
       </main>
