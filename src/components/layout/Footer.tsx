@@ -26,6 +26,7 @@ function Footer() {
           <a href="/sell">Sell</a>
           <a href="/home-value">Home Value</a>
           <a href="/mobile-notary">Mobile Notary</a>
+          <a href="/vacation-rentals">Vacation Rentals</a>
           <a href="/about">About</a>
           <a href="/resources">Resources</a>
         </div>
