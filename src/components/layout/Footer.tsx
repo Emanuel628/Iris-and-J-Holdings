@@ -5,10 +5,13 @@ function Footer() {
   return (
     <footer className="site-footer compact-footer">
       <div className="footer-main">
-        <div className="footer-column footer-daiana">
-          <h3>Daiana Castro</h3>
-          <p>NJREC license information to be added.</p>
-          <a className="footer-about-link" href="/about">About Daiana</a>
+        <div className="footer-column brokerage">
+          <h3>Brokerage</h3>
+          <p>
+            Real estate services through All Star Real Estate Agency · 1416B Morris Ave, Union, NJ 07083 ·
+            Office: <a href="tel:19089645005">(908) 964-5005</a> · Broker of Record: Neixa Capdevila
+          </p>
+          <p className="equal-housing">Equal Housing Opportunity</p>
         </div>
 
         <div className="footer-column footer-contact">
@@ -18,13 +21,10 @@ function Footer() {
           <p><MapPin size={14} /> Union, NJ · Union, Middlesex, and Essex Counties</p>
         </div>
 
-        <div className="footer-column brokerage">
-          <h3>Brokerage</h3>
-          <p>
-            Real estate services through All Star Real Estate Agency · 1416B Morris Ave, Union, NJ 07083 ·
-            Office: <a href="tel:19089645005">(908) 964-5005</a> · Broker of Record: Neixa Capdevila
-          </p>
-          <p className="equal-housing">Equal Housing Opportunity</p>
+        <div className="footer-column footer-daiana">
+          <h3>About</h3>
+          <p>Daiana Castro · NJREC license information to be added.</p>
+          <a className="footer-about-link" href="/about">About Daiana</a>
         </div>
       </div>
 
