@@ -7,10 +7,10 @@ function About() {
         <section className="page-hero">
           <div className="page-hero-content">
             <p className="eyebrow">About Daiana</p>
-            <h1>A calm, organized person in your corner.</h1>
+            <h1>A steady guide for real estate and next steps.</h1>
             <p>
-              The About page builds trust around Daiana as the person behind the service: professional,
-              prepared, clear, and easy to talk to.
+              Daiana Castro brings a calm, organized approach to real estate guidance and mobile notary service.
+              She helps people understand what needs to happen, what can wait, and how to move forward with confidence.
             </p>
             <div className="page-actions">
               <a className="button button-primary" href="/book">Meet With Daiana</a>
@@ -25,8 +25,8 @@ function About() {
               <p className="eyebrow">How she works</p>
               <h2>Clear answers, steady communication, and a plan that fits the client.</h2>
               <p>
-                Real estate decisions and important documents can feel stressful. The tone here should help visitors
-                feel that Daiana is steady, prepared, and focused on what they actually need.
+                Big decisions feel easier when someone explains the steps in plain language. Daiana keeps the process
+                organized, helps clients ask better questions, and gives each request the attention it deserves.
               </p>
             </div>
 
@@ -36,7 +36,7 @@ function About() {
                 <li>REALTOR® guidance through All Star Real Estate Agency</li>
                 <li>Mobile notary service by appointment</li>
                 <li>New Jersey service area focus</li>
-                <li>Clear next steps before big decisions</li>
+                <li>Simple next steps before important decisions</li>
               </ul>
             </div>
           </div>
@@ -45,8 +45,8 @@ function About() {
             <p className="eyebrow">Brand promise</p>
             <h2>You should know what comes next.</h2>
             <p>
-              The About page should feel personal without becoming too casual. The message is simple: Daiana listens,
-              explains clearly, and helps clients move forward with confidence.
+              Whether you are planning a move, reviewing your options, or booking an appointment,
+              the goal is the same: clear guidance, thoughtful preparation, and no rushed decisions.
             </p>
           </section>
         </section>
