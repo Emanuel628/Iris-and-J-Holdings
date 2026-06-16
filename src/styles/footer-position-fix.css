@@ -1,0 +1,35 @@
+.compact-footer .footer-main {
+  display: grid;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  padding: 1.35rem clamp(1rem, 4vw, 4rem);
+}
+
+.compact-footer .footer-column {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex-direction: column;
+  text-align: center;
+}
+
+.compact-footer .footer-column p {
+  max-width: 340px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.compact-footer .brokerage p {
+  max-width: 440px;
+}
+
+@media (max-width: 900px) {
+  .compact-footer .footer-main {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
