@@ -146,7 +146,8 @@
     scrollbar-width: none;
   }
 
-  .mobile-nav::-webkit-scrollbar {
+  .mobile-nav::-webkit-scrollbar,
+  .service-grid::-webkit-scrollbar {
     display: none;
   }
 
@@ -188,6 +189,35 @@
 
   .quiet-band {
     margin-top: 3rem;
+  }
+
+  .service-section {
+    overflow: hidden;
+  }
+
+  .service-grid,
+  html.desktop-view .service-grid {
+    display: flex;
+    grid-template-columns: none;
+    max-width: none;
+    margin: 0;
+    overflow-x: auto;
+    padding: 0 1rem 0.35rem;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .service-card,
+  html.desktop-view .service-card {
+    flex: 0 0 210px;
+    min-height: 245px;
+    padding: 1.45rem 1rem;
+    scroll-snap-align: start;
+  }
+
+  .service-card p,
+  html.desktop-view .service-card p {
+    min-height: 76px;
   }
 }
 
@@ -238,5 +268,10 @@
   .footer-main {
     padding-top: 3rem;
     padding-bottom: 3rem;
+  }
+
+  .service-grid,
+  html.desktop-view .service-grid {
+    grid-template-columns: none;
   }
 }
