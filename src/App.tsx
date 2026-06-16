@@ -10,12 +10,6 @@ import VacationRentals from './pages/public/VacationRentals';
 import PrivacyPolicy from './pages/public/PrivacyPolicy';
 import TermsOfUse from './pages/public/TermsOfUse';
 import NotFound from './pages/public/NotFound';
-import AdminLogin from './pages/admin/AdminLogin';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import Leads from './pages/admin/Leads';
-import Appointments from './pages/admin/Appointments';
-import MediaLibrary from './pages/admin/MediaLibrary';
-import SiteSettings from './pages/admin/SiteSettings';
 import ViewportModeToggle from './components/ui/ViewportModeToggle';
 
 const routes = {
@@ -31,12 +25,6 @@ const routes = {
   '/vacation-rentals': VacationRentals,
   '/privacy': PrivacyPolicy,
   '/terms': TermsOfUse,
-  '/admin/login': AdminLogin,
-  '/admin': AdminDashboard,
-  '/admin/leads': Leads,
-  '/admin/appointments': Appointments,
-  '/admin/media': MediaLibrary,
-  '/admin/settings': SiteSettings,
 };
 
 function normalizePath(pathname: string) {
