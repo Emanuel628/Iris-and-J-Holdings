@@ -14,7 +14,7 @@ function VacationRentals() {
   return (
     <PublicLayout>
       <main className="page-main">
-        <section className="page-hero">
+        <section className="page-hero page-hero-vacation">
           <div className="page-hero-content">
             <p className="eyebrow">Coming Soon</p>
             <h1>Orlando vacation rentals will have their own quiet corner.</h1>
@@ -26,11 +26,11 @@ function VacationRentals() {
               <a className="text-link" href="#rental-photos">View Photo Slots</a>
             </div>
           </div>
-          <div className="page-hero-visual vacation-hero-visual" aria-label="Vacation rental visual placeholder" />
+          <div className="page-hero-visual vacation-hero-visual" aria-label="Sunny Orlando vacation rental visual" />
         </section>
 
         <section className="page-content" id="interest-list">
-          <div className="split-section">
+          <div className="split-section vacation-interest-section">
             <div className="page-intro">
               <p className="eyebrow">Central Florida</p>
               <h2>A coming soon page for Orlando.</h2>
@@ -64,8 +64,8 @@ function VacationRentals() {
             </div>
           </section>
 
-          <section className="notice-box">
-            Orlando vacation rental services are offered independently through Iris & J Holdings and are not
+          <section className="vacation-legal-alert" aria-label="Vacation rental legal notice">
+            Orlando vacation rental services are offered independently through Iris &amp; J Holdings and are not
             provided through All Star Real Estate Agency.
           </section>
         </section>
