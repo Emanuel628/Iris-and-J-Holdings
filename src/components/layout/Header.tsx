@@ -1,5 +1,3 @@
-import { Menu } from 'lucide-react';
-
 const navItems = [
   { label: 'Buy', href: '/buy' },
   { label: 'Sell', href: '/sell' },
@@ -25,7 +23,10 @@ function Header() {
         {navItems.map((item) => <a href={item.href} key={item.href}>{item.label}</a>)}
       </nav>
       <a className="nav-cta" href="/book">Book a Call</a>
-      <button className="mobile-menu" aria-label="Open menu" type="button"><Menu size={22} /></button>
+      <nav className="mobile-nav" aria-label="Mobile navigation">
+        {navItems.map((item) => <a href={item.href} key={item.href}>{item.label}</a>)}
+        <a className="mobile-nav-cta" href="/book">Book</a>
+      </nav>
     </header>
   );
 }
