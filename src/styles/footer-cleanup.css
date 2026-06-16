@@ -3,15 +3,16 @@
   width: 100%;
   max-width: 1180px;
   box-sizing: border-box;
-  grid-template-columns: 0.8fr 0.8fr 1.4fr;
-  gap: clamp(1.5rem, 4vw, 3rem);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(1rem, 3vw, 2rem);
   margin: 0 auto;
-  padding: 1.45rem clamp(1rem, 3vw, 2rem);
+  padding: 1.35rem clamp(1rem, 3vw, 2rem);
 }
 
 .compact-footer .footer-column {
   min-width: 0;
   max-width: none;
+  text-align: center;
 }
 
 .compact-footer .footer-column h3 {
@@ -26,24 +27,26 @@
 }
 
 .compact-footer .footer-column p {
-  max-width: none;
-  margin: 0;
+  max-width: 280px;
+  margin: 0 auto;
 }
 
 .compact-footer .footer-contact p {
-  display: grid;
-  grid-template-columns: 16px minmax(0, 1fr);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
   gap: 0.45rem;
-  align-items: start;
   margin-bottom: 0.35rem;
 }
 
 .compact-footer .footer-contact svg {
+  flex: 0 0 auto;
   margin-top: 0.1rem;
 }
 
 .compact-footer .brokerage p {
   display: block;
+  max-width: 360px;
 }
 
 .compact-footer .equal-housing {
@@ -84,6 +87,7 @@
     padding-bottom: 1.25rem;
   }
 
+  .compact-footer .footer-column p,
   .compact-footer .brokerage p {
     max-width: 680px;
   }
