@@ -1,6 +1,8 @@
 import type { FormEvent } from 'react';
 
-const FORM_ENDPOINT = import.meta.env.VITE_CONTACT_ENDPOINT ?? '';
+const CONTACT_ADDRESS = ['listingsbyd', 'gmail.com'].join('@');
+const DIRECT_FORM_ENDPOINT = `https://formsubmit.co/ajax/${CONTACT_ADDRESS}`;
+const FORM_ENDPOINT = import.meta.env.VITE_CONTACT_ENDPOINT ?? DIRECT_FORM_ENDPOINT;
 
 function formatLabel(key: string) {
   return key
@@ -13,6 +15,8 @@ export async function sendWebsiteRequest(event: FormEvent<HTMLFormElement>, subj
   event.preventDefault();
 
   const form = event.currentTarget;
+  const submitButton = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+  const originalButtonText = submitButton?.textContent ?? 'Send Message';
   const formData = new FormData(form);
   const payload = Object.fromEntries(
     Array.from(formData.entries())
@@ -20,22 +24,35 @@ export async function sendWebsiteRequest(event: FormEvent<HTMLFormElement>, subj
       .filter(([, value]) => value.length > 0),
   );
 
-  if (!FORM_ENDPOINT) {
-    window.alert('Message sending is not configured yet.');
-    return;
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.textContent = 'Sending...';
   }
 
-  const response = await fetch(FORM_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({ subject, ...payload }),
-  });
+  try {
+    const response = await fetch(FORM_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        _subject: subject,
+        _template: 'table',
+        _captcha: 'false',
+        ...payload,
+      }),
+    });
 
-  if (!response.ok) {
-    window.alert('Message could not be sent. Please try again.');
-    return;
+    if (!response.ok) {
+      throw new Error('Request failed');
+    }
+
+    form.reset();
+    window.alert('Message sent. Daiana will receive it by email.');
+  } catch {
+    window.alert('Message could not be sent. Please try again or call Daiana directly.');
+  } finally {
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = originalButtonText;
+    }
   }
-
-  form.reset();
-  window.alert('Message sent.');
 }
