@@ -14,10 +14,10 @@ function Header() {
         <a href="/">Home</a>
         <a href="/about">About</a>
         <a href="/#services">Services</a>
-        <a href="/book">Contact</a>
+        <a href="/contact">Contact</a>
       </nav>
 
-      <a className="nav-cta" href="/book?service=General%20Question#contact-form">Book a Call</a>
+      <a className="nav-cta" href="/contact?service=General%20Question#contact-form">Book a Call</a>
     </header>
   );
 }
