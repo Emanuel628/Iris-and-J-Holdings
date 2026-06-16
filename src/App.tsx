@@ -9,6 +9,7 @@ import BookContact from './pages/public/BookContact';
 import VacationRentals from './pages/public/VacationRentals';
 import PrivacyPolicy from './pages/public/PrivacyPolicy';
 import TermsOfUse from './pages/public/TermsOfUse';
+import NotFound from './pages/public/NotFound';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import Leads from './pages/admin/Leads';
@@ -38,9 +39,17 @@ const routes = {
   '/admin/settings': SiteSettings,
 };
 
+function normalizePath(pathname: string) {
+  // Treat "/buy/" the same as "/buy" so a trailing slash doesn't fall through.
+  if (pathname.length > 1 && pathname.endsWith('/')) {
+    return pathname.slice(0, -1);
+  }
+  return pathname;
+}
+
 function App() {
-  const path = window.location.pathname as keyof typeof routes;
-  const Page = routes[path] ?? Home;
+  const path = normalizePath(window.location.pathname) as keyof typeof routes;
+  const Page = routes[path] ?? NotFound;
 
   return (
     <>
