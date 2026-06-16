@@ -13,7 +13,7 @@ function MobileNotary() {
               with limited Essex County availability based on distance and scheduling.
             </p>
             <div className="page-actions">
-              <a className="button button-primary" href="/book">Book Mobile Notary Appointment</a>
+              <a className="button button-primary" href="/book?service=Mobile%20Notary%20Appointment#contact-form">Book Mobile Notary Appointment</a>
             </div>
           </div>
           <div className="page-hero-visual" aria-label="Mobile notary visual placeholder" />
