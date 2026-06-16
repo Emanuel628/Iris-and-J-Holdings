@@ -1,6 +1,8 @@
+import AdminLayout from '../../components/layout/AdminLayout';
+
 function SiteSettings() {
   return (
-    <main className="admin-content">
+    <AdminLayout title="Settings">
       <div className="admin-header">
         <p className="eyebrow">Site Settings</p>
         <h1>Core website details in one place.</h1>
@@ -11,7 +13,7 @@ function SiteSettings() {
         <article className="content-card"><h3>Brokerage</h3><p>Brokerage disclosure and compliance text.</p></article>
         <article className="content-card"><h3>Footer</h3><p>Legal links, accessibility note, and social links.</p></article>
       </div>
-    </main>
+    </AdminLayout>
   );
 }
 
