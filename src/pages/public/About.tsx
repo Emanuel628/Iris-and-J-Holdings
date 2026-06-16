@@ -4,7 +4,7 @@ function About() {
   return (
     <PublicLayout>
       <main className="page-main">
-        <section className="page-hero">
+        <section className="page-hero page-hero-about">
           <div className="page-hero-content">
             <p className="eyebrow">About Daiana</p>
             <h1>A steady guide for real estate and next steps.</h1>
@@ -13,10 +13,10 @@ function About() {
               She helps people understand what needs to happen, what can wait, and how to move forward with confidence.
             </p>
             <div className="page-actions">
-              <a className="button button-primary" href="/book">Meet With Daiana</a>
+              <a className="button button-primary" href="/book?service=General%20Question#contact-form">Meet With Daiana</a>
             </div>
           </div>
-          <div className="page-hero-visual" aria-label="About Daiana visual placeholder" />
+          <div className="page-hero-visual about-hero-visual" aria-label="Professional headshot area for Daiana" />
         </section>
 
         <section className="page-content">
@@ -33,7 +33,7 @@ function About() {
             <div className="info-panel">
               <h3>Professional focus</h3>
               <ul className="detail-list">
-                <li>REALTOR® guidance through All Star Real Estate Agency</li>
+                <li>Real estate guidance through All Star Real Estate Agency</li>
                 <li>Mobile notary service by appointment</li>
                 <li>New Jersey service area focus</li>
                 <li>Simple next steps before important decisions</li>
