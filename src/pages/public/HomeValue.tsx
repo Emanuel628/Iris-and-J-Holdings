@@ -9,8 +9,8 @@ function HomeValue() {
             <p className="eyebrow">Home Value Review</p>
             <h1>Find out what your home may be worth.</h1>
             <p>
-              Share a few property details and Daiana will review local market activity to help you better
-              understand your options. This is a local review, not an appraisal.
+              Share a few property details and Daiana will review local market activity to help you understand
+              your options. This is a helpful starting point, not a formal appraisal.
             </p>
             <div className="page-actions">
               <a className="button button-primary" href="#home-value-form">Send My Home Value Request</a>
@@ -23,10 +23,9 @@ function HomeValue() {
           <div>
             <div className="page-intro">
               <p className="eyebrow">Property details</p>
-              <h2>A simple request form for homeowners.</h2>
+              <h2>A simple request for a thoughtful local review.</h2>
               <p>
-                This form collects the key details needed to start a thoughtful market review without
-                overwhelming the visitor.
+                The form keeps the first step light: address, timing, property type, and anything that may affect value.
               </p>
             </div>
             <div className="notice-box">
