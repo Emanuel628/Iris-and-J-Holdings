@@ -82,8 +82,7 @@ Good uses of cards:
 
 - Service selector on the homepage
 - Resource options
-- Admin dashboard summaries
-- Lead type summaries
+- Appointment type choices on the Book / Contact page
 
 Avoid:
 
@@ -220,7 +219,9 @@ Vacation Rentals should be included later as a softer secondary path, not equal 
 
 ## Full Site Pages
 
-The full public site is expected to need 11 public-facing pages:
+This is a public-facing website with 11 pages. There is no admin area or login —
+form submissions are delivered to Daiana by email, so the site holds no accounts
+or stored data.
 
 1. Home
 2. Buy
@@ -233,17 +234,6 @@ The full public site is expected to need 11 public-facing pages:
 9. Vacation Rentals Coming Soon
 10. Privacy Policy
 11. Terms of Use
-
-The admin side is expected to need 6 private pages:
-
-1. Admin Login
-2. Admin Dashboard
-3. Leads
-4. Appointments
-5. Media Library
-6. Site Settings
-
-Total planned pages: 17.
 
 ## Public Page Plan
 
@@ -418,83 +408,6 @@ Content:
 - Professional advice disclaimer
 - Brokerage disclosure reference
 
-## Admin Page Plan
-
-The admin side lets Daiana control the site without touching code.
-
-### 1. Admin Login
-
-Private login page.
-
-### 2. Admin Dashboard
-
-Quick overview:
-
-- New leads
-- Upcoming appointments
-- Recent form submissions
-- Media reminders
-
-### 3. Leads
-
-Lead management for:
-
-- Buyers
-- Sellers
-- Home value requests
-- Notary requests
-- Resource requests
-- Newsletter signups
-- Vacation rental interest
-- General questions
-
-Lead statuses:
-
-- New
-- Contacted
-- Scheduled
-- In Progress
-- Closed
-- Archived
-
-### 4. Appointments
-
-Appointment management for:
-
-- Buyer consultations
-- Seller strategy calls
-- Mobile notary appointments
-- General calls
-
-Could later integrate with Google Calendar, Calendly, or Cal.com.
-
-### 5. Media Library
-
-Controlled image management.
-
-Daiana should be able to:
-
-- Upload images
-- Delete images
-- Rename images
-- Reorder images
-- Assign images to pages
-- Set alt text
-- Set image focus position
-
-This should not become a full drag-anything-anywhere website builder.
-
-### 6. Site Settings
-
-Admin controls for:
-
-- Contact information
-- Service areas
-- Social links
-- Brokerage information
-- Footer text
-- Vacation rental coming soon status
-
 ## Functional Requirements
 
 ### Public Site
@@ -521,52 +434,25 @@ The site should support forms for:
 - Newsletter signup
 - Vacation rental interest
 
-Each form should create a lead.
+Each form sends an email to Daiana. Nothing is stored — there is no lead database.
 
-### Appointment Scheduling
+### Appointments
 
-Recommended first version:
-
-- Branded on-site flow
-- External scheduling integration underneath, such as Google Calendar appointment scheduling, Calendly, or Cal.com
-
-Later version:
-
-- Custom scheduling system
-- Admin availability controls
-- Calendar sync
-- Email reminders
-- SMS reminders
+Appointments are arranged by email. A visitor submits a form, Daiana receives the
+details, and the two coordinate timing directly. An external scheduling tool
+(Calendly, Cal.com, or Google Calendar appointment scheduling) could be embedded
+later if needed, but is not required.
 
 ### Email Notifications
 
-When a form is submitted:
-
-Visitor receives a confirmation email.
-
-Daiana receives a lead notification email with:
+When a form is submitted, Daiana receives a notification email at the configured
+address (see `EMAIL_SETUP.md`) with:
 
 - Name
 - Phone
 - Email
 - Service type
 - Submitted details
-- Appointment request if applicable
-
-### Media Uploads
-
-Admin should be able to upload and manage images.
-
-Image controls should be structured by page:
-
-- Home hero image
-- Home trust section image
-- Buy page image
-- Sell page image
-- Home value page image
-- Notary page image
-- About page image
-- Vacation rental gallery images
 
 ## Recommended Tech Stack
 
@@ -575,43 +461,23 @@ Image controls should be structured by page:
 - React
 - Vite
 - TypeScript
-- CSS Modules or standard CSS files
-- React Router
+- Standard CSS files
+- Lightweight path-based routing in `App.tsx` (no router dependency)
 
 ### Backend
 
-Recommended once forms/admin are active:
+A small Express server (`server.mjs`) that serves the built site and exposes a
+single `/api/contact` endpoint for form submissions.
 
 - Node.js
 - Express
-- TypeScript
-- PostgreSQL
+- nodemailer (SMTP, e.g. Gmail app password — see `EMAIL_SETUP.md`)
 
-### Storage
-
-For uploaded images:
-
-- Cloudinary, UploadThing, Supabase Storage, or S3-compatible storage
-
-### Email
-
-For notification emails:
-
-- Resend, SendGrid, or Postmark
-
-### Scheduling
-
-For MVP:
-
-- Calendly
-- Cal.com
-- Google Calendar appointment scheduling
+No database, accounts, or file storage are used.
 
 ### Deployment
 
-- Vercel for frontend
-- Railway, Render, or Fly.io for backend
-- PostgreSQL hosted database
+- Railway (the Express server serves both the static build and `/api/contact`)
 
 ## Project Build Phases
 
@@ -649,39 +515,13 @@ For MVP:
 - Hover states
 - Responsive rules
 
-### Phase 4: Forms and Leads
+### Phase 4: Forms and Email
 
 - Service-specific forms
 - Form validation
-- Lead creation
-- Email notifications
-- Admin lead view
+- Email delivery to Daiana via `/api/contact`
 
-### Phase 5: Admin System
-
-- Admin login
-- Dashboard
-- Leads
-- Appointments
-- Media Library
-- Site Settings
-
-### Phase 6: Media Uploads
-
-- Image upload
-- Reordering
-- Page image assignment
-- Alt text
-- Focus controls
-
-### Phase 7: Scheduling
-
-- Appointment type selection
-- Embedded scheduling
-- Calendar sync later
-- Confirmation emails
-
-### Phase 8: Polish
+### Phase 5: Polish
 
 - Accessibility
 - SEO
@@ -690,22 +530,21 @@ For MVP:
 - Legal cleanup
 - Deployment
 
-## Initial Empty File Structure Plan
-
-The first repository structure should be lightweight and organized.
+## File Structure
 
 ```text
 Iris-and-J-Holdings/
   README.md
+  EMAIL_SETUP.md
   package.json
   index.html
-  .gitignore
+  server.mjs            # Express server: serves the build + /api/contact
+  railway.json
+  vite.config.ts
+  tsconfig.json
   src/
     main.tsx
-    App.tsx
-    routes/
-      PublicRoutes.tsx
-      AdminRoutes.tsx
+    App.tsx             # path-based routing (falls back to NotFound)
     pages/
       public/
         Home.tsx
@@ -719,19 +558,12 @@ Iris-and-J-Holdings/
         VacationRentals.tsx
         PrivacyPolicy.tsx
         TermsOfUse.tsx
-      admin/
-        AdminLogin.tsx
-        AdminDashboard.tsx
-        Leads.tsx
-        Appointments.tsx
-        MediaLibrary.tsx
-        SiteSettings.tsx
+        NotFound.tsx
     components/
       layout/
         Header.tsx
         Footer.tsx
         PublicLayout.tsx
-        AdminLayout.tsx
       sections/
         Hero.tsx
         ServiceSelector.tsx
@@ -739,28 +571,20 @@ Iris-and-J-Holdings/
         ProcessSteps.tsx
         FinalCTA.tsx
       ui/
-        Button.tsx
-        Card.tsx
-        Input.tsx
-        Textarea.tsx
-        Select.tsx
+        ViewportModeToggle.tsx
+    lib/
+      formSubmitEmail.ts  # posts form data to /api/contact
     styles/
-      globals.css
       tokens.css
+      base.css
       layout.css
       animations.css
-    data/
-      navigation.ts
-      services.ts
-      legal.ts
-    types/
-      lead.ts
-      appointment.ts
-      media.ts
-    utils/
-      constants.ts
-      helpers.ts
+      global.css          # imports the four files above
+      overrides.css
+      viewport-toggle.css
+      footer-position-fix.css
   public/
+    favicon.svg
     images/
       .gitkeep
     icons/
@@ -773,6 +597,6 @@ The homepage will stay simple.
 
 It will not include every business feature.
 
-The detailed service content, forms, vacation rentals, legal text, resources, and admin tools will live on their own pages.
+The detailed service content, forms, vacation rentals, legal text, and resources live on their own pages.
 
 This protects the premium feel and keeps the funnel clear.

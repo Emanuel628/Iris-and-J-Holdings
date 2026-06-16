@@ -1,6 +1,8 @@
 import PublicLayout from '../../components/layout/PublicLayout';
+import { usePageMeta } from '../../lib/usePageMeta';
 
 function TermsOfUse() {
+  usePageMeta('Terms of Use', 'General website terms and real estate disclaimers for Iris & J Holdings.');
   return (
     <PublicLayout>
       <main className="page-main">

@@ -9,13 +9,7 @@ import BookContact from './pages/public/BookContact';
 import VacationRentals from './pages/public/VacationRentals';
 import PrivacyPolicy from './pages/public/PrivacyPolicy';
 import TermsOfUse from './pages/public/TermsOfUse';
-import AdminLogin from './pages/admin/AdminLogin';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import Leads from './pages/admin/Leads';
-import Appointments from './pages/admin/Appointments';
-import MediaLibrary from './pages/admin/MediaLibrary';
-import SiteSettings from './pages/admin/SiteSettings';
-import ViewportModeToggle from './components/ui/ViewportModeToggle';
+import NotFound from './pages/public/NotFound';
 
 const routes = {
   '/': Home,
@@ -30,24 +24,21 @@ const routes = {
   '/vacation-rentals': VacationRentals,
   '/privacy': PrivacyPolicy,
   '/terms': TermsOfUse,
-  '/admin/login': AdminLogin,
-  '/admin': AdminDashboard,
-  '/admin/leads': Leads,
-  '/admin/appointments': Appointments,
-  '/admin/media': MediaLibrary,
-  '/admin/settings': SiteSettings,
 };
 
-function App() {
-  const path = window.location.pathname as keyof typeof routes;
-  const Page = routes[path] ?? Home;
+function normalizePath(pathname: string) {
+  // Treat "/buy/" the same as "/buy" so a trailing slash doesn't fall through.
+  if (pathname.length > 1 && pathname.endsWith('/')) {
+    return pathname.slice(0, -1);
+  }
+  return pathname;
+}
 
-  return (
-    <>
-      <Page />
-      <ViewportModeToggle />
-    </>
-  );
+function App() {
+  const path = normalizePath(window.location.pathname) as keyof typeof routes;
+  const Page = routes[path] ?? NotFound;
+
+  return <Page />;
 }
 
 export default App;

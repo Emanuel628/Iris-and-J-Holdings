@@ -1,6 +1,11 @@
 import PublicLayout from '../../components/layout/PublicLayout';
+import { usePageMeta } from '../../lib/usePageMeta';
 
 function Resources() {
+  usePageMeta(
+    'Resources',
+    'Free buyer and seller guides plus local market updates — helpful next steps before you’re ready to schedule a call.',
+  );
   return (
     <PublicLayout>
       <main className="page-main">

@@ -14,10 +14,21 @@ function Header() {
         <a href="/">Home</a>
         <a href="/about">About</a>
         <a href="/#services">Services</a>
-        <a href="/contact">Contact</a>
+        <a href="/book">Contact</a>
       </nav>
 
-      <a className="nav-cta" href="/contact?service=General%20Question#contact-form">Book a Call</a>
+      <a className="nav-cta" href="/book?service=General%20Question#contact-form">Book a Call</a>
+
+      <nav className="mobile-nav" aria-label="Mobile navigation">
+        <a href="/">Home</a>
+        <a href="/buy">Buy</a>
+        <a href="/sell">Sell</a>
+        <a href="/home-value">Home Value</a>
+        <a href="/mobile-notary">Notary</a>
+        <a href="/resources">Resources</a>
+        <a href="/about">About</a>
+        <a className="mobile-nav-call" href="tel:19084996320">Call</a>
+      </nav>
     </header>
   );
 }

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import PublicLayout from '../../components/layout/PublicLayout';
-import { sendWebsiteRequest as sendMailRequest } from '../../lib/formSubmitEmail';
+import FormStatus from '../../components/ui/FormStatus';
+import { useContactForm } from '../../lib/useContactForm';
+import { usePageMeta } from '../../lib/usePageMeta';
 
 const appointmentTypes = [
   {
@@ -34,7 +36,12 @@ function getQueryValue(key: string) {
 }
 
 function BookContact() {
+  usePageMeta(
+    'Book or Contact',
+    'Book a buyer consultation, seller strategy call, or mobile notary appointment, or send Daiana a general question.',
+  );
   const formRef = useRef<HTMLFormElement>(null);
+  const { status, submit } = useContactForm('Iris & J Holdings Contact Request');
   const [selectedService, setSelectedService] = useState(() => getQueryValue('service'));
   const [messageValue, setMessageValue] = useState(() => getQueryValue('message'));
 
@@ -100,9 +107,10 @@ function BookContact() {
             <form
               className="info-panel form-shell"
               id="contact-form"
-              onSubmit={(event) => sendMailRequest(event, 'Iris & J Holdings Contact Request')}
+              onSubmit={submit}
               ref={formRef}
             >
+              <input className="hp-field" type="text" name="_gotcha" tabIndex={-1} autoComplete="off" aria-hidden="true" />
               <div className="form-row">
                 <div className="input-group"><label htmlFor="contact-name">Name</label><input id="contact-name" name="name" required /></div>
                 <div className="input-group"><label htmlFor="contact-email">Email</label><input id="contact-email" name="email" type="email" required /></div>
@@ -133,7 +141,10 @@ function BookContact() {
                   value={messageValue}
                 />
               </div>
-              <button className="button button-primary" type="submit">Send Message</button>
+              <button className="button button-primary" type="submit" disabled={status === 'sending'}>
+                {status === 'sending' ? 'Sending…' : 'Send Message'}
+              </button>
+              <FormStatus status={status} />
             </form>
           </section>
         </section>

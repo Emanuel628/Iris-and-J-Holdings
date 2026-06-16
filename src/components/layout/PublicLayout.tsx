@@ -9,8 +9,9 @@ type PublicLayoutProps = {
 function PublicLayout({ children }: PublicLayoutProps) {
   return (
     <div className="site-shell">
+      <a className="skip-link" href="#main">Skip to content</a>
       <Header />
-      {children}
+      <div id="main">{children}</div>
       <Footer />
     </div>
   );

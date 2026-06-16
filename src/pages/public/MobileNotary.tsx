@@ -1,6 +1,36 @@
+import { Phone } from 'lucide-react';
 import PublicLayout from '../../components/layout/PublicLayout';
+import Faq from '../../components/sections/Faq';
+import { usePageMeta } from '../../lib/usePageMeta';
+
+const notaryFaqs = [
+  {
+    question: 'Which areas do you serve?',
+    answer:
+      'Union County and Middlesex County, with limited Essex County availability based on distance and scheduling.',
+  },
+  {
+    question: 'What should I have ready before the appointment?',
+    answer:
+      'Share the city, document type, number of signers, your preferred time, and any notes. Bring a valid, unexpired government-issued photo ID for every signer, and leave documents unsigned until we meet.',
+  },
+  {
+    question: 'Is a fee required to book?',
+    answer:
+      'Yes — a travel or booking fee is confirmed before the appointment. Notary fees are separate and depend on the document type and number of notarizations. Daiana will confirm the details when you book.',
+  },
+  {
+    question: 'What types of documents can you notarize?',
+    answer:
+      'General notarizations, real estate documents, affidavits, and consent forms, among others. Share the document type when booking so Daiana can confirm.',
+  },
+];
 
 function MobileNotary() {
+  usePageMeta(
+    'Mobile Notary',
+    'Mobile notary service by appointment in Union and Middlesex Counties, with limited Essex County availability.',
+  );
   return (
     <PublicLayout>
       <main className="page-main">
@@ -14,6 +44,7 @@ function MobileNotary() {
             </p>
             <div className="page-actions">
               <a className="button button-primary" href="/book?service=Mobile%20Notary%20Appointment#contact-form">Book Mobile Notary Appointment</a>
+              <a className="text-link" href="tel:19084996320"><Phone size={18} /> Call (908) 499-6320</a>
             </div>
           </div>
           <div className="page-hero-visual" aria-label="Mobile notary visual placeholder" />
@@ -34,6 +65,8 @@ function MobileNotary() {
             <h2>A travel or booking fee is required before confirmation.</h2>
             <p>Notary fees are separate and depend on the document type and number of notarizations.</p>
           </section>
+
+          <Faq eyebrow="Notary questions" heading="Mobile notary, answered." items={notaryFaqs} />
         </section>
       </main>
     </PublicLayout>

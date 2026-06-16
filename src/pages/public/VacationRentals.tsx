@@ -1,5 +1,7 @@
 import PublicLayout from '../../components/layout/PublicLayout';
-import { sendWebsiteRequest as sendMailRequest } from '../../lib/formSubmitEmail';
+import FormStatus from '../../components/ui/FormStatus';
+import { useContactForm } from '../../lib/useContactForm';
+import { usePageMeta } from '../../lib/usePageMeta';
 
 const photoSlots = [
   'Exterior photo',
@@ -11,6 +13,11 @@ const photoSlots = [
 ];
 
 function VacationRentals() {
+  usePageMeta(
+    'Orlando Vacation Rentals',
+    'Orlando vacation rentals coming soon. Join the interest list for photos, stay details, and availability when they’re ready.',
+  );
+  const { status, submit } = useContactForm('Orlando Vacation Rental Interest Request');
   return (
     <PublicLayout>
       <main className="page-main">
@@ -38,11 +45,15 @@ function VacationRentals() {
                 This page will later include real photos, stay details, availability, and an interest list.
               </p>
             </div>
-            <form className="info-panel form-shell" onSubmit={(event) => sendMailRequest(event, 'Orlando Vacation Rental Interest Request')}>
+            <form className="info-panel form-shell" onSubmit={submit}>
+              <input className="hp-field" type="text" name="_gotcha" tabIndex={-1} autoComplete="off" aria-hidden="true" />
               <div className="input-group"><label htmlFor="rental-name">Name</label><input id="rental-name" name="name" required /></div>
               <div className="input-group"><label htmlFor="rental-email">Email</label><input id="rental-email" name="email" type="email" required /></div>
               <div className="input-group"><label htmlFor="rental-notes">Travel Notes</label><textarea id="rental-notes" name="travelNotes" /></div>
-              <button className="button button-primary" type="submit">Join Interest List</button>
+              <button className="button button-primary" type="submit" disabled={status === 'sending'}>
+                {status === 'sending' ? 'Sending…' : 'Join Interest List'}
+              </button>
+              <FormStatus status={status} />
             </form>
           </div>
 
