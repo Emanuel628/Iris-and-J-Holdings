@@ -9,8 +9,8 @@ function Resources() {
             <p className="eyebrow">Resources</p>
             <h1>Helpful guidance before you are ready to schedule.</h1>
             <p>
-              Some visitors are still gathering information. This page gives them simple ways to request buyer,
-              seller, and market resources while keeping the homepage clean.
+              Not everyone is ready for a call right away. Start with a buyer guide, seller guide,
+              or local market update and come back when the timing feels right.
             </p>
             <div className="page-actions">
               <a className="button button-primary" href="#resources-list">Browse Resources</a>
@@ -24,8 +24,7 @@ function Resources() {
             <p className="eyebrow">Choose one</p>
             <h2>Simple resources for buyers, sellers, and homeowners.</h2>
             <p>
-              These are lead capture paths, but they should feel helpful first. The wording should be useful,
-              calm, and direct.
+              Each resource path gives visitors a useful next step without forcing them into a conversation too early.
             </p>
           </div>
 
@@ -38,7 +37,7 @@ function Resources() {
           <section className="quiet-band">
             <p className="eyebrow">Stay informed</p>
             <h2>Get guidance that matches where you are.</h2>
-            <p>Resources should help visitors move from curiosity to confidence without forcing them into a call too early.</p>
+            <p>Useful information should make the next step feel easier, not heavier.</p>
           </section>
         </section>
       </main>
