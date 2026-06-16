@@ -1,4 +1,4 @@
-import { ArrowRight, BarChart3, HomeIcon, PenLine, Tag } from 'lucide-react';
+import { ArrowRight, BarChart3, HomeIcon, MapPin, PenLine, Tag } from 'lucide-react';
 
 const services = [
   {
@@ -24,6 +24,12 @@ const services = [
     text: 'Book a convenient mobile notary appointment.',
     href: '/mobile-notary',
     icon: PenLine,
+  },
+  {
+    title: 'Vacation Rentals',
+    text: 'Orlando vacation rentals are coming soon, with photos and property details to follow.',
+    href: '/vacation-rentals',
+    icon: MapPin,
   },
 ];
 
