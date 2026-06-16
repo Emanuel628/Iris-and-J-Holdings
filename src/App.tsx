@@ -16,7 +16,7 @@ import Appointments from './pages/admin/Appointments';
 import MediaLibrary from './pages/admin/MediaLibrary';
 import SiteSettings from './pages/admin/SiteSettings';
 
-const routes: Record<string, () => JSX.Element> = {
+const routes = {
   '/': Home,
   '/buy': Buy,
   '/sell': Sell,
@@ -37,7 +37,9 @@ const routes: Record<string, () => JSX.Element> = {
 };
 
 function App() {
-  const Page = routes[window.location.pathname] ?? Home;
+  const path = window.location.pathname as keyof typeof routes;
+  const Page = routes[path] ?? Home;
+
   return <Page />;
 }
 
