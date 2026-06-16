@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import PublicLayout from '../../components/layout/PublicLayout';
 import { sendWebsiteRequest as sendMailRequest } from '../../lib/formSubmitEmail';
 
@@ -17,18 +17,39 @@ const appointmentTypes = [
   },
 ];
 
+const serviceOptions = [
+  'General Question',
+  'Buyer Consultation',
+  'Seller Strategy Call',
+  'Mobile Notary Appointment',
+  'Home Value Review',
+  'Buyer Guide Request',
+  'Seller Guide Request',
+  'Market Updates Request',
+  'Vacation Rental Interest',
+];
+
 function getQueryValue(key: string) {
   return new URLSearchParams(window.location.search).get(key) ?? '';
 }
 
 function BookContact() {
+  const formRef = useRef<HTMLFormElement>(null);
   const [selectedService, setSelectedService] = useState(() => getQueryValue('service'));
   const [messageValue, setMessageValue] = useState(() => getQueryValue('message'));
+
+  useEffect(() => {
+    if (selectedService || messageValue || window.location.hash === '#contact-form') {
+      window.requestAnimationFrame(() => {
+        formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  }, [messageValue, selectedService]);
 
   return (
     <PublicLayout>
       <main className="page-main">
-        <section className="page-hero">
+        <section className="page-hero page-hero-contact">
           <div className="page-hero-content">
             <p className="eyebrow">Book or Contact</p>
             <h1>Choose the conversation that fits where you are.</h1>
@@ -40,7 +61,7 @@ function BookContact() {
               <a className="button button-primary" href="#appointment-types">Choose Appointment Type</a>
             </div>
           </div>
-          <div className="page-hero-visual" aria-label="Booking visual placeholder" />
+          <div className="page-hero-visual contact-hero-visual" aria-label="Contact and appointment request visual" />
         </section>
 
         <section className="page-content" id="appointment-types">
@@ -80,6 +101,7 @@ function BookContact() {
               className="info-panel form-shell"
               id="contact-form"
               onSubmit={(event) => sendMailRequest(event, 'Iris & J Holdings Contact Request')}
+              ref={formRef}
             >
               <div className="form-row">
                 <div className="input-group"><label htmlFor="contact-name">Name</label><input id="contact-name" name="name" required /></div>
@@ -89,13 +111,16 @@ function BookContact() {
                 <div className="input-group"><label htmlFor="contact-phone">Phone</label><input id="contact-phone" name="phone" type="tel" /></div>
                 <div className="input-group">
                   <label htmlFor="contact-service">Service</label>
-                  <input
+                  <select
                     id="contact-service"
                     name="service"
                     onChange={(event) => setSelectedService(event.target.value)}
-                    placeholder="Buyer, seller, notary, rental, or general"
+                    required
                     value={selectedService}
-                  />
+                  >
+                    <option value="">Choose a service</option>
+                    {serviceOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+                  </select>
                 </div>
               </div>
               <div className="input-group">
