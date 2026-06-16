@@ -1,5 +1,14 @@
 import PublicLayout from '../../components/layout/PublicLayout';
 
+const photoSlots = [
+  'Exterior photo',
+  'Living room photo',
+  'Kitchen photo',
+  'Bedroom photo',
+  'Outdoor space photo',
+  'Area photo',
+];
+
 function VacationRentals() {
   return (
     <PublicLayout>
@@ -9,23 +18,23 @@ function VacationRentals() {
             <p className="eyebrow">Coming Soon</p>
             <h1>Orlando vacation rentals will have their own quiet corner.</h1>
             <p>
-              Vacation rentals stay separate from the real estate and notary funnel until the service is ready.
-              This page keeps interest organized without confusing the main homepage.
+              A simple page for future Orlando stays, photos, property details, and interest requests.
             </p>
             <div className="page-actions">
               <a className="button button-primary" href="#interest-list">Join Interest List</a>
+              <a className="text-link" href="#rental-photos">View Photo Slots</a>
             </div>
           </div>
-          <div className="page-hero-visual" aria-label="Vacation rental visual placeholder" />
+          <div className="page-hero-visual vacation-hero-visual" aria-label="Vacation rental visual placeholder" />
         </section>
 
         <section className="page-content" id="interest-list">
           <div className="split-section">
             <div className="page-intro">
               <p className="eyebrow">Central Florida</p>
-              <h2>A simple coming soon page for future guests.</h2>
+              <h2>A coming soon page for Orlando.</h2>
               <p>
-                This page will later include vacation rental photography, details, availability, and an interest list.
+                This page will later include real photos, stay details, availability, and an interest list.
               </p>
             </div>
             <form className="info-panel form-shell">
@@ -35,6 +44,24 @@ function VacationRentals() {
               <button className="button button-primary" type="button">Join Interest List</button>
             </form>
           </div>
+
+          <section className="vacation-photo-section" id="rental-photos">
+            <div className="page-intro">
+              <p className="eyebrow">Photo Gallery</p>
+              <h2>Photos will be uploaded here.</h2>
+              <p>
+                These slots are ready for the rental photos once they are available.
+              </p>
+            </div>
+            <div className="vacation-photo-grid">
+              {photoSlots.map((slot) => (
+                <div className="vacation-photo-card" key={slot}>
+                  <span>Photo slot</span>
+                  <strong>{slot}</strong>
+                </div>
+              ))}
+            </div>
+          </section>
 
           <section className="notice-box">
             Orlando vacation rental services are offered independently through Iris & J Holdings and are not
