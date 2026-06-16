@@ -10,7 +10,6 @@ import VacationRentals from './pages/public/VacationRentals';
 import PrivacyPolicy from './pages/public/PrivacyPolicy';
 import TermsOfUse from './pages/public/TermsOfUse';
 import NotFound from './pages/public/NotFound';
-import ViewportModeToggle from './components/ui/ViewportModeToggle';
 
 const routes = {
   '/': Home,
@@ -39,12 +38,7 @@ function App() {
   const path = normalizePath(window.location.pathname) as keyof typeof routes;
   const Page = routes[path] ?? NotFound;
 
-  return (
-    <>
-      <Page />
-      <ViewportModeToggle />
-    </>
-  );
+  return <Page />;
 }
 
 export default App;

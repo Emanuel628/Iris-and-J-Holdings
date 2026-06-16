@@ -1,6 +1,11 @@
 import PublicLayout from '../../components/layout/PublicLayout';
+import { usePageMeta } from '../../lib/usePageMeta';
 
 function About() {
+  usePageMeta(
+    'About Daiana Castro',
+    'Daiana Castro brings a calm, organized approach to New Jersey real estate guidance and mobile notary service.',
+  );
   return (
     <PublicLayout>
       <main className="page-main">

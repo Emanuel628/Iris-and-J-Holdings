@@ -1,6 +1,8 @@
 import PublicLayout from '../../components/layout/PublicLayout';
+import { usePageMeta } from '../../lib/usePageMeta';
 
 function NotFound() {
+  usePageMeta('Page Not Found', 'The page you were looking for isn’t here.');
   return (
     <PublicLayout>
       <main className="page-main">

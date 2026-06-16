@@ -1,7 +1,14 @@
 import PublicLayout from '../../components/layout/PublicLayout';
-import { sendWebsiteRequest as sendMailRequest } from '../../lib/formSubmitEmail';
+import FormStatus from '../../components/ui/FormStatus';
+import { useContactForm } from '../../lib/useContactForm';
+import { usePageMeta } from '../../lib/usePageMeta';
 
 function HomeValue() {
+  usePageMeta(
+    'Home Value Review',
+    'Request a local home value review based on current market activity. A helpful starting point — not a formal appraisal.',
+  );
+  const { status, submit } = useContactForm('Home Value Review Request');
   return (
     <PublicLayout>
       <main className="page-main">
@@ -34,7 +41,8 @@ function HomeValue() {
             </div>
           </div>
 
-          <form className="info-panel form-shell" onSubmit={(event) => sendMailRequest(event, 'Home Value Review Request')}>
+          <form className="info-panel form-shell" onSubmit={submit}>
+            <input className="hp-field" type="text" name="_gotcha" tabIndex={-1} autoComplete="off" aria-hidden="true" />
             <div className="form-row">
               <div className="input-group"><label htmlFor="value-name">Full Name</label><input id="value-name" name="fullName" required /></div>
               <div className="input-group"><label htmlFor="value-email">Email</label><input id="value-email" name="email" type="email" required /></div>
@@ -47,7 +55,10 @@ function HomeValue() {
             <div className="input-group"><label htmlFor="value-city">City or Town</label><input id="value-city" name="cityOrTown" required /></div>
             <div className="input-group"><label htmlFor="value-timeline">Timeline</label><input id="value-timeline" name="timeline" /></div>
             <div className="input-group"><label htmlFor="value-details">Updates or details</label><textarea id="value-details" name="updatesOrDetails" /></div>
-            <button className="button button-primary" type="submit">Submit Request</button>
+            <button className="button button-primary" type="submit" disabled={status === 'sending'}>
+              {status === 'sending' ? 'Sending…' : 'Submit Request'}
+            </button>
+            <FormStatus status={status} />
           </form>
         </section>
       </main>

@@ -1,6 +1,8 @@
 import PublicLayout from '../../components/layout/PublicLayout';
+import { usePageMeta } from '../../lib/usePageMeta';
 
 function PrivacyPolicy() {
+  usePageMeta('Privacy Policy', 'How Iris & J Holdings collects, uses, and protects information submitted through the website.');
   return (
     <PublicLayout>
       <main className="page-main">

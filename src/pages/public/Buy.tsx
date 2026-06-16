@@ -1,6 +1,11 @@
 import PublicLayout from '../../components/layout/PublicLayout';
+import { usePageMeta } from '../../lib/usePageMeta';
 
 function Buy() {
+  usePageMeta(
+    'Buy a Home',
+    'Buyer guidance for budget, search strategy, offers, and closing across Union, Middlesex, and Essex County, New Jersey.',
+  );
   return (
     <PublicLayout>
       <main className="page-main">

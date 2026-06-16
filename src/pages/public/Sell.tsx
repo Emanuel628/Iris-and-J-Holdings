@@ -1,7 +1,14 @@
 import PublicLayout from '../../components/layout/PublicLayout';
-import { sendWebsiteRequest as sendMailRequest } from '../../lib/formSubmitEmail';
+import FormStatus from '../../components/ui/FormStatus';
+import { useContactForm } from '../../lib/useContactForm';
+import { usePageMeta } from '../../lib/usePageMeta';
 
 function Sell() {
+  usePageMeta(
+    'Sell Your Home',
+    'Seller strategy guidance for pricing, preparation, marketing, and negotiation across Union, Middlesex, and Essex County, NJ.',
+  );
+  const { status, submit } = useContactForm('Seller Strategy Request');
   return (
     <PublicLayout>
       <main className="page-main">
@@ -31,7 +38,8 @@ function Sell() {
             </div>
           </div>
 
-          <form className="info-panel form-shell" onSubmit={(event) => sendMailRequest(event, 'Seller Strategy Request')}>
+          <form className="info-panel form-shell" onSubmit={submit}>
+            <input className="hp-field" type="text" name="_gotcha" tabIndex={-1} autoComplete="off" aria-hidden="true" />
             <div className="form-row">
               <div className="input-group"><label htmlFor="seller-name">Full Name</label><input id="seller-name" name="fullName" required /></div>
               <div className="input-group"><label htmlFor="seller-email">Email</label><input id="seller-email" name="email" type="email" required /></div>
@@ -42,7 +50,10 @@ function Sell() {
             </div>
             <div className="input-group"><label htmlFor="seller-address">Property Address or Area</label><input id="seller-address" name="propertyAddressOrArea" /></div>
             <div className="input-group"><label htmlFor="seller-message">Questions or goals</label><textarea id="seller-message" name="questionsOrGoals" required /></div>
-            <button className="button button-primary" type="submit">Send Seller Request</button>
+            <button className="button button-primary" type="submit" disabled={status === 'sending'}>
+              {status === 'sending' ? 'Sending…' : 'Send Seller Request'}
+            </button>
+            <FormStatus status={status} />
           </form>
         </section>
 
