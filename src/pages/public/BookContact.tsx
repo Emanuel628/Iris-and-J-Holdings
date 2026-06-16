@@ -9,8 +9,8 @@ function BookContact() {
             <p className="eyebrow">Book or Contact</p>
             <h1>Choose the conversation that fits where you are.</h1>
             <p>
-              The booking page routes visitors into the right form or appointment type instead of making them
-              guess which service to ask about.
+              Tell Daiana what you need help with and the site will point visitors toward the right path:
+              buyer consultation, seller strategy, mobile notary, or a general question.
             </p>
             <div className="page-actions">
               <a className="button button-primary" href="#appointment-types">Choose Appointment Type</a>
@@ -24,8 +24,8 @@ function BookContact() {
             <p className="eyebrow">Start here</p>
             <h2>One calm path for calls, questions, and appointment requests.</h2>
             <p>
-              Later, this page will connect to scheduling and lead capture. For now, it creates the structure for
-              the guided booking funnel.
+              Scheduling will be connected later. For now, this page sets up the clean contact structure and keeps
+              each visitor from guessing where to begin.
             </p>
           </div>
 
