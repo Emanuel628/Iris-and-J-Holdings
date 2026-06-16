@@ -10,8 +10,8 @@ function Sell() {
             <h1>Selling your home takes more than a listing.</h1>
             <p>Pricing, preparation, timing, and presentation all matter. Daiana helps homeowners understand the market and move forward with a clear plan.</p>
             <div className="page-actions">
-              <a className="button button-primary" href="/book">Request Seller Strategy Call</a>
-              <a className="text-link" href="/home-value">Get Home Value Review</a>
+              <a className="button button-primary" href="/book?service=Seller%20Strategy%20Call#contact-form">Request Seller Strategy Call</a>
+              <a className="text-link" href="/home-value#home-value-form">Get Home Value Review</a>
             </div>
           </div>
           <div className="page-hero-visual" aria-label="Seller strategy visual placeholder" />
@@ -36,7 +36,7 @@ function Sell() {
               <p className="eyebrow">Homeowners</p>
               <h2>Not ready to list yet? That is okay.</h2>
               <p>A strategy call can help you understand your timing, your options, and whether selling now makes sense.</p>
-              <div className="page-actions"><a className="button button-primary" href="/book">Request Seller Strategy Call</a></div>
+              <div className="page-actions"><a className="button button-primary" href="/book?service=Seller%20Strategy%20Call#contact-form">Request Seller Strategy Call</a></div>
             </div>
           </section>
         </section>
