@@ -12,7 +12,7 @@ function Hero() {
         </p>
         <div className="hero-actions" aria-label="Primary actions">
           <a className="button button-primary" href="#services">Find the Right Service</a>
-          <a className="text-link" href="/book">
+          <a className="text-link" href="/book?service=General%20Question#contact-form">
             Book a Call <ArrowRight size={18} />
           </a>
         </div>
