@@ -28,7 +28,7 @@ Iris & J Holdings
 Daiana Castro  
 REALTOR® | Mobile Notary
 
-Real estate services are provided through All Star Real Estate Agency.
+Real estate services are provided through NEIXA LLC, doing business as All Star Real Estate Agency (a licensed New Jersey real estate brokerage).
 
 ### Core Services
 

@@ -94,7 +94,7 @@ function VacationRentals() {
 
           <section className="vacation-legal-alert" aria-label="Vacation rental legal notice">
             Orlando vacation rental services are offered independently through Iris &amp; J Holdings and are not
-            provided through All Star Real Estate Agency.
+            provided through NEIXA LLC (All Star Real Estate Agency).
           </section>
         </section>
       </main>
