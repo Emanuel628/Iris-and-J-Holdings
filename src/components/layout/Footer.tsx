@@ -26,17 +26,6 @@ function Footer() {
           <p>Daiana Castro · NJ Real Estate Salesperson. License details available upon request and broker verification.</p>
           <a className="footer-about-link" href="/about">About Daiana</a>
         </div>
-
-        <nav className="footer-column footer-links" aria-label="Footer">
-          <h3>Explore</h3>
-          <a href="/buy">Buy</a>
-          <a href="/sell">Sell</a>
-          <a href="/home-value">Home Value</a>
-          <a href="/mobile-notary">Mobile Notary</a>
-          <a href="/resources">Resources</a>
-          <a href="/vacation-rentals">Vacation Rentals</a>
-          <a href="/book">Book a Call</a>
-        </nav>
       </div>
 
       <div className="footer-bottom">
