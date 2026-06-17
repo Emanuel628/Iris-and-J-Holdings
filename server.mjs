@@ -11,6 +11,8 @@ const port = Number(process.env.PORT || 8080);
 const contactTo = process.env.CONTACT_TO_EMAIL || 'listingsbyd@gmail.com';
 const resendApiKey = process.env.RESEND_API_KEY;
 const resendFrom = process.env.RESEND_FROM_EMAIL || 'Iris & J Holdings <onboarding@resend.dev>';
+const canonicalHost = 'www.irisjholdings.com';
+const apexHost = 'irisjholdings.com';
 
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 const booking = {
@@ -24,6 +26,17 @@ const booking = {
 };
 
 app.set('trust proxy', 1);
+
+app.use((req, res, next) => {
+  const forwardedHost = String(req.headers['x-forwarded-host'] || req.headers.host || '');
+  const host = forwardedHost.split(',')[0].split(':')[0].toLowerCase();
+
+  if ((req.method === 'GET' || req.method === 'HEAD') && host === apexHost) {
+    return res.redirect(301, `https://${canonicalHost}${req.originalUrl}`);
+  }
+
+  return next();
+});
 
 // Stripe webhook needs the raw request body for signature verification, so it
 // must be registered before the JSON body parser below.
