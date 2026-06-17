@@ -7,6 +7,7 @@ import Resources from './pages/public/Resources';
 import About from './pages/public/About';
 import BookContact from './pages/public/BookContact';
 import VacationRentals from './pages/public/VacationRentals';
+import BookingSuccess from './pages/public/BookingSuccess';
 import PrivacyPolicy from './pages/public/PrivacyPolicy';
 import TermsOfUse from './pages/public/TermsOfUse';
 import NotFound from './pages/public/NotFound';
@@ -23,6 +24,7 @@ const routes = {
   '/book': BookContact,
   '/contact': BookContact,
   '/vacation-rentals': VacationRentals,
+  '/booking-success': BookingSuccess,
   '/privacy': PrivacyPolicy,
   '/terms': TermsOfUse,
 };

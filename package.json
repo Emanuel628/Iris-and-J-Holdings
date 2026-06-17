@@ -19,7 +19,8 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "lucide-react": "0.511.0",
-    "express": "4.19.2"
+    "express": "4.19.2",
+    "stripe": "17.7.0"
   },
   "devDependencies": {
     "@types/node": "22.15.0",
