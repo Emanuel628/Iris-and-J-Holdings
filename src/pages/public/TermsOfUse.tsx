@@ -29,8 +29,9 @@ function TermsOfUse() {
           <article>
             <h2>Real estate services</h2>
             <p>
-              Real estate services are provided through All Star Real Estate Agency. Iris & J Holdings is a separate
-              business brand and is not a real estate brokerage.
+              Real estate services are provided through NEIXA LLC, doing business as All Star Real Estate Agency,
+              a licensed New Jersey real estate brokerage. Iris & J Holdings is a personal marketing brand of
+              Daiana Castro and is not itself a licensed real estate brokerage.
             </p>
           </article>
           <article>
@@ -53,7 +54,7 @@ function TermsOfUse() {
             <h2>Vacation rentals</h2>
             <p>
               Orlando vacation rental services are offered independently through Iris & J Holdings and are not
-              provided through All Star Real Estate Agency.
+              provided through NEIXA LLC (All Star Real Estate Agency).
             </p>
           </article>
         </section>
