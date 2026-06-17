@@ -231,3 +231,24 @@ summary:focus-visible,
   max-width: 64ch;
   padding-bottom: 1.1rem;
 }
+
+/* ---- Footer: keep columns side by side but stop them overlapping ----
+   Grid tracks default to min-width:auto, so long lines bleed into the next
+   column. min-width:0 + overflow-wrap lets the text wrap inside its column. */
+.footer-column {
+  min-width: 0;
+}
+
+.footer-column p,
+.footer-column a {
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 680px) {
+  /* Two columns instead of a single stack, with breathing room between them. */
+  .footer-main {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1.75rem;
+    row-gap: 2.25rem;
+  }
+}

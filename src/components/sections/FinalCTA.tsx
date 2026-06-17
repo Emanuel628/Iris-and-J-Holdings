@@ -6,7 +6,7 @@ function FinalCTA() {
       <div className="cta-copy">
         <h2 id="cta-heading">Not sure where to start?</h2>
         <span className="gold-line short" aria-hidden="true" />
-        <p>That’s okay. Schedule a quick conversation and I’ll help you choose the right path.</p>
+        <p>That’s okay. Book a quick call and I’ll help you figure out the next step.</p>
         <a className="button button-primary" href="/book?service=General%20Question#contact-form">
           Book a Call <ArrowRight size={16} />
         </a>

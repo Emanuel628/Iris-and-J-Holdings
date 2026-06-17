@@ -37,8 +37,8 @@ function ServiceSelector() {
   return (
     <section className="service-section section" id="services" aria-labelledby="service-heading">
       <div className="section-heading centered">
-        <p className="eyebrow">What do you need help with?</p>
-        <h2 id="service-heading">Choose the path that fits you best.</h2>
+        <p className="eyebrow">Services</p>
+        <h2 id="service-heading">What do you need help with?</h2>
         <span className="gold-line short" aria-hidden="true" />
       </div>
 

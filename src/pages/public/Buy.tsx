@@ -28,7 +28,7 @@ function Buy() {
         <section className="page-content">
           <div className="page-intro">
             <p className="eyebrow">What to expect</p>
-            <h2>Guidance before the search gets overwhelming.</h2>
+            <h2>Get your bearings before you start touring.</h2>
             <p>
               Start with a no-pressure conversation about your budget and pre-approval, the neighborhoods and
               home types that fit, and how New Jersey’s process works — from making an offer and attorney review

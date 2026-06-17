@@ -4,7 +4,7 @@ import { usePageMeta } from '../../lib/usePageMeta';
 function About() {
   usePageMeta(
     'About Daiana Castro',
-    'Daiana Castro brings a calm, organized approach to New Jersey real estate guidance and mobile notary service.',
+    'Daiana Castro helps New Jersey buyers, sellers, and notary clients with real estate guidance and mobile notary service.',
   );
   return (
     <PublicLayout>
@@ -12,7 +12,7 @@ function About() {
         <section className="page-hero page-hero-about">
           <div className="page-hero-content">
             <p className="eyebrow">About Daiana</p>
-            <h1>A steady guide for real estate and next steps.</h1>
+            <h1>Real estate and notary help that keeps things simple.</h1>
             <p>
               Daiana Castro is a New Jersey REALTOR® with All Star Real Estate Agency and a mobile notary. She
               helps buyers, sellers, and notary clients across Union, Middlesex, and Essex County understand what
@@ -29,7 +29,7 @@ function About() {
           <div className="split-section">
             <div className="page-intro">
               <p className="eyebrow">How she works</p>
-              <h2>Clear answers, steady communication, and a plan that fits the client.</h2>
+              <h2>How Daiana works with clients.</h2>
               <p>
                 Big decisions feel easier when someone explains the steps in plain language. Daiana responds
                 promptly, keeps the paperwork and timeline organized, and makes sure you understand each option

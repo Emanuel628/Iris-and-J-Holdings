@@ -12,7 +12,7 @@ function Resources() {
         <section className="page-hero">
           <div className="page-hero-content">
             <p className="eyebrow">Resources</p>
-            <h1>Helpful guidance before you are ready to schedule.</h1>
+            <h1>Helpful info before you’re ready to reach out.</h1>
             <p>
               Not everyone is ready for a call right away. Start with a buyer guide, seller guide,
               or local market update and come back when the timing feels right.
@@ -41,8 +41,8 @@ function Resources() {
 
           <section className="quiet-band">
             <p className="eyebrow">Stay informed</p>
-            <h2>Get guidance that matches where you are.</h2>
-            <p>Useful information should make the next step feel easier, not heavier.</p>
+            <h2>Useful info, whenever you’re ready.</h2>
+            <p>Good information should make your next step easier — not add to the pile.</p>
           </section>
         </section>
       </main>

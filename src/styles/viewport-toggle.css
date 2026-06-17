@@ -60,8 +60,9 @@ html.desktop-view .nav-cta {
   display: inline-flex;
 }
 
-html.desktop-view .mobile-menu {
-  display: none;
+html.desktop-view .mobile-menu,
+html.desktop-view .mobile-nav {
+  display: none !important;
 }
 
 html.desktop-view .hero-section {

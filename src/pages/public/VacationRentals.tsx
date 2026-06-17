@@ -24,7 +24,7 @@ function VacationRentals() {
         <section className="page-hero page-hero-vacation">
           <div className="page-hero-content">
             <p className="eyebrow">Coming Soon</p>
-            <h1>Orlando vacation rentals will have their own quiet corner.</h1>
+            <h1>Orlando vacation rentals are coming soon.</h1>
             <p>
               Short-term vacation stays in Orlando and Central Florida are on the way. Join the interest list and
               you’ll be the first to see photos, nightly details, and availability.
@@ -41,7 +41,7 @@ function VacationRentals() {
           <div className="split-section vacation-interest-section">
             <div className="page-intro">
               <p className="eyebrow">Central Florida</p>
-              <h2>A coming soon page for Orlando.</h2>
+              <h2>Orlando stays are on the way.</h2>
               <p>
                 Tell Daiana when you’re hoping to travel and what you’re looking for, and you’ll get an email as
                 soon as photos, stay details, and booking are ready.
@@ -62,7 +62,7 @@ function VacationRentals() {
           <section className="vacation-photo-section" id="rental-photos">
             <div className="page-intro">
               <p className="eyebrow">Photo Gallery</p>
-              <h2>Photos will be uploaded here.</h2>
+              <h2>Photos coming soon.</h2>
               <p>
                 These slots are ready for the rental photos once they are available.
               </p>

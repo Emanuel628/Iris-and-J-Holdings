@@ -31,7 +31,7 @@ function HomeValue() {
           <div>
             <div className="page-intro">
               <p className="eyebrow">Property details</p>
-              <h2>A simple request for a thoughtful local review.</h2>
+              <h2>A few details to get started.</h2>
               <p>
                 Daiana reviews recent comparable sales, current nearby listings, and your home’s condition and
                 updates, then follows up by email with a price range and the reasoning behind it. There’s no cost

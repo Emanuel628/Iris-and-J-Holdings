@@ -52,7 +52,7 @@ function MobileNotary() {
         <section className="page-content">
           <div className="page-intro">
             <p className="eyebrow">Booking details</p>
-            <h2>Clear expectations before the appointment is confirmed.</h2>
+            <h2>What to know before booking.</h2>
             <p>The notary page keeps appointment details easy to understand: area, timing, document type, signer count, and travel fee expectations.</p>
           </div>
           <div className="content-grid">

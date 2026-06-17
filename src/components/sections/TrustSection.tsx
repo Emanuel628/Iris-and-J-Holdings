@@ -8,8 +8,8 @@ function TrustSection() {
       </div>
 
       <div className="trust-copy">
-        <p className="eyebrow">A calm, organized approach</p>
-        <h2 id="trust-heading">Clear guidance. Thoughtful planning. Steady communication.</h2>
+        <p className="eyebrow">How I work</p>
+        <h2 id="trust-heading">I’ll keep you in the loop, start to finish.</h2>
         <span className="gold-line" aria-hidden="true" />
         <p>
           From the first conversation, you’ll know what happens next and why. I explain each step in plain

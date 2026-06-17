@@ -59,7 +59,7 @@ function BookContact() {
         <section className="page-hero page-hero-contact">
           <div className="page-hero-content">
             <p className="eyebrow">Book or Contact</p>
-            <h1>Choose the conversation that fits where you are.</h1>
+            <h1>Tell Daiana what you need.</h1>
             <p>
               Tell Daiana what you need and she’ll point you to the right next step — a buyer consultation,
               seller strategy call, mobile notary appointment, or a general question. She’ll follow up by email.
@@ -74,7 +74,7 @@ function BookContact() {
         <section className="page-content" id="appointment-types">
           <div className="page-intro">
             <p className="eyebrow">Start here</p>
-            <h2>One calm path for calls, questions, and appointment requests.</h2>
+            <h2>Calls, questions, and appointment requests.</h2>
             <p>
               Choose a request type, then send the details directly to Daiana by email.
             </p>

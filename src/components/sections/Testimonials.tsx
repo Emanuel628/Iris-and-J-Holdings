@@ -24,8 +24,8 @@ function Testimonials() {
   return (
     <section className="testimonials-section section" aria-labelledby="testimonials-heading">
       <div className="section-heading centered">
-        <p className="eyebrow">In their words</p>
-        <h2 id="testimonials-heading">Calm guidance people remember.</h2>
+        <p className="eyebrow">Testimonials</p>
+        <h2 id="testimonials-heading">What clients say.</h2>
         <span className="gold-line short" aria-hidden="true" />
       </div>
 
