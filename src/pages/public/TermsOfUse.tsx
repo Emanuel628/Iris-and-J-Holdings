@@ -41,6 +41,15 @@ function TermsOfUse() {
             </p>
           </article>
           <article>
+            <h2>Mobile notary services</h2>
+            <p>
+              A notary public verifies identity and witnesses signatures; a notary does not provide legal advice
+              or prepare documents. Every signer must be present with valid, unexpired photo identification.
+              Travel or booking fees are confirmed before the appointment, and notary fees follow the maximums
+              set by New Jersey law.
+            </p>
+          </article>
+          <article>
             <h2>Vacation rentals</h2>
             <p>
               Orlando vacation rental services are offered independently through Iris & J Holdings and are not

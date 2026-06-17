@@ -12,8 +12,9 @@ function TrustSection() {
         <h2 id="trust-heading">Clear guidance. Thoughtful planning. Steady communication.</h2>
         <span className="gold-line" aria-hidden="true" />
         <p>
-          From the first conversation, you’ll know what comes next and why it matters.
-          My goal is to make the process feel less stressful — and a lot more manageable.
+          From the first conversation, you’ll know what happens next and why. I explain each step in plain
+          language, respond quickly, and help you weigh your options without pressure — for buyers, sellers,
+          and notary clients across Union, Middlesex, and Essex County, New Jersey.
         </p>
         <a className="button button-secondary" href="/about">Meet Daiana</a>
       </div>

@@ -14,8 +14,9 @@ function About() {
             <p className="eyebrow">About Daiana</p>
             <h1>A steady guide for real estate and next steps.</h1>
             <p>
-              Daiana Castro brings a calm, organized approach to real estate guidance and mobile notary service.
-              She helps people understand what needs to happen, what can wait, and how to move forward with confidence.
+              Daiana Castro is a New Jersey REALTOR® with All Star Real Estate Agency and a mobile notary. She
+              helps buyers, sellers, and notary clients across Union, Middlesex, and Essex County understand what
+              needs to happen, what can wait, and how to move forward with confidence.
             </p>
             <div className="page-actions">
               <a className="button button-primary" href="/book?service=General%20Question#contact-form">Meet With Daiana</a>
@@ -30,8 +31,9 @@ function About() {
               <p className="eyebrow">How she works</p>
               <h2>Clear answers, steady communication, and a plan that fits the client.</h2>
               <p>
-                Big decisions feel easier when someone explains the steps in plain language. Daiana keeps the process
-                organized, helps clients ask better questions, and gives each request the attention it deserves.
+                Big decisions feel easier when someone explains the steps in plain language. Daiana responds
+                promptly, keeps the paperwork and timeline organized, and makes sure you understand each option
+                before you decide — whether you’re touring homes, preparing to list, or signing a document.
               </p>
             </div>
 
@@ -47,11 +49,12 @@ function About() {
           </div>
 
           <section className="quiet-band">
-            <p className="eyebrow">Brand promise</p>
-            <h2>You should know what comes next.</h2>
+            <p className="eyebrow">How to reach her</p>
+            <h2>Serving Union, Middlesex, and Essex County, NJ.</h2>
             <p>
-              Whether you are planning a move, reviewing your options, or booking an appointment,
-              the goal is the same: clear guidance, thoughtful preparation, and no rushed decisions.
+              Real estate services run through All Star Real Estate Agency; mobile notary visits are booked
+              directly. Call or text <a href="tel:19084996320">(908) 499-6320</a>, or send your details through
+              the booking page and Daiana will follow up by email.
             </p>
           </section>
         </section>

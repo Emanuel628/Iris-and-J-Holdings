@@ -7,8 +7,9 @@ function Hero() {
         <h1 id="hero-heading">Your Next Move, Made Clear.</h1>
         <span className="gold-line" aria-hidden="true" />
         <p>
-          Buying, selling, or booking important notary services can feel like a lot.
-          I help you understand the next step, make a plan, and move forward with confidence.
+          Buying, selling, or signing important documents can feel like a lot. I’ll help you understand the
+          next step, make a plan, and move forward with confidence — real estate guidance and mobile notary
+          service across Union, Middlesex, and Essex County, New Jersey.
         </p>
         <div className="hero-actions" aria-label="Primary actions">
           <a className="button button-primary" href="#services">Find the Right Service</a>

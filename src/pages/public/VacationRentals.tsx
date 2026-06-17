@@ -26,7 +26,8 @@ function VacationRentals() {
             <p className="eyebrow">Coming Soon</p>
             <h1>Orlando vacation rentals will have their own quiet corner.</h1>
             <p>
-              A simple page for future Orlando stays, photos, property details, and interest requests.
+              Short-term vacation stays in Orlando and Central Florida are on the way. Join the interest list and
+              you’ll be the first to see photos, nightly details, and availability.
             </p>
             <div className="page-actions">
               <a className="button button-primary" href="#interest-list">Join Interest List</a>
@@ -42,7 +43,8 @@ function VacationRentals() {
               <p className="eyebrow">Central Florida</p>
               <h2>A coming soon page for Orlando.</h2>
               <p>
-                This page will later include real photos, stay details, availability, and an interest list.
+                Tell Daiana when you’re hoping to travel and what you’re looking for, and you’ll get an email as
+                soon as photos, stay details, and booking are ready.
               </p>
             </div>
             <form className="info-panel form-shell" onSubmit={submit}>

@@ -61,8 +61,8 @@ function BookContact() {
             <p className="eyebrow">Book or Contact</p>
             <h1>Choose the conversation that fits where you are.</h1>
             <p>
-              Tell Daiana what you need help with and the site will point visitors toward the right path:
-              buyer consultation, seller strategy, mobile notary, or a general question.
+              Tell Daiana what you need and she’ll point you to the right next step — a buyer consultation,
+              seller strategy call, mobile notary appointment, or a general question. She’ll follow up by email.
             </p>
             <div className="page-actions">
               <a className="button button-primary" href="#appointment-types">Choose Appointment Type</a>
@@ -100,8 +100,8 @@ function BookContact() {
               <p className="eyebrow">Not sure?</p>
               <h2>Ask a question first.</h2>
               <p>
-                Visitors who are not ready to schedule should still have a simple way to reach out and get pointed
-                in the right direction.
+                Not ready to schedule? Send a question — about buying, selling, a home value, or a notary visit —
+                and Daiana will help you figure out the right next step.
               </p>
             </div>
             <form

@@ -41,10 +41,19 @@ function PrivacyPolicy() {
             </p>
           </article>
           <article>
-            <h2>Third-party tools</h2>
+            <h2>How information is shared</h2>
             <p>
-              Future scheduling, form, email, or photo tools may have their own privacy terms. Those services will be
-              reviewed before being connected to the live site.
+              Form submissions are delivered to Daiana by email, so trusted email and hosting providers process
+              your message to deliver it. These providers may have their own privacy terms, and information is
+              shared only to operate the site and respond to your request.
+            </p>
+          </article>
+          <article>
+            <h2>Your choices</h2>
+            <p>
+              You can ask what information is on file, correct it, or have it deleted at any time. Email{' '}
+              <a href="mailto:listingsbyd@gmail.com">listingsbyd@gmail.com</a> or call{' '}
+              <a href="tel:19084996320">(908) 499-6320</a>. To stop receiving messages, just reply and say so.
             </p>
           </article>
         </section>

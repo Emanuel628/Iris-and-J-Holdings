@@ -34,9 +34,9 @@ function Resources() {
           </div>
 
           <div className="content-grid">
-            <article className="content-card"><h3>Buyer Guide</h3><p>For people preparing to buy and trying to understand what happens first.</p><a className="card-link" href="/book?service=Buyer%20Guide%20Request&message=I%20would%20like%20to%20request%20the%20buyer%20guide.#contact-form">Request Guide</a></article>
-            <article className="content-card"><h3>Seller Guide</h3><p>For homeowners who want to prepare before listing or scheduling a strategy call.</p><a className="card-link" href="/book?service=Seller%20Guide%20Request&message=I%20would%20like%20to%20request%20the%20seller%20guide.#contact-form">Request Guide</a></article>
-            <article className="content-card"><h3>Market Updates</h3><p>For visitors who want occasional local real estate updates and guidance.</p><a className="card-link" href="/book?service=Market%20Updates%20Request&message=I%20would%20like%20to%20request%20local%20market%20updates.#contact-form">Request Updates</a></article>
+            <article className="content-card"><h3>Buyer Guide</h3><p>What to do before you tour homes: setting a budget, getting pre-approved, and the New Jersey timeline from offer to closing.</p><a className="card-link" href="/book?service=Buyer%20Guide%20Request&message=I%20would%20like%20to%20request%20the%20buyer%20guide.#contact-form">Request Guide</a></article>
+            <article className="content-card"><h3>Seller Guide</h3><p>How to prepare, price, and time your sale, plus what to expect through offers, attorney review, and closing.</p><a className="card-link" href="/book?service=Seller%20Guide%20Request&message=I%20would%20like%20to%20request%20the%20seller%20guide.#contact-form">Request Guide</a></article>
+            <article className="content-card"><h3>Market Updates</h3><p>Occasional, plain-language notes on local prices and inventory — and what they mean if you’re thinking about buying or selling.</p><a className="card-link" href="/book?service=Market%20Updates%20Request&message=I%20would%20like%20to%20request%20local%20market%20updates.#contact-form">Request Updates</a></article>
           </div>
 
           <section className="quiet-band">
