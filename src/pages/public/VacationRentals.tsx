@@ -1,4 +1,5 @@
 import PublicLayout from '../../components/layout/PublicLayout';
+import AvailabilityCalendar from '../../components/booking/AvailabilityCalendar';
 import FormStatus from '../../components/ui/FormStatus';
 import { useContactForm } from '../../lib/useContactForm';
 import { usePageMeta } from '../../lib/usePageMeta';
@@ -15,7 +16,7 @@ const photoSlots = [
 function VacationRentals() {
   usePageMeta(
     'Orlando Vacation Rentals',
-    'Orlando vacation rentals coming soon. Join the interest list for photos, stay details, and availability when they’re ready.',
+    'Check open dates for an Orlando vacation rental and book your stay with secure checkout, or join the interest list.',
   );
   const { status, submit } = useContactForm('Orlando Vacation Rental Interest Request');
   return (
@@ -23,18 +24,22 @@ function VacationRentals() {
       <main className="page-main">
         <section className="page-hero page-hero-vacation">
           <div className="page-hero-content">
-            <p className="eyebrow">Coming Soon</p>
-            <h1>Orlando vacation rentals are coming soon.</h1>
+            <p className="eyebrow">Vacation Rentals</p>
+            <h1>Book your Orlando vacation stay.</h1>
             <p>
-              Short-term vacation stays in Orlando and Central Florida are on the way. Join the interest list and
-              you’ll be the first to see photos, nightly details, and availability.
+              Check the calendar for open dates in Orlando and Central Florida, then reserve with secure checkout.
+              Prefer to ask first? Join the interest list and Daiana will follow up.
             </p>
             <div className="page-actions">
-              <a className="button button-primary" href="#interest-list">Join Interest List</a>
-              <a className="text-link" href="#rental-photos">View Photo Slots</a>
+              <a className="button button-primary" href="#availability">Check Availability</a>
+              <a className="text-link" href="#interest-list">Join Interest List</a>
             </div>
           </div>
           <div className="page-hero-visual vacation-hero-visual" aria-label="Sunny Orlando vacation rental visual" />
+        </section>
+
+        <section className="page-content vacation-availability" id="availability">
+          <AvailabilityCalendar />
         </section>
 
         <section className="page-content" id="interest-list">
