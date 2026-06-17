@@ -54,6 +54,7 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
   }
 
   if (event.type === 'checkout.session.completed') {
+    bookedCache = { at: 0, ranges: [] }; // a new paid booking — refresh availability
     try {
       await notifyBooking(event.data.object);
     } catch (notifyError) {
@@ -156,6 +157,45 @@ function money(cents, currency) {
   return `${(cents / 100).toFixed(2)} ${String(currency).toUpperCase()}`;
 }
 
+// Website bookings are stored in Stripe itself: any paid Checkout Session carries
+// the booked dates in its metadata. We read those back and treat them as blocked,
+// so a date booked on the site grays out just like an Airbnb-blocked date.
+let bookedCache = { at: 0, ranges: [] };
+const BOOKED_CACHE_TTL_MS = 5 * 60 * 1000;
+
+async function getWebsiteBookedRanges() {
+  if (!stripe) return [];
+
+  const now = Date.now();
+  if (now - bookedCache.at < BOOKED_CACHE_TTL_MS) {
+    return bookedCache.ranges;
+  }
+
+  try {
+    const ranges = [];
+    const sessions = await stripe.checkout.sessions.list({ limit: 100 });
+    for (const session of sessions.data) {
+      const { checkIn, checkOut } = session.metadata || {};
+      if (session.payment_status === 'paid' && checkIn && checkOut) {
+        ranges.push({ start: checkIn, end: checkOut });
+      }
+    }
+    bookedCache = { at: now, ranges };
+    return ranges;
+  } catch (error) {
+    console.error('Failed to load website bookings from Stripe:', error);
+    return bookedCache.ranges;
+  }
+}
+
+async function getAllBlockedRanges() {
+  const [airbnb, website] = await Promise.all([
+    getBlockedRanges(booking.icalUrl),
+    getWebsiteBookedRanges(),
+  ]);
+  return [...airbnb, ...website];
+}
+
 async function notifyBooking(session) {
   const { checkIn = '', checkOut = '' } = session.metadata || {};
   const guestEmail = session.customer_details?.email || session.customer_email || 'unknown';
@@ -172,7 +212,7 @@ app.get('/health', (_req, res) => {
 });
 
 app.get('/api/availability', async (_req, res) => {
-  const blocked = await getBlockedRanges(booking.icalUrl);
+  const blocked = await getAllBlockedRanges();
   res.json({
     blocked,
     nightlyRateCents: booking.nightlyRateCents,
@@ -200,7 +240,7 @@ app.post('/api/checkout', async (req, res) => {
       return res.status(400).json({ message: stay.message });
     }
 
-    const blocked = await getBlockedRanges(booking.icalUrl);
+    const blocked = await getAllBlockedRanges();
     if (overlapsBlocked(checkIn, checkOut, blocked)) {
       return res.status(409).json({ message: 'Some of those nights are no longer available. Please choose different dates.' });
     }
