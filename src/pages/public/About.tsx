@@ -22,7 +22,7 @@ function About() {
               <a className="button button-primary" href="/book?service=General%20Question#contact-form">Meet With Daiana</a>
             </div>
           </div>
-          <div className="page-hero-visual about-hero-visual" aria-label="Professional headshot area for Daiana" />
+          <div className="page-hero-visual about-hero-visual" role="img" aria-label="Portrait of Daiana Castro" />
         </section>
 
         <section className="page-content">
