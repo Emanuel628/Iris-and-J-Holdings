@@ -28,7 +28,9 @@
   font-weight: 800;
 }
 
-@media (max-width: 820px) {
+/* Phones only: small screen AND a touch pointer, so a narrowed PC window
+   (mouse pointer) never shows the toggle. */
+@media (max-width: 820px) and (pointer: coarse) {
   .viewport-toggle {
     display: inline-flex;
   }
