@@ -572,8 +572,8 @@ html {
 
 .about-hero-visual {
   background:
-    linear-gradient(135deg, rgba(255, 254, 253, 0.72), rgba(238, 224, 211, 0.82)),
-    url('/images/site/daiana-portrait.jpg') center / cover no-repeat,
+    linear-gradient(160deg, rgba(255, 254, 253, 0.04), rgba(238, 224, 211, 0.12)),
+    url('/images/site/daiana-portrait.jpg') center 18% / cover no-repeat,
     linear-gradient(135deg, #f8f1ea, #ccb49c);
   border-radius: 999px 999px 18px 18px;
 }

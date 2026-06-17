@@ -375,6 +375,15 @@
   box-shadow: var(--shadow-soft);
 }
 
+.portrait-photo {
+  width: min(420px, 82%);
+  height: 460px;
+  object-fit: cover;
+  object-position: center 18%;
+  border-radius: 210px 210px 12px 12px;
+  box-shadow: var(--shadow-soft);
+}
+
 .trust-copy {
   display: flex;
   max-width: 520px;
@@ -677,8 +686,9 @@
     padding: 4rem 1.25rem;
   }
 
-  .portrait-placeholder {
-    height: 330px;
+  .portrait-placeholder,
+  .portrait-photo {
+    height: 360px;
   }
 
   .footer-bottom {

@@ -1,10 +1,12 @@
 function TrustSection() {
   return (
     <section className="trust-section" id="about" aria-labelledby="trust-heading">
-      <div className="portrait-panel" aria-label="Portrait area for Daiana Castro">
-        <div className="portrait-placeholder">
-          <span>Daiana</span>
-        </div>
+      <div className="portrait-panel">
+        <img
+          className="portrait-photo"
+          src="/images/site/daiana-portrait.jpg"
+          alt="Daiana Castro, REALTOR and Mobile Notary"
+        />
       </div>
 
       <div className="trust-copy">
