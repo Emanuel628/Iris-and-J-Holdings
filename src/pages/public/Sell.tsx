@@ -61,7 +61,11 @@ function Sell() {
           <div className="page-intro">
             <p className="eyebrow">Listing with intention</p>
             <h2>A calm plan for pricing, preparation, marketing, and negotiation.</h2>
-            <p>Selling works best when the strategy is clear before the listing goes live. The goal is simple: prepare well and make decisions with confidence.</p>
+            <p>
+              Selling works best when the plan is set before the listing goes live: a price based on recent
+              comparable sales, a short list of prep that actually moves the needle, clear marketing, and steady
+              guidance through offers, attorney review, and closing.
+            </p>
           </div>
           <div className="content-grid">
             <article className="content-card"><h3>Pricing</h3><p>Review local activity, comparable homes, condition, demand, and seller goals.</p></article>

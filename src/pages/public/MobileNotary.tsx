@@ -58,7 +58,7 @@ function MobileNotary() {
           <div className="content-grid">
             <article className="content-card"><h3>Service Areas</h3><ul><li>Union County</li><li>Middlesex County</li><li>Limited Essex County appointments</li></ul></article>
             <article className="content-card"><h3>Common Documents</h3><ul><li>General notarizations</li><li>Real estate documents</li><li>Affidavits</li><li>Consent forms</li></ul></article>
-            <article className="content-card"><h3>Before Booking</h3><p>Share the city, document type, number of signers, preferred time, and any appointment notes.</p></article>
+            <article className="content-card"><h3>Before Your Appointment</h3><p>Have a valid, unexpired photo ID ready for every signer, keep documents unsigned until we meet, and make sure all signers can be present.</p></article>
           </div>
           <section className="quiet-band">
             <p className="eyebrow">Travel notice</p>

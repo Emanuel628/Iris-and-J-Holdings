@@ -3,20 +3,20 @@ import { CalendarCheck, ClipboardCheck, HomeIcon } from 'lucide-react';
 const steps = [
   {
     number: '01',
-    title: 'Tell me where you are.',
-    text: 'Share your goals and what you need help with.',
+    title: 'Reach out.',
+    text: 'Call or send a quick note with your goal, your timing, and any questions. No preparation needed.',
     icon: ClipboardCheck,
   },
   {
     number: '02',
     title: 'Get a clear plan.',
-    text: 'I’ll review your options and outline the best next steps.',
+    text: 'You’ll get straight answers about your options and the steps that matter — buying, selling, a home value, or a notary visit.',
     icon: CalendarCheck,
   },
   {
     number: '03',
-    title: 'Take the next step.',
-    text: 'Move forward with confidence. I’ll be with you along the way.',
+    title: 'Move forward.',
+    text: 'Book the consultation, listing, or appointment when you’re ready. I’ll handle the details and keep you posted by email.',
     icon: HomeIcon,
   },
 ];

@@ -30,8 +30,9 @@ function Buy() {
             <p className="eyebrow">What to expect</p>
             <h2>Guidance before the search gets overwhelming.</h2>
             <p>
-              Buying should not feel like guessing. Start with the basics, understand what matters most,
-              and move through the process with a clear sense of what comes next.
+              Start with a no-pressure conversation about your budget and pre-approval, the neighborhoods and
+              home types that fit, and how New Jersey’s process works — from making an offer and attorney review
+              to inspections and the closing timeline.
             </p>
           </div>
 
