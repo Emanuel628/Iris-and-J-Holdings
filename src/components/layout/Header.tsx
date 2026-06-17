@@ -14,6 +14,7 @@ function Header() {
         <a href="/buy">Buy</a>
         <a href="/sell">Sell</a>
         <a href="/mobile-notary">Notary</a>
+        <a href="/vacation-rentals">Vacation Rentals</a>
         <a href="/about">About</a>
       </nav>
 
