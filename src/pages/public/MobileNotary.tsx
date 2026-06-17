@@ -1,5 +1,6 @@
 import { Phone } from 'lucide-react';
 import PublicLayout from '../../components/layout/PublicLayout';
+import NotaryBooking from '../../components/booking/NotaryBooking';
 import Faq from '../../components/sections/Faq';
 import { usePageMeta } from '../../lib/usePageMeta';
 
@@ -43,11 +44,25 @@ function MobileNotary() {
               with limited Essex County availability based on distance and scheduling.
             </p>
             <div className="page-actions">
-              <a className="button button-primary" href="/book?service=Mobile%20Notary%20Appointment#contact-form">Book Mobile Notary Appointment</a>
+              <a className="button button-primary" href="#notary-booking">Request an Appointment</a>
               <a className="text-link" href="tel:19084996320"><Phone size={18} /> Call (908) 499-6320</a>
             </div>
           </div>
           <div className="page-hero-visual" aria-label="Mobile notary visual placeholder" />
+        </section>
+
+        <section className="page-content" id="appointment">
+          <div className="split-section">
+            <div className="page-intro">
+              <p className="eyebrow">Request an appointment</p>
+              <h2>Pick a date and time.</h2>
+              <p>
+                Choose when works for you and send the details. Daiana will confirm the appointment, the service
+                area, and any travel or notary fees by email.
+              </p>
+            </div>
+            <NotaryBooking />
+          </div>
         </section>
         <section className="page-content">
           <div className="page-intro">

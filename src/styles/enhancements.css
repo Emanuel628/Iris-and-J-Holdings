@@ -479,6 +479,12 @@ summary:focus-visible,
   color: var(--color-ink-soft);
 }
 
+.form-note {
+  margin-top: 0.9rem;
+  font-size: 0.82rem;
+  color: var(--color-muted);
+}
+
 @media (max-width: 480px) {
   .availability-calendar {
     max-width: 100%;
