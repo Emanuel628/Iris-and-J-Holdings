@@ -19,7 +19,7 @@ function Hero() {
         </div>
       </div>
 
-      <div className="hero-visual" aria-label="Calm living room with neutral decor">
+      <div className="hero-visual" aria-label="Illustrated living room with neutral decor">
         <div className="sun-wash" aria-hidden="true" />
         <div className="vase" aria-hidden="true">
           <span className="branch branch-one" />

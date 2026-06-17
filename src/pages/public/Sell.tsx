@@ -59,18 +59,18 @@ function Sell() {
 
         <section className="page-content seller-support-content">
           <div className="page-intro">
-            <p className="eyebrow">Listing with intention</p>
-            <h2>A calm plan for pricing, preparation, marketing, and negotiation.</h2>
+            <p className="eyebrow">Before you list</p>
+            <h2>Pricing, prep, marketing, and negotiation.</h2>
             <p>
               Selling works best when the plan is set before the listing goes live: a price based on recent
-              comparable sales, a short list of prep that actually moves the needle, clear marketing, and steady
-              guidance through offers, attorney review, and closing.
+              comparable sales, a short list of prep that actually moves the needle, clear marketing, and help
+              through offers, attorney review, and closing.
             </p>
           </div>
           <div className="content-grid">
             <article className="content-card"><h3>Pricing</h3><p>Review local activity, comparable homes, condition, demand, and seller goals.</p></article>
             <article className="content-card"><h3>Preparation</h3><p>Identify what should be cleaned, organized, staged, or improved before going live.</p></article>
-            <article className="content-card"><h3>Negotiation</h3><p>Compare offers clearly and move through each decision with steady guidance.</p></article>
+            <article className="content-card"><h3>Negotiation</h3><p>Compare offers side by side and decide each step with straightforward advice.</p></article>
           </div>
         </section>
       </main>
