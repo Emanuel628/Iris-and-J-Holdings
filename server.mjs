@@ -1,5 +1,4 @@
 import express from 'express';
-import nodemailer from 'nodemailer';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -8,6 +7,8 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const port = Number(process.env.PORT || 8080);
 const contactTo = process.env.CONTACT_TO_EMAIL || 'listingsbyd@gmail.com';
+const resendApiKey = process.env.RESEND_API_KEY;
+const resendFrom = process.env.RESEND_FROM_EMAIL || 'Iris & J Holdings <onboarding@resend.dev>';
 
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '100kb' }));
@@ -48,22 +49,31 @@ function escapeHtml(value) {
     .replace(/'/g, '&#039;');
 }
 
-function getTransporter() {
-  const host = process.env.SMTP_HOST;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const smtpPort = Number(process.env.SMTP_PORT || 465);
-
-  if (!host || !user || !pass) {
-    throw new Error('SMTP is not configured.');
+async function sendResendEmail({ to, replyTo, subject, text, html }) {
+  if (!resendApiKey) {
+    throw new Error('RESEND_API_KEY is not configured.');
   }
 
-  return nodemailer.createTransport({
-    host,
-    port: smtpPort,
-    secure: smtpPort === 465,
-    auth: { user, pass },
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: resendFrom,
+      to,
+      reply_to: replyTo,
+      subject,
+      text,
+      html,
+    }),
   });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Resend email failed: ${response.status} ${errorText}`);
+  }
 }
 
 app.get('/health', (_req, res) => {
@@ -96,11 +106,7 @@ app.post('/api/contact', async (req, res) => {
       .map(([key, value]) => `<tr><th align="left">${escapeHtml(key)}</th><td>${escapeHtml(value)}</td></tr>`)
       .join('');
 
-    const transporter = getTransporter();
-    const fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER;
-
-    await transporter.sendMail({
-      from: fromAddress,
+    await sendResendEmail({
       to: contactTo,
       replyTo: email,
       subject,
@@ -110,9 +116,9 @@ app.post('/api/contact', async (req, res) => {
 
     // Send the visitor a confirmation. A failure here must not fail the request.
     try {
-      await transporter.sendMail({
-        from: fromAddress,
+      await sendResendEmail({
         to: email,
+        replyTo: contactTo,
         subject: 'We received your message — Iris & J Holdings',
         text: `Hi ${name},\n\nThanks for reaching out to Iris & J Holdings. Daiana received your message and will follow up by email soon.\n\nIf your request is time-sensitive, you can call (908) 499-6320.\n\n— Iris & J Holdings`,
         html: `<p>Hi ${escapeHtml(name)},</p><p>Thanks for reaching out to Iris &amp; J Holdings. Daiana received your message and will follow up by email soon.</p><p>If your request is time-sensitive, you can call <a href="tel:19084996320">(908) 499-6320</a>.</p><p>— Iris &amp; J Holdings</p>`,
