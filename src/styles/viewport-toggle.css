@@ -1,0 +1,118 @@
+.viewport-toggle {
+  display: none;
+  width: fit-content;
+  min-height: 34px;
+  margin: 0.7rem 1rem 1.1rem auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.7rem;
+  color: var(--color-ink);
+  background: rgba(255, 254, 253, 0.94);
+  border: 1px solid rgba(231, 223, 212, 0.9);
+  border-radius: 999px;
+  box-shadow: 0 8px 22px rgba(18, 24, 32, 0.1);
+}
+
+.viewport-toggle span {
+  color: var(--color-muted);
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.viewport-toggle strong {
+  color: var(--color-champagne-dark);
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+@media (max-width: 820px) {
+  .viewport-toggle {
+    display: inline-flex;
+  }
+}
+
+html.desktop-view body {
+  min-width: 1180px;
+  overflow-x: auto;
+}
+
+html.desktop-view .viewport-toggle {
+  margin-right: auto;
+  margin-left: 1rem;
+}
+
+html.desktop-view .site-header {
+  grid-template-columns: auto 1fr auto;
+  min-height: 116px;
+  padding: 1.05rem clamp(1.25rem, 5vw, 5rem);
+}
+
+html.desktop-view .desktop-nav {
+  display: flex;
+}
+
+html.desktop-view .nav-cta {
+  display: inline-flex;
+}
+
+html.desktop-view .mobile-menu {
+  display: none;
+}
+
+html.desktop-view .hero-section {
+  grid-template-columns: minmax(330px, 0.9fr) minmax(360px, 1.1fr);
+}
+
+html.desktop-view .trust-section {
+  grid-template-columns: 1fr 1fr;
+}
+
+html.desktop-view .final-cta {
+  grid-template-columns: 1fr 320px;
+}
+
+html.desktop-view .service-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+html.desktop-view .step-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+html.desktop-view .footer-main {
+  grid-template-columns: 1.2fr 0.7fr 1fr 1.25fr;
+}
+
+html.desktop-view .process-step {
+  border-right: 1px solid var(--color-border);
+  border-bottom: 0;
+  padding: 0 2rem;
+}
+
+html.desktop-view .process-step:last-child {
+  border-right: 0;
+}
+
+html.desktop-view .page-hero {
+  grid-template-columns: minmax(280px, 0.9fr) minmax(280px, 1.1fr);
+  min-height: 520px;
+}
+
+html.desktop-view .split-section {
+  grid-template-columns: 0.85fr 1.15fr;
+}
+
+html.desktop-view .content-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+html.desktop-view .content-grid.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+html.desktop-view .form-row {
+  grid-template-columns: 1fr 1fr;
+}
