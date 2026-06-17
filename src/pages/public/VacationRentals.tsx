@@ -38,8 +38,18 @@ function VacationRentals() {
           <div className="page-hero-visual vacation-hero-visual" aria-label="Sunny Orlando vacation rental visual" />
         </section>
 
-        <section className="page-content vacation-availability" id="availability">
-          <AvailabilityCalendar />
+        <section className="page-content" id="availability">
+          <div className="split-section vacation-booking">
+            <div className="page-intro">
+              <p className="eyebrow">Availability</p>
+              <h2>Available dates for the rental.</h2>
+              <p>
+                Open dates are available to book; grayed-out dates are already taken. Pick your check-in and
+                check-out, see the total, and continue to secure checkout.
+              </p>
+            </div>
+            <AvailabilityCalendar />
+          </div>
         </section>
 
         <section className="page-content" id="interest-list">
