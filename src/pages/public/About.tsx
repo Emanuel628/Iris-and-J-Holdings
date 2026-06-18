@@ -14,15 +14,18 @@ function About() {
             <p className="eyebrow">About Daiana</p>
             <h1>Real estate and notary help that keeps things simple.</h1>
             <p>
-              Daiana Castro is a licensed New Jersey real estate salesperson with, All Star Real Estate Agency and a mobile notary. She helps buyers, sellers, and notary clients
-              across all of New Jersey understand what needs to happen, what can wait, and how
-              to move forward with confidence.
+              Daiana Castro, REALTOR®, provides real estate services throughout New Jersey through All Star Real
+              Estate Agency. She also offers mobile notary services and independently manages Orlando vacation
+              rental accommodations through Iris &amp; J Holdings.
             </p>
             <div className="page-actions">
               <a className="button button-primary" href="/book?service=General%20Question#contact-form">Meet With Daiana</a>
             </div>
           </div>
-          <div className="page-hero-visual about-hero-visual" role="img" aria-label="Portrait of Daiana Castro" />
+          <figure className="about-portrait">
+            <div className="page-hero-visual about-hero-visual" role="img" aria-label="Portrait of Daiana Castro" />
+            <figcaption>Daiana Castro, REALTOR®</figcaption>
+          </figure>
         </section>
 
         <section className="page-content">
@@ -40,21 +43,22 @@ function About() {
             <div className="info-panel">
               <h3>Professional focus</h3>
               <ul className="detail-list">
-                <li>Real estate services through, All Star Real Estate Agency</li>
-                <li>Mobile notary service by appointment</li>
-                <li>New Jersey service area focus</li>
-                <li>Simple next steps before important decisions</li>
+                <li>REALTOR® with All Star Real Estate Agency</li>
+                <li>Real estate services throughout New Jersey</li>
+                <li>Mobile notary services by appointment</li>
+                <li>Orlando vacation rentals through Iris &amp; J Holdings</li>
               </ul>
             </div>
           </div>
 
           <section className="quiet-band">
             <p className="eyebrow">How to reach her</p>
-            <h2>Serving Union, Middlesex, and Essex County, NJ.</h2>
+            <h2>Serving New Jersey.</h2>
             <p>
-              Real estate services run through, All Star Real Estate Agency; mobile notary visits
-              are booked directly. Call or text <a href="tel:19084996320">(908) 499-6320</a>, or send your details through
-              the booking page and Daiana will follow up by email.
+              Real estate runs through All Star Real Estate Agency, available throughout New Jersey with a focus
+              on Union, Middlesex, and Essex County; mobile notary visits are booked directly. Call or text{' '}
+              <a href="tel:19084996320">(908) 499-6320</a>, or send your details through the booking page and
+              Daiana will follow up by email.
             </p>
           </section>
         </section>

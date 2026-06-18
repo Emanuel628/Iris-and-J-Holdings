@@ -29,9 +29,9 @@ function TermsOfUse() {
           <article>
             <h2>Real estate services</h2>
             <p>
-              Real estate services are provided through NEIXA LLC, doing business as All Star Real Estate Agency,
-              a licensed New Jersey real estate brokerage. Iris & J Holdings is a personal marketing brand of
-              Daiana Castro and is not itself a licensed real estate brokerage.
+              Daiana Castro, REALTOR®, provides real estate services throughout New Jersey through All Star Real
+              Estate Agency, a licensed New Jersey real estate brokerage. Iris & J Holdings is a personal marketing
+              brand of Daiana Castro and is not itself a licensed real estate brokerage.
             </p>
           </article>
           <article>
@@ -44,17 +44,19 @@ function TermsOfUse() {
           <article>
             <h2>Mobile notary services</h2>
             <p>
-              A notary public verifies identity and witnesses signatures; a notary does not provide legal advice
-              or prepare documents. Every signer must be present with valid, unexpired photo identification.
-              Travel or booking fees are confirmed before the appointment, and notary fees follow the maximums
-              set by New Jersey law.
+              Mobile notary services are provided independently through Iris & J Holdings and are not real estate
+              brokerage services. A notary public verifies identity and witnesses signatures; a notary does not
+              provide legal advice or prepare documents. Every signer must be present with valid, unexpired photo
+              identification. Travel or booking fees are confirmed before the appointment, and notary fees follow
+              the maximums set by New Jersey law.
             </p>
           </article>
           <article>
             <h2>Vacation rentals</h2>
             <p>
-              Orlando vacation rental services are offered independently through Iris & J Holdings and are not
-              provided through NEIXA LLC (All Star Real Estate Agency).
+              Orlando vacation rental accommodations are offered independently through Iris & J Holdings and are
+              not provided through All Star Real Estate Agency. Vacation rental accommodations do not constitute
+              real estate brokerage services.
             </p>
           </article>
         </section>

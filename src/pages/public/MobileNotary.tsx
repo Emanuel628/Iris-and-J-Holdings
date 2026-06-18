@@ -7,7 +7,7 @@ const notaryFaqs = [
   {
     question: 'Which areas do you serve?',
     answer:
-      'Union County and Middlesex County, with limited Essex County availability based on distance and scheduling.',
+      'Primarily Union, Middlesex, and Essex Counties, with additional areas available by request based on distance and scheduling.',
   },
   {
     question: 'What should I have ready before the appointment?',
@@ -29,7 +29,7 @@ const notaryFaqs = [
 function MobileNotary() {
   usePageMeta(
     'Mobile Notary',
-    'Mobile notary service by appointment in Union and Middlesex Counties, with limited Essex County availability.',
+    'Mobile notary services by appointment, primarily in Union, Middlesex, and Essex Counties, with additional areas by request.',
   );
   return (
     <PublicLayout>
@@ -39,8 +39,8 @@ function MobileNotary() {
             <p className="eyebrow">Mobile Notary</p>
             <h1>Mobile notary service, by appointment.</h1>
             <p>
-              Mobile notary help is available by appointment in Union County and Middlesex County,
-              with limited Essex County availability based on distance and scheduling.
+              Mobile notary help is available by appointment, primarily in Union, Middlesex, and Essex Counties,
+              with additional areas available by request.
             </p>
           </div>
           <div className="page-hero-visual" aria-label="Mobile notary visual placeholder" />
@@ -66,7 +66,7 @@ function MobileNotary() {
             <p>The notary page keeps appointment details easy to understand: area, timing, document type, signer count, and travel fee expectations.</p>
           </div>
           <div className="content-grid">
-            <article className="content-card"><h3>Service Areas</h3><ul><li>Union County</li><li>Middlesex County</li><li>Limited Essex County appointments</li></ul></article>
+            <article className="content-card"><h3>Service Areas</h3><ul><li>Union County</li><li>Middlesex County</li><li>Essex County</li><li>Additional areas by request</li></ul></article>
             <article className="content-card"><h3>Common Documents</h3><ul><li>General notarizations</li><li>Real estate documents</li><li>Affidavits</li><li>Consent forms</li></ul></article>
             <article className="content-card"><h3>Before Your Appointment</h3><p>Have a valid, unexpired photo ID ready for every signer, keep documents unsigned until we meet, and make sure all signers can be present.</p></article>
           </div>
@@ -77,6 +77,11 @@ function MobileNotary() {
           </section>
 
           <Faq eyebrow="Notary questions" heading="Mobile notary, answered." items={notaryFaqs} />
+
+          <section className="vacation-legal-alert" aria-label="Mobile notary legal notice">
+            Mobile notary services are provided independently through Iris &amp; J Holdings and are not real
+            estate brokerage services.
+          </section>
         </section>
       </main>
     </PublicLayout>

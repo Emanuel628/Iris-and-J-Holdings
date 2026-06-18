@@ -1,5 +1,6 @@
 import PublicLayout from '../../components/layout/PublicLayout';
 import AvailabilityCalendar from '../../components/booking/AvailabilityCalendar';
+import Faq from '../../components/sections/Faq';
 import FormStatus from '../../components/ui/FormStatus';
 import { useContactForm } from '../../lib/useContactForm';
 import { usePageMeta } from '../../lib/usePageMeta';
@@ -11,6 +12,42 @@ const photoSlots = [
   'Bedroom photo',
   'Outdoor space photo',
   'Area photo',
+];
+
+// TODO: confirm the rental's actual amenities and update this list.
+const amenities = [
+  'Fully equipped kitchen',
+  'Fast Wi-Fi',
+  'Free parking',
+  'Washer & dryer',
+  'Smart TV / streaming',
+  'Self check-in',
+  'Close to Orlando theme parks',
+  'Linens & towels provided',
+];
+
+// TODO: refine answers with the rental's real details.
+const orlandoFaqs = [
+  {
+    question: 'Where is the rental located?',
+    answer:
+      'In the Orlando / Central Florida area, close to the major theme parks. The exact address is shared after booking.',
+  },
+  {
+    question: 'How do I book?',
+    answer:
+      'Pick your dates on the availability calendar above and check out securely. You’ll receive a confirmation by email.',
+  },
+  {
+    question: 'What’s included in the price?',
+    answer:
+      'The nightly rate plus a one-time cleaning fee, shown on the calendar before you check out. The home comes furnished with the amenities listed above.',
+  },
+  {
+    question: 'Have a question before booking?',
+    answer:
+      'Use the question form on this page and Daiana will get back to you by email about dates, the property, or anything else.',
+  },
 ];
 
 function VacationRentals() {
@@ -46,6 +83,19 @@ function VacationRentals() {
             </div>
             <AvailabilityCalendar />
           </div>
+        </section>
+
+        <section className="page-content" id="amenities">
+          <div className="page-intro">
+            <p className="eyebrow">Amenities</p>
+            <h2>What’s included in your stay.</h2>
+            <p>A comfortable, fully furnished home base for your Orlando trip.</p>
+          </div>
+          <ul className="amenity-grid">
+            {amenities.map((amenity) => (
+              <li className="amenity-item" key={amenity}>{amenity}</li>
+            ))}
+          </ul>
         </section>
 
         <section className="page-content" id="interest-list">
@@ -87,9 +137,12 @@ function VacationRentals() {
             </div>
           </section>
 
+          <Faq eyebrow="Orlando questions" heading="Vacation rental, answered." items={orlandoFaqs} />
+
           <section className="vacation-legal-alert" aria-label="Vacation rental legal notice">
-            Orlando vacation rental services are offered independently through Iris &amp; J Holdings and are not
-            provided through NEIXA LLC (All Star Real Estate Agency).
+            Orlando vacation rental accommodations are offered independently through Iris &amp; J Holdings and are
+            not provided through All Star Real Estate Agency. Vacation rental accommodations do not constitute real
+            estate brokerage services.
           </section>
         </section>
       </main>
