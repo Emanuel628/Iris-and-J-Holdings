@@ -5,6 +5,7 @@ import './styles/global.css';
 import './styles/overrides.css';
 import './styles/viewport-toggle.css';
 import './styles/enhancements.css';
+import './styles/hero-images.css';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
