@@ -52,8 +52,8 @@ const orlandoFaqs = [
 
 function VacationRentals() {
   usePageMeta(
-    'Orlando Vacation Rentals',
-    'Check open dates for an Orlando vacation rental and book your stay with secure checkout, or send Daiana a question.',
+    'Orlando Vacation Rental Near Theme Parks',
+    'Check availability and book an Orlando vacation rental in Central Florida near major theme parks with secure checkout, amenities, FAQs, and booking questions.',
   );
   const { status, submit } = useContactForm('Orlando Vacation Rental Question');
   return (
