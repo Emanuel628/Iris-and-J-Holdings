@@ -40,8 +40,7 @@ function Footer() {
         <div>
           <a href="/privacy">Privacy Policy</a>
           <a href="/terms">Terms of Use</a>
-          <a href="/accessibility#fair-housing">Fair Housing</a>
-          <a href="/accessibility">Accessibility</a>
+          <a href="/accessibility">Accessibility &amp; Fair Housing</a>
         </div>
         <p>© 2026 Iris &amp; J Holdings. All rights reserved.</p>
       </div>
