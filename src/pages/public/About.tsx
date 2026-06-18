@@ -56,7 +56,7 @@ function About() {
             <h2>Serving New Jersey.</h2>
             <p>
               Real estate runs through All Star Real Estate Agency, available throughout New Jersey with a focus
-              on Union, Middlesex, and Essex County; mobile notary visits are booked directly. Call or text{' '}
+              on Union, Middlesex, and Essex Counties; mobile notary visits are booked directly. Call or text{' '}
               <a href="tel:19084996320">(908) 499-6320</a>, or send your details through the booking page and
               Daiana will follow up by email.
             </p>
