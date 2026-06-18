@@ -28,7 +28,7 @@ const notaryFaqs = [
 
 function MobileNotary() {
   usePageMeta(
-    'Mobile Notary in Union, Middlesex & Essex County',
+    'Mobile Notary in Union, Middlesex & Essex Counties',
     'Mobile notary appointments for Union County, Middlesex County, and Essex County, NJ, including general notarizations, real estate documents, affidavits, and consent forms.',
   );
   return (
