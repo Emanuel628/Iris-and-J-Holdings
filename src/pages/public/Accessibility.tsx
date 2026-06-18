@@ -59,17 +59,20 @@ function Accessibility() {
             <p>
               Real estate services are offered without unlawful discrimination and in accordance with the federal
               Fair Housing Act, the New Jersey Law Against Discrimination, and applicable local fair housing laws.
-              We do not discriminate based on race, color, religion, sex, disability, familial status, national
-              origin, or any other category protected by federal, state, or local law.
+              We do not discriminate based on race, creed, color, religion, national origin, ancestry, sex, gender
+              identity or expression, affectional or sexual orientation, marital status, civil union status,
+              domestic partnership status, familial status, disability, source of lawful income used for rental or
+              mortgage payments, liability for service in the Armed Forces, nationality, pregnancy or breastfeeding,
+              or any other category protected by applicable law.
             </p>
           </article>
           <article>
             <h2>What fair housing means here</h2>
             <p>
-              We do not deny, limit, discourage, misrepresent availability, change terms, steer, advertise, or
-              provide different service based on a protected category. We also do not honor requests to include,
-              exclude, prefer, or avoid people, neighborhoods, schools, buildings, or communities based on a
-              protected category.
+              We do not deny, limit, discourage, misrepresent availability, change terms, steer, advertise, make
+              discriminatory inquiries, blockbust, or provide different service based on a protected category. We
+              also do not honor requests to include, exclude, prefer, or avoid people, neighborhoods, schools,
+              buildings, or communities based on a protected category.
             </p>
           </article>
           <article>
