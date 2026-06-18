@@ -18,7 +18,9 @@ function Buy() {
               narrow your search, prepare with confidence, and know what to expect before closing.
             </p>
           </div>
-          <div className="page-hero-visual" aria-label="Buyer consultation visual placeholder" />
+          <div className="page-hero-visual page-hero-image-frame" aria-label="Buyer guidance visual">
+            <img src="/images/site/buy-hero.jpg" alt="Architectural home model for buyer guidance" />
+          </div>
         </section>
 
         <section className="page-content">
