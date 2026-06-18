@@ -3,8 +3,8 @@ import { usePageMeta } from '../../lib/usePageMeta';
 
 function Resources() {
   usePageMeta(
-    'Resources',
-    'Free buyer and seller guides plus local market updates — helpful next steps before you’re ready to schedule a call.',
+    'Real Estate Resources for NJ Buyers & Sellers',
+    'Plain-language New Jersey buyer guides, seller guides, and local market updates for people preparing to buy, sell, or request a home value review.',
   );
   return (
     <PublicLayout>
