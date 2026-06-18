@@ -46,7 +46,17 @@ function Sell() {
             </div>
             <div className="form-row">
               <div className="input-group"><label htmlFor="seller-phone">Phone</label><input id="seller-phone" name="phone" type="tel" /></div>
-              <div className="input-group"><label htmlFor="seller-timeline">Selling Timeline</label><input id="seller-timeline" name="sellingTimeline" placeholder="Now, 3-6 months, exploring" /></div>
+              <div className="input-group">
+               <label htmlFor="seller-timeline">Selling Timeline</label>
+               <select id="seller-timeline" name="sellingTimeline" required defaultValue="">
+                   <option value="" disabled>Choose timeline</option>
+                   <option value="Ready now">Ready now</option>
+                   <option value="1-3 months">1-3 months</option>
+                   <option value="3-6 months">3-6 months</option>
+                   <option value="6-12 months">6-12 months</option>
+                   <option value="Exploring options">Exploring options</option>
+               </select>
+            </div>
             </div>
             <div className="input-group"><label htmlFor="seller-address">Property Address or Area</label><input id="seller-address" name="propertyAddressOrArea" /></div>
             <div className="input-group"><label htmlFor="seller-message">Questions or goals</label><textarea id="seller-message" name="questionsOrGoals" required /></div>
