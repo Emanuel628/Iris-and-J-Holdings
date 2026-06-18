@@ -10,7 +10,7 @@ import { usePageMeta } from '../../lib/usePageMeta';
 function Home() {
   usePageMeta(
     '',
-    'New Jersey real estate guidance and mobile notary services. Buy, sell, home value, and notary help throughout all of New Jersey.',
+    'Iris & J Holdings helps New Jersey buyers and sellers, offers mobile notary appointments in Union, Middlesex, and Essex Counties, and provides Orlando vacation rental booking.',
   );
   return (
     <PublicLayout>
