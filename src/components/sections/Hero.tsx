@@ -20,7 +20,7 @@ function Hero() {
       </div>
 
       <div className="hero-visual hero-image-frame" aria-label="Iris and J Holdings brand visual">
-        <img src="/images/site/home-hero.jpg" alt="Elegant real estate, notary, and hospitality workspace" />
+        <img src="/images/site/home-hero.svg" alt="Elegant real estate, notary, and hospitality workspace" />
       </div>
     </section>
   );
