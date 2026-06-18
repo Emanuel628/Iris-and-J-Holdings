@@ -36,12 +36,12 @@ const orlandoFaqs = [
   {
     question: 'How do I book?',
     answer:
-      'Pick your dates on the availability calendar above and check out securely. You’ll receive a confirmation by email.',
+      'Pick your dates on the availability calendar above and check out securely. A stay is confirmed after payment is completed and a booking confirmation is issued by email.',
   },
   {
     question: 'What’s included in the price?',
     answer:
-      'The nightly rate plus a one-time cleaning fee, shown on the calendar before you check out. The home comes furnished with the amenities listed above.',
+      'The nightly rate plus a one-time cleaning fee is shown on the calendar before checkout. Any additional property-specific terms, fees, or house rules are confirmed before booking.',
   },
   {
     question: 'Have a question before booking?',
@@ -82,6 +82,11 @@ function VacationRentals() {
                 Open dates are available to book; grayed-out dates are already taken. Pick your check-in and
                 check-out, see the total, and continue to secure checkout.
               </p>
+              <div className="notice-box">
+                Availability and pricing may change until payment is completed and a booking confirmation is issued.
+                Vacation rental accommodations are offered independently through Iris &amp; J Holdings and are not
+                real estate brokerage services.
+              </div>
             </div>
             <AvailabilityCalendar />
           </div>
@@ -148,7 +153,8 @@ function VacationRentals() {
           <section className="vacation-legal-alert" aria-label="Vacation rental legal notice">
             Orlando vacation rental accommodations are offered independently through Iris &amp; J Holdings and are not
             provided through All Star Real Estate Agency. Vacation rental accommodations do not constitute real
-            estate brokerage services.
+            estate brokerage services. A stay is not confirmed until payment is completed and a booking confirmation
+            is issued.
           </section>
         </section>
       </main>
