@@ -62,6 +62,7 @@ function AvailabilityCalendar() {
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [email, setEmail] = useState('');
+  const [policyAgreed, setPolicyAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState('');
 
@@ -128,6 +129,11 @@ function AvailabilityCalendar() {
 
     if (!trimmedEmail) {
       setBookingError('Please enter your email so we can send your confirmation and receipt.');
+      return;
+    }
+
+    if (!policyAgreed) {
+      setBookingError('Please agree to the Vacation Rental Refund & Cancellation Policy before checkout.');
       return;
     }
 
@@ -259,6 +265,19 @@ function AvailabilityCalendar() {
                         required
                       />
                     </div>
+                    <label className="form-note" htmlFor="vacation-policy-agree">
+                      <input
+                        id="vacation-policy-agree"
+                        name="policyAgreement"
+                        type="checkbox"
+                        checked={policyAgreed}
+                        onChange={(event) => setPolicyAgreed(event.target.checked)}
+                      />{' '}
+                      I agree to the{' '}
+                      <a href="/refund-cancellation-policy#vacation-rentals" target="_blank" rel="noreferrer">
+                        Vacation Rental Refund &amp; Cancellation Policy
+                      </a>.
+                    </label>
                     <button className="button button-primary" type="button" onClick={startCheckout} disabled={submitting}>
                       {submitting ? 'Starting checkout…' : 'Check out & book'} <ArrowRight size={16} />
                     </button>
