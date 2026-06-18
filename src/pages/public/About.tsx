@@ -61,6 +61,12 @@ function About() {
               Daiana will follow up by email.
             </p>
           </section>
+
+          <div className="notice-box">
+            Iris &amp; J Holdings is not a licensed real estate brokerage. Real estate brokerage services are provided
+            only through All Star Real Estate Agency after the required New Jersey disclosures and written agreements
+            are completed. Mobile notary and vacation rental services are separate from brokerage services.
+          </div>
         </section>
       </main>
     </PublicLayout>
