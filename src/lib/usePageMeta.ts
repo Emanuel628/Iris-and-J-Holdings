@@ -60,6 +60,11 @@ const ROUTE_META: Record<string, { title?: string; description?: string; robots?
     description: 'Your Orlando vacation rental booking status.',
     robots: 'noindex,nofollow',
   },
+  '/notary-success': {
+    title: 'Notary Booking Fee Received',
+    description: 'Your mobile notary booking fee was received.',
+    robots: 'noindex,nofollow',
+  },
   '/privacy': {
     title: 'Privacy Policy',
     description:
