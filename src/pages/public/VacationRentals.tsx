@@ -93,8 +93,11 @@ function VacationRentals() {
           </div>
           <ul className="amenity-grid">
             {amenities.map((amenity) => (
-              <li className="amenity-item" key={amenity}>{amenity}</li>
-            ))}
+              <li className="amenity-item" key={amenity.label}>
+            <span className="amenity-icon" aria-hidden="true">{amenity.icon}</span>
+            <span>{amenity.label}</span>
+              </li>
+          ))}
           </ul>
         </section>
 
