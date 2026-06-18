@@ -34,8 +34,8 @@ function Footer() {
         <div>
           <a href="/privacy">Privacy Policy</a>
           <a href="/terms">Terms of Use</a>
-        </div>
-        <p>© 2026 Iris &amp; J Holdings. All rights reserved.</p>
+          <p>© 2026 Iris &amp; J Holdings. All rights reserved.</p>
+        <div>
       </div>
     </footer>
   );
