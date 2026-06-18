@@ -8,8 +8,9 @@ function Footer() {
         <div className="footer-column brokerage">
           <h3>Brokerage</h3>
           <p>
-            Daiana Castro, REALTOR®, provides real estate services throughout New Jersey through All Star Real
-            Estate Agency, a licensed New Jersey real estate brokerage. 1416B Morris Ave, Union, NJ 07083.
+            New Jersey real estate services are provided by Daiana Castro, Licensed NJ Real Estate
+            Salesperson, through All Star Real Estate Agency, a licensed New Jersey real estate brokerage.
+            1416B Morris Ave, Union, NJ 07083.
           </p>
           <p>Brokerage office: <a href="tel:19089645005">(908) 964-5005</a></p>
           <img className="eho-logo" src="/equal-housing-opportunity.svg" alt="Equal Housing Opportunity" width="190" />
@@ -17,11 +18,12 @@ function Footer() {
 
         <div className="footer-column footer-contact">
           <h3>Contact</h3>
-          <p>Daiana Castro, REALTOR®</p>
+          <p>Daiana Castro</p>
+          <p>Licensed NJ Real Estate Salesperson</p>
           <p>NJ Real Estate License #2190570</p>
           <p><Phone size={14} /> Mobile: <a href="tel:19084996320">(908) 499-6320</a></p>
           <p><Mail size={14} /> listingsbyd@gmail.com</p>
-          <p><MapPin size={14} /> New Jersey · Union, Middlesex &amp; Essex Counties</p>
+          <p><MapPin size={14} /> Union, Middlesex &amp; Essex Counties, NJ</p>
         </div>
 
         <nav className="footer-column footer-services" aria-label="Services">
@@ -33,7 +35,10 @@ function Footer() {
 
         <div className="footer-column footer-daiana">
           <h3>About</h3>
-          <p>Real estate, mobile notary, and Orlando vacation rentals — clear guidance for each step.</p>
+          <p>
+            Real estate through All Star Real Estate Agency. Mobile notary and vacation rental services
+            through Iris &amp; J Holdings.
+          </p>
           <a className="footer-about-link" href="/about">About Daiana</a>
         </div>
       </div>
