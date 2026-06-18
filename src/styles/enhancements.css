@@ -239,6 +239,21 @@ summary:focus-visible,
   text-transform: uppercase;
 }
 
+.trust-card h3 {
+  margin: 0;
+  color: var(--color-ink);
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.trust-card p {
+  margin: 0;
+  color: var(--color-ink-soft);
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
 .contact-select-card {
   cursor: pointer;
   transition: transform var(--speed) var(--ease-soft), border-color var(--speed) var(--ease-soft), box-shadow var(--speed) var(--ease-soft);
