@@ -68,7 +68,9 @@ function VacationRentals() {
               Prefer to ask first? Send Daiana a question and she’ll follow up by email.
             </p>
           </div>
-          <div className="page-hero-visual vacation-hero-visual" aria-label="Sunny Orlando vacation rental visual" />
+          <div className="page-hero-visual page-hero-image-frame vacation-hero-visual" aria-label="Orlando vacation rental visual">
+            <img src="/images/site/vacation-hero.jpg" alt="Sunlit Orlando vacation rental interior and patio" />
+          </div>
         </section>
 
         <section className="page-content" id="availability">
@@ -88,60 +90,64 @@ function VacationRentals() {
         <section className="page-content" id="amenities">
           <div className="page-intro">
             <p className="eyebrow">Amenities</p>
-            <h2>What’s included in your stay.</h2>
-            <p>A comfortable, fully furnished home base for your Orlando trip.</p>
+            <h2>Comfortable, practical, and close to the parks.</h2>
+            <p>
+              This section can be updated with the property’s exact photos, amenities, house rules, and guest
+              instructions once those details are finalized.
+            </p>
           </div>
           <ul className="amenity-grid">
             {amenities.map((amenity) => (
               <li className="amenity-item" key={amenity}>{amenity}</li>
-           ))}
+            ))}
           </ul>
         </section>
 
-        <section className="page-content" id="interest-list">
-          <div className="split-section vacation-interest-section">
+        <section className="page-content" id="photos">
+          <div className="page-intro">
+            <p className="eyebrow">Photos</p>
+            <h2>Property photos coming soon.</h2>
+            <p>
+              Replace these placeholders with the rental’s actual photos before promoting the listing.
+            </p>
+          </div>
+          <div className="vacation-photo-grid">
+            {photoSlots.map((slot) => (
+              <div className="vacation-photo-card" key={slot}>{slot}</div>
+            ))}
+          </div>
+        </section>
+
+        <section className="page-content" id="questions">
+          <div className="split-section vacation-question-section">
             <div className="page-intro">
-              <p className="eyebrow">Questions?</p>
-              <h2>Have a question about the rental?</h2>
+              <p className="eyebrow">Questions</p>
+              <h2>Ask before you book.</h2>
               <p>
-                Ask anything about open dates, the property, or booking, and Daiana will get back to you by email.
+                Have a question about dates, the home, the area, or the booking process? Send it here and Daiana
+                will follow up by email.
               </p>
             </div>
             <form className="info-panel form-shell" onSubmit={submit}>
               <input className="hp-field" type="text" name="_gotcha" tabIndex={-1} autoComplete="off" aria-hidden="true" />
-              <div className="input-group"><label htmlFor="rental-name">Name</label><input id="rental-name" name="name" required /></div>
-              <div className="input-group"><label htmlFor="rental-email">Email</label><input id="rental-email" name="email" type="email" required /></div>
-              <div className="input-group"><label htmlFor="rental-question">Your Question</label><textarea id="rental-question" name="question" required /></div>
+              <div className="form-row">
+                <div className="input-group"><label htmlFor="vacation-name">Name</label><input id="vacation-name" name="name" required /></div>
+                <div className="input-group"><label htmlFor="vacation-email">Email</label><input id="vacation-email" name="email" type="email" required /></div>
+              </div>
+              <div className="input-group"><label htmlFor="vacation-question">Your Question</label><textarea id="vacation-question" name="question" required /></div>
               <button className="button button-primary" type="submit" disabled={status === 'sending'}>
                 {status === 'sending' ? 'Sending…' : 'Send Question'}
               </button>
               <FormStatus status={status} />
             </form>
           </div>
+        </section>
 
-          <section className="vacation-photo-section" id="rental-photos">
-            <div className="page-intro">
-              <p className="eyebrow">Photo Gallery</p>
-              <h2>Photos coming soon.</h2>
-              <p>
-                These slots are ready for the rental photos once they are available.
-              </p>
-            </div>
-            <div className="vacation-photo-grid">
-              {photoSlots.map((slot) => (
-                <div className="vacation-photo-card" key={slot}>
-                  <span>Photo slot</span>
-                  <strong>{slot}</strong>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <Faq eyebrow="Orlando questions" heading="Vacation rental, answered." items={orlandoFaqs} />
-
+        <section className="page-content">
+          <Faq eyebrow="Vacation rental FAQ" heading="Before you reserve." items={orlandoFaqs} />
           <section className="vacation-legal-alert" aria-label="Vacation rental legal notice">
-            Orlando vacation rental accommodations are offered independently through Iris &amp; J Holdings and are
-            not provided through All Star Real Estate Agency. Vacation rental accommodations do not constitute real
+            Orlando vacation rental accommodations are offered independently through Iris &amp; J Holdings and are not
+            provided through All Star Real Estate Agency. Vacation rental accommodations do not constitute real
             estate brokerage services.
           </section>
         </section>
