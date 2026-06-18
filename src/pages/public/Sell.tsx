@@ -5,8 +5,8 @@ import { usePageMeta } from '../../lib/usePageMeta';
 
 function Sell() {
   usePageMeta(
-    'Sell Your Home',
-    'Seller strategy guidance for pricing, preparation, marketing, and negotiation throughout New Jersey.',
+    'Sell Your Home in New Jersey',
+    'Seller strategy guidance in New Jersey for pricing, preparation, marketing, negotiation, attorney review, and closing through All Star Real Estate Agency.',
   );
   const { status, submit } = useContactForm('Seller Strategy Request');
   return (
