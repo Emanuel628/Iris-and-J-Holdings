@@ -1,0 +1,37 @@
+/* Final hero image frames: replaces abstract filler visuals with page-specific imagery. */
+.page-hero-image-frame::before,
+.page-hero-image-frame::after {
+  display: none;
+}
+
+.page-hero-image-frame,
+.hero-image-frame {
+  background: var(--color-soft-cream);
+}
+
+.page-hero-image-frame img,
+.hero-image-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  object-fit: cover;
+  object-position: center;
+}
+
+.hero-image-frame img {
+  min-height: 640px;
+}
+
+@media (max-width: 900px) {
+  .hero-image-frame img {
+    min-height: 520px;
+  }
+}
+
+@media (max-width: 620px) {
+  .hero-image-frame img,
+  .page-hero-image-frame img {
+    min-height: 320px;
+  }
+}
