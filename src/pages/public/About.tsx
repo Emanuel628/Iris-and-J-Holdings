@@ -3,8 +3,8 @@ import { usePageMeta } from '../../lib/usePageMeta';
 
 function About() {
   usePageMeta(
-    'About Daiana Castro',
-    'Daiana Castro helps New Jersey buyers, sellers, and notary clients with real estate guidance and mobile notary service.',
+    'About Daiana Castro, REALTOR®',
+    'Meet Daiana Castro, REALTOR® and mobile notary serving New Jersey buyers, sellers, and notary clients through Iris & J Holdings and All Star Real Estate Agency.',
   );
   return (
     <PublicLayout>
