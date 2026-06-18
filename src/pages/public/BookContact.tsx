@@ -65,7 +65,9 @@ function BookContact() {
               seller strategy call, mobile notary appointment, or a general question. She’ll follow up by email.
             </p>
           </div>
-          <div className="page-hero-visual contact-hero-visual" aria-label="Contact and appointment request visual" />
+          <div className="page-hero-visual page-hero-image-frame contact-hero-visual" aria-label="Contact and appointment request visual">
+            <img src="/images/site/contact-hero.jpg" alt="Elegant consultation table for appointment planning" />
+          </div>
         </section>
 
         <section className="page-content" id="appointment-types">
