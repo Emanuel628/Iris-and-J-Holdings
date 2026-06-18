@@ -215,13 +215,37 @@ async function getAllBlockedRanges() {
 
 async function notifyBooking(session) {
   const { checkIn = '', checkOut = '' } = session.metadata || {};
-  const guestEmail = session.customer_details?.email || session.customer_email || 'unknown';
+  const guestEmail = session.customer_details?.email || session.customer_email || session.metadata?.email || '';
+  const amount = money(session.amount_total ?? 0, session.currency || 'usd');
+
   await sendResendEmail({
     to: contactTo,
     subject: `New vacation rental booking — ${checkIn} to ${checkOut}`,
-    text: `A vacation rental booking was paid through Stripe.\n\nDates: ${checkIn} to ${checkOut}\nGuest: ${guestEmail}\nAmount: ${money(session.amount_total ?? 0, session.currency || 'usd')}\nStripe session: ${session.id}`,
-    html: `<h2>New vacation rental booking</h2><p><strong>Dates:</strong> ${escapeHtml(checkIn)} to ${escapeHtml(checkOut)}<br><strong>Guest:</strong> ${escapeHtml(guestEmail)}<br><strong>Amount:</strong> ${escapeHtml(money(session.amount_total ?? 0, session.currency || 'usd'))}<br><strong>Stripe session:</strong> ${escapeHtml(session.id)}</p>`,
+    text: `A vacation rental booking was paid through Stripe.\n\nDates: ${checkIn} to ${checkOut}\nGuest: ${guestEmail || 'unknown'}\nAmount: ${amount}\nStripe session: ${session.id}`,
+    html: `<h2>New vacation rental booking</h2><p><strong>Dates:</strong> ${escapeHtml(checkIn)} to ${escapeHtml(checkOut)}<br><strong>Guest:</strong> ${escapeHtml(guestEmail || 'unknown')}<br><strong>Amount:</strong> ${escapeHtml(amount)}<br><strong>Stripe session:</strong> ${escapeHtml(session.id)}</p>`,
   });
+
+  if (guestEmail) {
+    await sendResendEmail({
+      to: guestEmail,
+      replyTo: contactTo,
+      subject: 'Your Orlando vacation rental booking is confirmed',
+      text:
+        `Hi,\n\n` +
+        `Your Orlando vacation rental booking has been paid and received.\n\n` +
+        `Dates: ${checkIn} to ${checkOut}\n` +
+        `Amount paid: ${amount}\n\n` +
+        `A Stripe receipt should arrive separately by email. Daiana will follow up with the booking details, house rules, and check-in information.\n\n` +
+        `— Iris & J Holdings`,
+      html:
+        `<p>Hi,</p>` +
+        `<p>Your Orlando vacation rental booking has been paid and received.</p>` +
+        `<p><strong>Dates:</strong> ${escapeHtml(checkIn)} to ${escapeHtml(checkOut)}<br>` +
+        `<strong>Amount paid:</strong> ${escapeHtml(amount)}</p>` +
+        `<p>A Stripe receipt should arrive separately by email. Daiana will follow up with the booking details, house rules, and check-in information.</p>` +
+        `<p>— Iris &amp; J Holdings</p>`,
+    });
+  }
 }
 
 async function notifyNotaryBooking(session) {
@@ -235,6 +259,7 @@ async function notifyNotaryBooking(session) {
     documentType = '',
     notes = '',
   } = session.metadata || {};
+  const amount = money(session.amount_total ?? 0, session.currency || 'usd');
 
   await sendResendEmail({
     to: contactTo,
@@ -250,7 +275,7 @@ async function notifyNotaryBooking(session) {
       `Preferred time: ${appointmentTime}\n` +
       `Document type: ${documentType}\n` +
       `Notes: ${notes}\n` +
-      `Amount: ${money(session.amount_total ?? 0, session.currency || 'usd')}\n` +
+      `Amount: ${amount}\n` +
       `Stripe session: ${session.id}`,
     html:
       `<h2>Paid notary booking fee</h2>` +
@@ -262,9 +287,35 @@ async function notifyNotaryBooking(session) {
       `<strong>Preferred time:</strong> ${escapeHtml(appointmentTime)}<br>` +
       `<strong>Document type:</strong> ${escapeHtml(documentType)}<br>` +
       `<strong>Notes:</strong> ${escapeHtml(notes)}<br>` +
-      `<strong>Amount:</strong> ${escapeHtml(money(session.amount_total ?? 0, session.currency || 'usd'))}<br>` +
+      `<strong>Amount:</strong> ${escapeHtml(amount)}<br>` +
       `<strong>Stripe session:</strong> ${escapeHtml(session.id)}</p>`,
   });
+
+  if (email) {
+    await sendResendEmail({
+      to: email,
+      replyTo: contactTo,
+      subject: 'Your mobile notary booking fee was received',
+      text:
+        `Hi ${name || 'there'},\n\n` +
+        `Your mobile notary travel / booking fee has been paid and received.\n\n` +
+        `Preferred appointment: ${appointmentDate} at ${appointmentTime}\n` +
+        `Document type: ${documentType || 'Not provided'}\n` +
+        `Amount paid: ${amount}\n\n` +
+        `A Stripe receipt should arrive separately by email. Daiana will follow up to confirm the appointment time, service area, signer requirements, and any separate notary fees.\n\n` +
+        `Payment does not guarantee that a notarial act can be completed if legal, signer, document, or identification requirements cannot be satisfied.\n\n` +
+        `— Iris & J Holdings`,
+      html:
+        `<p>Hi ${escapeHtml(name || 'there')},</p>` +
+        `<p>Your mobile notary travel / booking fee has been paid and received.</p>` +
+        `<p><strong>Preferred appointment:</strong> ${escapeHtml(appointmentDate)} at ${escapeHtml(appointmentTime)}<br>` +
+        `<strong>Document type:</strong> ${escapeHtml(documentType || 'Not provided')}<br>` +
+        `<strong>Amount paid:</strong> ${escapeHtml(amount)}</p>` +
+        `<p>A Stripe receipt should arrive separately by email. Daiana will follow up to confirm the appointment time, service area, signer requirements, and any separate notary fees.</p>` +
+        `<p>Payment does not guarantee that a notarial act can be completed if legal, signer, document, or identification requirements cannot be satisfied.</p>` +
+        `<p>— Iris &amp; J Holdings</p>`,
+    });
+  }
 }
 
 app.get('/health', (_req, res) => {
@@ -295,6 +346,10 @@ app.post('/api/checkout', async (req, res) => {
     const checkIn = clean(req.body?.checkIn);
     const checkOut = clean(req.body?.checkOut);
     const email = clean(req.body?.email);
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required so we can send your confirmation and receipt.' });
+    }
 
     const stay = validateStay(checkIn, checkOut);
     if (!stay.ok) {
@@ -336,8 +391,9 @@ app.post('/api/checkout', async (req, res) => {
       line_items: lineItems,
       success_url: booking.successUrl || `${origin}/booking-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: booking.cancelUrl || `${origin}/vacation-rentals`,
-      customer_email: email || undefined,
-      metadata: { type: 'vacation', checkIn, checkOut, nights: String(stay.nights) },
+      customer_email: email,
+      payment_intent_data: { receipt_email: email },
+      metadata: { type: 'vacation', checkIn, checkOut, nights: String(stay.nights), email: metadataValue(email) },
     });
 
     return res.json({ url: session.url });
@@ -390,6 +446,7 @@ app.post('/api/notary-checkout', async (req, res) => {
       success_url: notary.successUrl || `${origin}/notary-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: notary.cancelUrl || `${origin}/mobile-notary`,
       customer_email: email,
+      payment_intent_data: { receipt_email: email },
       metadata: {
         type: 'notary',
         name: metadataValue(name),
@@ -427,7 +484,7 @@ app.get('/api/checkout-session', async (req, res) => {
       type: session.metadata?.type || 'vacation',
       checkIn: session.metadata?.checkIn || '',
       checkOut: session.metadata?.checkOut || '',
-      email: session.customer_details?.email || session.customer_email || '',
+      email: session.customer_details?.email || session.customer_email || session.metadata?.email || '',
       name: session.metadata?.name || '',
       phone: session.metadata?.phone || '',
       city: session.metadata?.city || '',
