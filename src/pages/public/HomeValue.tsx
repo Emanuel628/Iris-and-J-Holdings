@@ -5,8 +5,8 @@ import { usePageMeta } from '../../lib/usePageMeta';
 
 function HomeValue() {
   usePageMeta(
-    'Home Value Review',
-    'Request a local home value review based on current market activity. A helpful starting point — not a formal appraisal.',
+    'New Jersey Home Value Review',
+    'Request a New Jersey home value review using recent comparable sales, nearby listings, condition, updates, and local market activity. Not a formal appraisal.',
   );
   const { status, submit } = useContactForm('Home Value Review Request');
   return (
