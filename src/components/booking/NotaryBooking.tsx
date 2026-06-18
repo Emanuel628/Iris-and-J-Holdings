@@ -1,34 +1,6 @@
 import FormStatus from '../ui/FormStatus';
 import { useContactForm } from '../../lib/useContactForm';
 
-function upcomingDates(count: number) {
-  const out: { value: string; label: string }[] = [];
-  const start = new Date();
-  for (let i = 0; i < count; i += 1) {
-    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
-    const label = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-    const value = d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    out.push({ value, label: i === 0 ? `Today — ${label}` : label });
-  }
-  return out;
-}
-
-function timeSlots() {
-  const slots: string[] = [];
-  for (let hour = 8; hour <= 19; hour += 1) {
-    for (const minute of [0, 30]) {
-      if (hour === 19 && minute === 30) break;
-      const period = hour < 12 ? 'AM' : 'PM';
-      const hour12 = ((hour + 11) % 12) + 1;
-      slots.push(`${hour12}:${String(minute).padStart(2, '0')} ${period}`);
-    }
-  }
-  return slots;
-}
-
-const DATES = upcomingDates(30);
-const TIMES = timeSlots();
-
 /** Mobile notary appointment request: pick a date and time, email goes to Daiana. */
 function NotaryBooking() {
   const { status, submit } = useContactForm('Mobile Notary Appointment Request');
@@ -47,17 +19,11 @@ function NotaryBooking() {
       <div className="form-row">
         <div className="input-group">
           <label htmlFor="notary-date">Preferred Date</label>
-          <select id="notary-date" name="appointmentDate" required defaultValue="">
-            <option value="" disabled>Choose a date</option>
-            {DATES.map((date) => <option key={date.value} value={date.value}>{date.label}</option>)}
-          </select>
+          <input id="notary-date" name="appointmentDate" type="date" required />
         </div>
         <div className="input-group">
           <label htmlFor="notary-time">Preferred Time</label>
-          <select id="notary-time" name="appointmentTime" required defaultValue="">
-            <option value="" disabled>Choose a time</option>
-            {TIMES.map((time) => <option key={time} value={time}>{time}</option>)}
-          </select>
+          <input id="notary-time" name="appointmentTime" type="time" required />
         </div>
       </div>
       <div className="input-group">
