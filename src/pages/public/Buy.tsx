@@ -34,6 +34,13 @@ function Buy() {
             </p>
           </div>
 
+          <div className="notice-box">
+            Initial questions and conversations do not create a buyer agency relationship. New Jersey brokerage
+            disclosures, the Consumer Information Statement, and a written brokerage services agreement are handled
+            through All Star Real Estate Agency before buyer brokerage services begin. Broker compensation is
+            negotiable and not set by law.
+          </div>
+
           <div className="content-grid">
             <article className="content-card">
               <h3>Prepare</h3>
