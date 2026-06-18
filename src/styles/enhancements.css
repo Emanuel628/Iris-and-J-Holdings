@@ -285,19 +285,6 @@ summary:focus-visible,
   font-weight: 800;
 }
 
-.amenity-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  flex: 0 0 38px;
-  background: #f7ead8;
-  border: 1px solid rgba(167, 121, 49, 0.28);
-  border-radius: 999px;
-  font-size: 1.2rem;
-}
-
 @media (max-width: 900px) {
   .amenity-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
