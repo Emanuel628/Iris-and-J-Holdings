@@ -8,7 +8,7 @@ function Footer() {
         <div className="footer-column brokerage">
           <h3>Brokerage</h3>
           <p>
-            New Jersey real estate services are provided by Daiana Castro, Licensed NJ Real Estate
+            Real estate services are provided by Daiana Castro, REALTOR®, Licensed NJ Real Estate
             Salesperson, through All Star Real Estate Agency, a licensed New Jersey real estate brokerage.
             1416B Morris Ave, Union, NJ 07083.
           </p>
@@ -18,7 +18,7 @@ function Footer() {
 
         <div className="footer-column footer-contact">
           <h3>Contact</h3>
-          <p>Daiana Castro</p>
+          <p>Daiana Castro, REALTOR®</p>
           <p>Licensed NJ Real Estate Salesperson</p>
           <p>NJ Real Estate License #2190570</p>
           <p><Phone size={14} /> Mobile: <a href="tel:19084996320">(908) 499-6320</a></p>
