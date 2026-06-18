@@ -16,14 +16,14 @@ const photoSlots = [
 
 // TODO: confirm the rental's actual amenities and update this list.
 const amenities = [
-  'Fully equipped kitchen',
-  'Fast Wi-Fi',
-  'Free parking',
-  'Washer & dryer',
-  'Smart TV / streaming',
-  'Self check-in',
-  'Close to Orlando theme parks',
-  'Linens & towels provided',
+  { icon: '🍳', label: 'Fully equipped kitchen' },
+  { icon: '📶', label: 'Fast Wi-Fi' },
+  { icon: '🅿️', label: 'Free parking' },
+  { icon: '👕', label: 'Washer & dryer' },
+  { icon: '📺', label: 'Smart TV / streaming' },
+  { icon: '🔑', label: 'Self check-in' },
+  { icon: '🎢', label: 'Close to Orlando theme parks' },
+  { icon: '🛏️', label: 'Linens & towels provided' },
 ];
 
 // TODO: refine answers with the rental's real details.
