@@ -61,6 +61,7 @@ function AvailabilityCalendar() {
   const [view, setView] = useState({ year: now.getFullYear(), month: now.getMonth() });
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
+  const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState('');
 
@@ -96,6 +97,7 @@ function AvailabilityCalendar() {
   const cleaning = data?.cleaningFeeCents ?? 0;
   const total = nights > 0 ? nightlyTotal + cleaning : 0;
   const currency = data?.currency ?? 'usd';
+  const trimmedEmail = email.trim();
 
   function rangeHasBlockedNight(from: string, toExclusive: string) {
     let cursor = from;
@@ -122,13 +124,19 @@ function AvailabilityCalendar() {
   }
 
   async function startCheckout() {
-    setSubmitting(true);
     setBookingError('');
+
+    if (!trimmedEmail) {
+      setBookingError('Please enter your email so we can send your confirmation and receipt.');
+      return;
+    }
+
+    setSubmitting(true);
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ checkIn, checkOut }),
+        body: JSON.stringify({ checkIn, checkOut, email: trimmedEmail }),
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok || !payload.url) {
@@ -238,9 +246,23 @@ function AvailabilityCalendar() {
                   </div>
                 </dl>
                 {data.bookingEnabled ? (
-                  <button className="button button-primary" type="button" onClick={startCheckout} disabled={submitting}>
-                    {submitting ? 'Starting checkout…' : 'Check out & book'} <ArrowRight size={16} />
-                  </button>
+                  <>
+                    <div className="input-group">
+                      <label htmlFor="vacation-booking-email">Email for confirmation and receipt</label>
+                      <input
+                        id="vacation-booking-email"
+                        name="email"
+                        type="email"
+                        autoComplete="email"
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                        required
+                      />
+                    </div>
+                    <button className="button button-primary" type="button" onClick={startCheckout} disabled={submitting}>
+                      {submitting ? 'Starting checkout…' : 'Check out & book'} <ArrowRight size={16} />
+                    </button>
+                  </>
                 ) : (
                   <p className="cal-note">
                     Online checkout is coming soon. <a className="text-link" href="#interest-list">Send Daiana a question</a> and she’ll confirm these dates.
