@@ -20,7 +20,7 @@ function formatMoney(cents: number, currency: string) {
 }
 
 function BookingSuccess() {
-  usePageMeta('Booking Status', 'Your Orlando vacation rental booking status.');
+  usePageMeta('Booking Status', 'Your Orlando vacation rental booking status.', { robots: 'noindex,nofollow' });
   const [info, setInfo] = useState<SessionInfo | null>(null);
   const [done, setDone] = useState(false);
 
