@@ -79,17 +79,23 @@ function BookContact() {
 
           <div className="content-grid">
             {appointmentTypes.map((type) => (
-              <a
-                className="content-card"
-                href="#contact-form"
-                key={type.title}
-                onClick={() => setSelectedService(type.title)}
-              >
-                <h3>{type.title}</h3>
-                <p>{type.text}</p>
-                <span className="card-link">Select this request</span>
-              </a>
-            ))}
+            <a className="content-card contact-select-card"
+              href="#contact-form"
+              key={type.title}
+              onClick={(event) => {
+              event.preventDefault();
+              setSelectedService(type.title);
+              window.requestAnimationFrame(() => {
+              formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+          }}
+           >
+    
+         <h3>{type.title}</h3>
+         <p>{type.text}</p>
+         <span className="card-link">Select this request →</span>
+         </a>
+         ))}
           </div>
 
           <section className="split-section">
