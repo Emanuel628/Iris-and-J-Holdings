@@ -65,6 +65,11 @@ const ROUTE_META: Record<string, { title?: string; description?: string; robots?
     description: 'Your mobile notary booking fee was received.',
     robots: 'noindex,nofollow',
   },
+  '/refund-cancellation-policy': {
+    title: 'Refund & Cancellation Policy',
+    description:
+      'Refund, cancellation, rescheduling, and no-show policy for Iris & J Holdings mobile notary booking fees and Orlando vacation rental bookings.',
+  },
   '/privacy': {
     title: 'Privacy Policy',
     description:
