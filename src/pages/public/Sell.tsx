@@ -36,7 +36,11 @@ function Sell() {
               </p>
             </div>
             <div className="notice-box">
-              Submitting this form does not create a brokerage relationship. Required New Jersey disclosures and agreements come before brokerage services begin.
+              Submitting this form does not create a listing agreement or brokerage relationship. Required New
+              Jersey disclosures, the Consumer Information Statement, agency disclosure, a written brokerage
+              services agreement, compensation terms, and any required seller property condition disclosure are
+              handled through All Star Real Estate Agency before listing or brokerage services move forward.
+              Broker compensation is negotiable and not set by law.
             </div>
           </div>
 
