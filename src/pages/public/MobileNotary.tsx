@@ -1,4 +1,3 @@
-import { Phone } from 'lucide-react';
 import PublicLayout from '../../components/layout/PublicLayout';
 import NotaryBooking from '../../components/booking/NotaryBooking';
 import Faq from '../../components/sections/Faq';
@@ -43,10 +42,6 @@ function MobileNotary() {
               Mobile notary help is available by appointment in Union County and Middlesex County,
               with limited Essex County availability based on distance and scheduling.
             </p>
-            <div className="page-actions">
-              <a className="button button-primary" href="#notary-booking">Request an Appointment</a>
-              <a className="text-link" href="tel:19084996320"><Phone size={18} /> Call (908) 499-6320</a>
-            </div>
           </div>
           <div className="page-hero-visual" aria-label="Mobile notary visual placeholder" />
         </section>

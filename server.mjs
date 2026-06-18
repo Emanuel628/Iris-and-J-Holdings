@@ -319,7 +319,7 @@ app.post('/api/contact', async (req, res) => {
 
     const subject = clean(req.body?.subject) || 'Iris & J Holdings Website Request';
     const fields = req.body?.fields && typeof req.body.fields === 'object' ? req.body.fields : req.body;
-    const name = clean(fields?.Name || fields?.name || fields?.FullName || fields?.fullName);
+    const name = clean(fields?.Name || fields?.['Full Name'] || fields?.name || fields?.FullName || fields?.fullName);
     const email = clean(fields?.Email || fields?.email);
 
     if (!name || !email) {

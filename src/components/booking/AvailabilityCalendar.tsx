@@ -163,7 +163,7 @@ function AvailabilityCalendar() {
       </div>
 
       {loadError ? (
-        <p className="cal-note">The calendar couldn’t load right now. Please refresh, or join the interest list.</p>
+        <p className="cal-note">The calendar couldn’t load right now. Please refresh, or send Daiana a question below.</p>
       ) : !data ? (
         <p className="cal-note">Loading availability…</p>
       ) : (
@@ -243,7 +243,7 @@ function AvailabilityCalendar() {
                   </button>
                 ) : (
                   <p className="cal-note">
-                    Online checkout is coming soon. <a className="text-link" href="#interest-list">Join the interest list</a> and Daiana will confirm these dates.
+                    Online checkout is coming soon. <a className="text-link" href="#interest-list">Send Daiana a question</a> and she’ll confirm these dates.
                   </p>
                 )}
                 {bookingError && <p className="form-status form-status-error" role="alert">{bookingError}</p>}
