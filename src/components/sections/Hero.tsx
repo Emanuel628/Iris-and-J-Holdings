@@ -19,19 +19,8 @@ function Hero() {
         </div>
       </div>
 
-      <div className="hero-visual" aria-label="Illustrated living room with neutral decor">
-        <div className="sun-wash" aria-hidden="true" />
-        <div className="vase" aria-hidden="true">
-          <span className="branch branch-one" />
-          <span className="branch branch-two" />
-          <span className="branch branch-three" />
-        </div>
-        <div className="art-frame" aria-hidden="true" />
-        <div className="soft-chair" aria-hidden="true" />
-        <div className="stacked-books" aria-hidden="true">
-          <span />
-          <span />
-        </div>
+      <div className="hero-visual hero-image-frame" aria-label="Iris and J Holdings brand visual">
+        <img src="/images/site/home-hero.jpg" alt="Elegant real estate, notary, and hospitality workspace" />
       </div>
     </section>
   );
