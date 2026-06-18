@@ -20,7 +20,7 @@ function formatMoney(cents: number, currency: string) {
 }
 
 function BookingSuccess() {
-  usePageMeta('Booking Confirmed', 'Your Orlando vacation rental booking is confirmed.');
+  usePageMeta('Booking Status', 'Your Orlando vacation rental booking status.');
   const [info, setInfo] = useState<SessionInfo | null>(null);
   const [done, setDone] = useState(false);
 
@@ -45,14 +45,19 @@ function BookingSuccess() {
         <section className="page-hero">
           <div className="page-hero-content">
             <p className="eyebrow">Booking {paid ? 'confirmed' : 'received'}</p>
-            <h1>Thank you — your stay is reserved.</h1>
+            <h1>{paid ? 'Thank you — your stay is reserved.' : 'Thank you — your booking is being processed.'}</h1>
             {!done ? (
               <p>Confirming your booking…</p>
-            ) : info && info.checkIn ? (
+            ) : paid && info && info.checkIn ? (
               <p>
                 You’re booked from <strong>{info.checkIn}</strong> to <strong>{info.checkOut}</strong>
                 {info.amountTotal ? <> for {formatMoney(info.amountTotal, info.currency)}</> : null}. A receipt is on
                 its way to {info.email || 'your email'}, and Daiana will follow up with the details.
+              </p>
+            ) : info && info.checkIn ? (
+              <p>
+                Your dates were received, but the booking has not been marked paid yet. Daiana will follow up by
+                email, and the stay is not confirmed until payment is completed and a booking confirmation is issued.
               </p>
             ) : (
               <p>Your booking is being processed. Daiana will follow up by email with the details.</p>
