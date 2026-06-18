@@ -14,9 +14,8 @@ function About() {
             <p className="eyebrow">About Daiana</p>
             <h1>Real estate and notary help that keeps things simple.</h1>
             <p>
-              Daiana Castro is a licensed New Jersey real estate salesperson with NEIXA LLC (doing business as
-              All Star Real Estate Agency) and a mobile notary. She helps buyers, sellers, and notary clients
-              across Union, Middlesex, and Essex County understand what needs to happen, what can wait, and how
+              Daiana Castro is a licensed New Jersey real estate salesperson with, All Star Real Estate Agency and a mobile notary. She helps buyers, sellers, and notary clients
+              across all of New Jersey understand what needs to happen, what can wait, and how
               to move forward with confidence.
             </p>
             <div className="page-actions">
@@ -41,7 +40,7 @@ function About() {
             <div className="info-panel">
               <h3>Professional focus</h3>
               <ul className="detail-list">
-                <li>Real estate services through NEIXA LLC (dba All Star Real Estate Agency)</li>
+                <li>Real estate services through, All Star Real Estate Agency</li>
                 <li>Mobile notary service by appointment</li>
                 <li>New Jersey service area focus</li>
                 <li>Simple next steps before important decisions</li>
@@ -53,7 +52,7 @@ function About() {
             <p className="eyebrow">How to reach her</p>
             <h2>Serving Union, Middlesex, and Essex County, NJ.</h2>
             <p>
-              Real estate services run through NEIXA LLC (dba All Star Real Estate Agency); mobile notary visits
+              Real estate services run through, All Star Real Estate Agency; mobile notary visits
               are booked directly. Call or text <a href="tel:19084996320">(908) 499-6320</a>, or send your details through
               the booking page and Daiana will follow up by email.
             </p>
