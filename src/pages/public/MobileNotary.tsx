@@ -28,8 +28,8 @@ const notaryFaqs = [
 
 function MobileNotary() {
   usePageMeta(
-    'Mobile Notary',
-    'Mobile notary services by appointment, primarily in Union, Middlesex, and Essex Counties, with additional areas by request.',
+    'Mobile Notary in Union, Middlesex & Essex County',
+    'Mobile notary appointments for Union County, Middlesex County, and Essex County, NJ, including general notarizations, real estate documents, affidavits, and consent forms.',
   );
   return (
     <PublicLayout>
