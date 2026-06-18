@@ -313,13 +313,13 @@ summary:focus-visible,
 }
 
 .cal-weekday {
-  padding-bottom: 0.3rem;
+  padding: 0.35rem 0 0.45rem;
   text-align: center;
-  font-size: 0.6rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  font-size: 0.64rem;
+  font-weight: 900;
+  letter-spacing: 0.055em;
   text-transform: uppercase;
-  color: var(--color-muted);
+  color: #5f4a35;
 }
 
 .cal-day {
@@ -327,14 +327,14 @@ summary:focus-visible,
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.82rem;
+  font-weight: 700;
   color: var(--color-ink);
-  background: var(--color-warm-white);
-  border: 1px solid var(--color-border);
+  background: #fffaf2; 
+  border: 1px solid #d6c3a6;
   border-radius: 7px;
   cursor: pointer;
-  transition: background-color var(--speed) var(--ease-soft), border-color var(--speed) var(--ease-soft), color var(--speed) var(--ease-soft);
+  transition: background-color var(--speed) var(--ease-soft), border-color var(--speed) var(--ease-soft), color var(--speed) var(--ease-soft), transform var(--speed) var(--ease-soft);
 }
 
 .cal-day.is-empty {
@@ -344,19 +344,28 @@ summary:focus-visible,
 }
 
 .cal-day.is-open:hover {
-  border-color: var(--color-champagne);
-  background: #faf3e8;
+  border-color: var(--color-champagne-dark);
+  background: #f7ead8;
+  transform: translateY(-1px);
 }
 
 .cal-day.is-disabled {
-  color: var(--color-muted);
+  color: #8d8174;
   cursor: not-allowed;
-  background: repeating-linear-gradient(135deg, #efe8df, #efe8df 3px, #f7f2eb 3px, #f7f2eb 6px);
-  border-color: transparent;
+  background: repeating-linear-gradient(
+    135deg,
+    #d8d0c6,
+    #d8d0c6 4px,
+    #eee7de 4px,
+    #eee7de 8px
+  );
+  border-color: #c9bdae;
 }
 
 .cal-day.is-blocked {
+  color: #6f655c;
   text-decoration: line-through;
+  text-decoration-thickness: 2px;
 }
 
 .cal-day.is-range {
@@ -398,11 +407,19 @@ summary:focus-visible,
 }
 
 .swatch-open {
-  background: var(--color-warm-white);
+  background: #fffaf2;
+  border-color: #d6c3a6;
 }
 
 .swatch-booked {
-  background: repeating-linear-gradient(135deg, #e7dfd4, #e7dfd4 3px, #f4efe8 3px, #f4efe8 6px);
+  background: repeating-linear-gradient(
+    135deg,
+    #d8d0c6,
+    #d8d0c6 4px,
+    #eee7de 4px,
+    #eee7de 8px
+  );
+  border-color: #c9bdae;
 }
 
 .swatch-selected {
