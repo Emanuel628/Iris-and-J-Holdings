@@ -17,7 +17,7 @@ const notaryFaqs = [
   {
     question: 'Is a fee required to book?',
     answer:
-      'Yes — a travel or booking fee is confirmed before the appointment. Notary fees are separate and depend on the document type and number of notarizations. Daiana will confirm the details when you book.',
+      'Yes — the travel or booking fee is paid through secure checkout when you submit the request. Notary fees are separate and depend on the document type and number of notarizations. Daiana will confirm the details by email.',
   },
   {
     question: 'What types of documents can you notarize?',
@@ -54,8 +54,9 @@ function MobileNotary() {
               <p className="eyebrow">Request an appointment</p>
               <h2>Pick a date and time.</h2>
               <p>
-                Choose when works for you and send the details. Daiana will confirm the appointment, the service
-                area, and any travel or notary fees by email.
+                Choose your preferred date and time, then pay the travel / booking fee to send the request.
+                Daiana will confirm the appointment time, service area, document type, signer requirements,
+                and any separate notary fees by email.
               </p>
             </div>
             <NotaryBooking />
@@ -74,7 +75,7 @@ function MobileNotary() {
           </div>
           <section className="quiet-band">
             <p className="eyebrow">Travel notice</p>
-            <h2>A travel or booking fee is required before confirmation.</h2>
+            <h2>A travel or booking fee is paid before the request is submitted for confirmation.</h2>
             <p>Notary fees are separate and depend on the document type and number of notarizations.</p>
           </section>
 
