@@ -10,8 +10,10 @@ import VacationRentals from './pages/public/VacationRentals';
 import BookingSuccess from './pages/public/BookingSuccess';
 import PrivacyPolicy from './pages/public/PrivacyPolicy';
 import TermsOfUse from './pages/public/TermsOfUse';
+import Accessibility from './pages/public/Accessibility';
 import NotFound from './pages/public/NotFound';
 import ViewportModeToggle from './components/ui/ViewportModeToggle';
+import AccessibilityWidget from './components/ui/AccessibilityWidget';
 
 const routes = {
   '/': Home,
@@ -27,6 +29,7 @@ const routes = {
   '/booking-success': BookingSuccess,
   '/privacy': PrivacyPolicy,
   '/terms': TermsOfUse,
+  '/accessibility': Accessibility,
 };
 
 function normalizePath(pathname: string) {
@@ -44,6 +47,7 @@ function App() {
   return (
     <>
       <Page />
+      <AccessibilityWidget />
       <ViewportModeToggle />
     </>
   );

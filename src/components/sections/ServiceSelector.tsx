@@ -27,7 +27,7 @@ const services = [
   },
   {
     title: 'Vacation Rentals',
-    text: 'Orlando vacation rentals are coming soon, with photos and property details to follow.',
+    text: 'Check availability and book an Orlando vacation stay through Iris & J Holdings.',
     href: '/vacation-rentals',
     icon: MapPin,
   },

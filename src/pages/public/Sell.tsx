@@ -6,7 +6,7 @@ import { usePageMeta } from '../../lib/usePageMeta';
 function Sell() {
   usePageMeta(
     'Sell Your Home',
-    'Seller strategy guidance for pricing, preparation, marketing, and negotiation across Union, Middlesex, and Essex County, NJ.',
+    'Seller strategy guidance for pricing, preparation, marketing, and negotiation throughout New Jersey.',
   );
   const { status, submit } = useContactForm('Seller Strategy Request');
   return (

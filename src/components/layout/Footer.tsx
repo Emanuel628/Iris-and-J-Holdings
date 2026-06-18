@@ -8,25 +8,32 @@ function Footer() {
         <div className="footer-column brokerage">
           <h3>Brokerage</h3>
           <p>
-            Real estate services are provided through NEIXA LLC, doing business as All Star Real Estate Agency,
-            a licensed New Jersey real estate brokerage. 1416B Morris Ave, Union, NJ 07083.
+            Daiana Castro, REALTOR®, provides real estate services throughout New Jersey through All Star Real
+            Estate Agency, a licensed New Jersey real estate brokerage. 1416B Morris Ave, Union, NJ 07083.
           </p>
           <p>Brokerage office: <a href="tel:19089645005">(908) 964-5005</a></p>
-          <p className="equal-housing">Equal Housing Opportunity</p>
+          <img className="eho-logo" src="/equal-housing-opportunity.svg" alt="Equal Housing Opportunity" width="190" />
         </div>
 
         <div className="footer-column footer-contact">
           <h3>Contact</h3>
-          <p>Daiana Castro, Licensed NJ Real Estate Salesperson</p>
+          <p>Daiana Castro, REALTOR®</p>
           <p>NJ Real Estate License #2190570</p>
           <p><Phone size={14} /> Mobile: <a href="tel:19084996320">(908) 499-6320</a></p>
           <p><Mail size={14} /> listingsbyd@gmail.com</p>
-          <p><MapPin size={14} /> Union, Middlesex &amp; Essex Counties, NJ</p>
+          <p><MapPin size={14} /> New Jersey · Union, Middlesex &amp; Essex Counties</p>
         </div>
+
+        <nav className="footer-column footer-services" aria-label="Services">
+          <h3>Services</h3>
+          <a href="/buy">New Jersey Real Estate</a>
+          <a href="/mobile-notary">Mobile Notary Services</a>
+          <a href="/vacation-rentals">Orlando Vacation Rentals</a>
+        </nav>
 
         <div className="footer-column footer-daiana">
           <h3>About</h3>
-          <p>Daiana Castro helps buyers, sellers, and notary clients across Union, Middlesex, and Essex County, New Jersey.</p>
+          <p>Real estate, mobile notary, and Orlando vacation rentals — clear guidance for each step.</p>
           <a className="footer-about-link" href="/about">About Daiana</a>
         </div>
       </div>
@@ -35,8 +42,10 @@ function Footer() {
         <div>
           <a href="/privacy">Privacy Policy</a>
           <a href="/terms">Terms of Use</a>
-          <p>© 2026 Iris &amp; J Holdings. All rights reserved.</p>
+          <a href="/accessibility#fair-housing">Fair Housing</a>
+          <a href="/accessibility">Accessibility</a>
         </div>
+        <p>© 2026 Iris &amp; J Holdings. All rights reserved.</p>
       </div>
     </footer>
   );

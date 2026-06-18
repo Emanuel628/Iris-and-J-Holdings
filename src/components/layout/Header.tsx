@@ -6,7 +6,7 @@ function Header() {
         <span className="brand-copy">
           <strong>Iris &amp; J</strong>
           <span>Holdings</span>
-          <small>Real Estate Guidance · Mobile Notary Services</small>
+          <small>Brokered by All Star Real Estate Agency</small>
         </span>
       </a>
 
@@ -24,6 +24,7 @@ function Header() {
         <a href="/buy">Buy</a>
         <a href="/sell">Sell</a>
         <a href="/mobile-notary">Notary</a>
+        <a href="/vacation-rentals">Vacation Rentals</a>
         <a href="/about">About</a>
         <a className="mobile-nav-call" href="tel:19084996320">Call</a>
       </nav>
