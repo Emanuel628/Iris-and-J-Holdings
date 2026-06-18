@@ -16,14 +16,14 @@ const photoSlots = [
 
 // TODO: confirm the rental's actual amenities and update this list.
 const amenities = [
-  { icon: '🍳', label: 'Fully equipped kitchen' },
-  { icon: '📶', label: 'Fast Wi-Fi' },
-  { icon: '🅿️', label: 'Free parking' },
-  { icon: '👕', label: 'Washer & dryer' },
-  { icon: '📺', label: 'Smart TV / streaming' },
-  { icon: '🔑', label: 'Self check-in' },
-  { icon: '🎢', label: 'Close to Orlando theme parks' },
-  { icon: '🛏️', label: 'Linens & towels provided' },
+  'Fully equipped kitchen',
+  'Fast Wi-Fi',
+  'Free parking',
+  'Washer & dryer',
+  'Smart TV / streaming',
+  'Self check-in',
+  'Close to Orlando theme parks',
+  'Linens & towels provided',
 ];
 
 // TODO: refine answers with the rental's real details.
@@ -93,11 +93,8 @@ function VacationRentals() {
           </div>
           <ul className="amenity-grid">
             {amenities.map((amenity) => (
-              <li className="amenity-item" key={amenity.label}>
-            <span className="amenity-icon" aria-hidden="true">{amenity.icon}</span>
-            <span>{amenity.label}</span>
-              </li>
-          ))}
+              <li className="amenity-item" key={amenity}>{amenity}</li>
+           ))}
           </ul>
         </section>
 
