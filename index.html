@@ -4,58 +4,132 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#121820" />
+    <meta name="robots" content="index,follow" />
     <meta
       name="description"
-      content="Iris & J Holdings — New Jersey real estate services through All Star Real Estate Agency, mobile notary services, and Orlando vacation rentals."
+      content="Iris & J Holdings helps New Jersey buyers and sellers, offers mobile notary appointments in Union, Middlesex, and Essex Counties, and provides Orlando vacation rental booking."
     />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
-    <link rel="canonical" href="https://iris-and-j-holdings-production.up.railway.app/" />
-    <title>Iris & J Holdings | Real Estate Guidance & Mobile Notary Services</title>
+    <link rel="canonical" href="https://www.irisjholdings.com/" />
+    <title>Iris & J Holdings | New Jersey Real Estate, Mobile Notary & Orlando Rentals</title>
 
     <!-- Open Graph / social sharing -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Iris & J Holdings" />
-    <meta property="og:title" content="Iris & J Holdings | Real Estate Guidance & Mobile Notary Services" />
+    <meta property="og:title" content="Iris & J Holdings | New Jersey Real Estate, Mobile Notary & Orlando Rentals" />
     <meta
       property="og:description"
-      content="New Jersey real estate services through All Star Real Estate Agency, mobile notary services, and Orlando vacation rentals."
+      content="New Jersey buyer and seller guidance through All Star Real Estate Agency, mobile notary appointments, and Orlando vacation rental booking."
     />
-    <meta property="og:url" content="https://iris-and-j-holdings-production.up.railway.app/" />
-    <!-- TODO: swap og-image.svg for a 1200x630 photo-based PNG when imagery is ready -->
-    <meta property="og:image" content="https://iris-and-j-holdings-production.up.railway.app/og-image.svg" />
+    <meta property="og:url" content="https://www.irisjholdings.com/" />
+    <meta property="og:image" content="https://www.irisjholdings.com/og-image.svg" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://iris-and-j-holdings-production.up.railway.app/og-image.svg" />
+    <meta name="twitter:title" content="Iris & J Holdings | New Jersey Real Estate, Mobile Notary & Orlando Rentals" />
+    <meta
+      name="twitter:description"
+      content="New Jersey buyer and seller guidance, mobile notary appointments, and Orlando vacation rental booking."
+    />
+    <meta name="twitter:image" content="https://www.irisjholdings.com/og-image.svg" />
 
-    <!-- Local business structured data for search engines -->
+    <!-- Structured data for search engines -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "Organization",
-        "name": "Iris & J Holdings",
-        "description": "Marketing site for New Jersey real estate services provided by Daiana Castro through All Star Real Estate Agency, plus mobile notary services and Orlando vacation rentals through Iris & J Holdings.",
-        "url": "https://iris-and-j-holdings-production.up.railway.app/",
-        "telephone": "+1-908-499-6320",
-        "email": "listingsbyd@gmail.com",
-        "image": "https://iris-and-j-holdings-production.up.railway.app/og-image.svg",
-        "areaServed": ["New Jersey", "Union County, NJ", "Middlesex County, NJ", "Essex County, NJ", "Orlando, FL"],
-        "address": {
-          "@type": "PostalAddress",
-          "streetAddress": "1416B Morris Ave",
-          "addressLocality": "Union",
-          "addressRegion": "NJ",
-          "postalCode": "07083",
-          "addressCountry": "US"
-        },
-        "employee": {
-          "@type": "Person",
-          "name": "Daiana Castro",
-          "jobTitle": "REALTOR® and Mobile Notary",
-          "affiliation": {
-            "@type": "RealEstateAgent",
-            "name": "All Star Real Estate Agency"
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://www.irisjholdings.com/#website",
+            "name": "Iris & J Holdings",
+            "url": "https://www.irisjholdings.com/",
+            "description": "New Jersey real estate guidance, mobile notary appointments, and Orlando vacation rental booking."
+          },
+          {
+            "@type": "Organization",
+            "@id": "https://www.irisjholdings.com/#organization",
+            "name": "Iris & J Holdings",
+            "url": "https://www.irisjholdings.com/",
+            "telephone": "+1-908-499-6320",
+            "email": "listingsbyd@gmail.com",
+            "image": "https://www.irisjholdings.com/og-image.svg",
+            "description": "Marketing site for New Jersey real estate services provided by Daiana Castro through All Star Real Estate Agency, plus mobile notary services and Orlando vacation rentals through Iris & J Holdings.",
+            "areaServed": ["New Jersey", "Union County, NJ", "Middlesex County, NJ", "Essex County, NJ", "Orlando, FL"],
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": "1416B Morris Ave",
+              "addressLocality": "Union",
+              "addressRegion": "NJ",
+              "postalCode": "07083",
+              "addressCountry": "US"
+            },
+            "employee": {
+              "@id": "https://www.irisjholdings.com/#daiana-castro"
+            },
+            "hasOfferCatalog": {
+              "@type": "OfferCatalog",
+              "name": "Iris & J Holdings services",
+              "itemListElement": [
+                {
+                  "@type": "Offer",
+                  "itemOffered": {
+                    "@type": "Service",
+                    "name": "New Jersey buyer guidance",
+                    "serviceType": "Real estate buyer consultation",
+                    "areaServed": "New Jersey"
+                  }
+                },
+                {
+                  "@type": "Offer",
+                  "itemOffered": {
+                    "@type": "Service",
+                    "name": "New Jersey seller strategy",
+                    "serviceType": "Real estate seller consultation",
+                    "areaServed": "New Jersey"
+                  }
+                },
+                {
+                  "@type": "Offer",
+                  "itemOffered": {
+                    "@type": "Service",
+                    "name": "Mobile notary appointments",
+                    "serviceType": "Mobile notary service",
+                    "areaServed": ["Union County, NJ", "Middlesex County, NJ", "Essex County, NJ"]
+                  }
+                },
+                {
+                  "@type": "Offer",
+                  "itemOffered": {
+                    "@type": "Service",
+                    "name": "Orlando vacation rental booking",
+                    "serviceType": "Vacation rental accommodations",
+                    "areaServed": "Orlando, FL"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "@type": "Person",
+            "@id": "https://www.irisjholdings.com/#daiana-castro",
+            "name": "Daiana Castro",
+            "jobTitle": "REALTOR® and Mobile Notary",
+            "telephone": "+1-908-499-6320",
+            "email": "listingsbyd@gmail.com",
+            "affiliation": {
+              "@type": "RealEstateAgent",
+              "name": "All Star Real Estate Agency",
+              "address": {
+                "@type": "PostalAddress",
+                "streetAddress": "1416B Morris Ave",
+                "addressLocality": "Union",
+                "addressRegion": "NJ",
+                "postalCode": "07083",
+                "addressCountry": "US"
+              },
+              "telephone": "+1-908-964-5005"
+            }
           }
-        }
+        ]
       }
     </script>
 
