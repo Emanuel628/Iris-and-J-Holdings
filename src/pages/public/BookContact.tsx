@@ -108,6 +108,13 @@ function BookContact() {
                 Not ready to schedule? Send a question — about buying, selling, a home value, or a notary visit —
                 and Daiana will help you figure out the right next step.
               </p>
+              <div className="notice-box">
+                Submitting this form starts a request only. It does not create a brokerage relationship,
+                listing agreement, buyer agency agreement, notary appointment, or vacation rental booking.
+                Real estate services are provided through All Star Real Estate Agency only after the required
+                New Jersey disclosures and written agreements are completed. Please do not submit confidential
+                legal, financial, or medical information through this form.
+              </div>
             </div>
             <form
               className="info-panel form-shell"
