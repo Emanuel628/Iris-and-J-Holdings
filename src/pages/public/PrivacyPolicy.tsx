@@ -4,7 +4,7 @@ import { usePageMeta } from '../../lib/usePageMeta';
 function PrivacyPolicy() {
   usePageMeta(
     'Privacy Policy',
-    'How Iris & J Holdings handles information submitted through website forms without storing form submissions in a website database.'
+    'Privacy Policy for Iris & J Holdings, including website forms, contact requests, mobile notary appointment requests, home value requests, and vacation rental inquiries.'
   );
   return (
     <PublicLayout>
@@ -78,18 +78,17 @@ function PrivacyPolicy() {
           <article>
             <h2>Website operation and technical logs</h2>
             <p>
-              This website does not use a user account system or store visitor profiles. Basic technical logs
-              may be created by the website host for security, performance, troubleshooting, and operation of
-              the website.
+              The website host or related technical providers may create ordinary server logs or security logs,
+              such as IP address, browser, device, pages visited, and time of visit, to operate, secure, and
+              troubleshoot the website.
             </p>
           </article>
           <article>
             <h2>Your choices</h2>
             <p>
-              You can ask what information is on file, correct it, or have it deleted from ordinary business
-              communications at any time. Email <a href="mailto:listingsbyd@gmail.com">listingsbyd@gmail.com</a>{' '}
-              or call <a href="tel:19084996320">(908) 499-6320</a>. To stop receiving messages, reply and ask
-              us to stop contacting you.
+              You may contact us to ask questions about submitted information or request that we stop contacting
+              you about a submitted request. Contact Daiana at{' '}
+              <a href="mailto:listingsbyd@gmail.com">listingsbyd@gmail.com</a>.
             </p>
           </article>
         </section>
