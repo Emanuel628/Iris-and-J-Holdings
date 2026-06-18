@@ -16,7 +16,7 @@ function TrustSection() {
         <p>
           From the first conversation, you’ll know what happens next and why. I explain each step in plain
           language, respond quickly, and help you weigh your options without pressure — for buyers, sellers,
-          and notary clients throughout New Jersey, with a focus on Union, Middlesex, and Essex County.
+          and notary clients throughout New Jersey, with a focus on Union, Middlesex, and Essex Counties.
         </p>
         <a className="button button-secondary" href="/about">Meet Daiana</a>
       </div>
