@@ -26,13 +26,6 @@ function Footer() {
           <p><MapPin size={14} /> Union, Middlesex &amp; Essex Counties, NJ</p>
         </div>
 
-        <nav className="footer-column footer-services" aria-label="Services">
-          <h3>Services</h3>
-          <a href="/buy">New Jersey Real Estate</a>
-          <a href="/mobile-notary">Mobile Notary Services</a>
-          <a href="/vacation-rentals">Orlando Vacation Rentals</a>
-        </nav>
-
         <div className="footer-column footer-daiana">
           <h3>About</h3>
           <p>
