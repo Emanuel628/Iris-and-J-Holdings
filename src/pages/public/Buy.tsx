@@ -3,8 +3,8 @@ import { usePageMeta } from '../../lib/usePageMeta';
 
 function Buy() {
   usePageMeta(
-    'Buy a Home',
-    'Buyer guidance for budget, search strategy, offers, and closing throughout New Jersey.',
+    'Buy a Home in New Jersey',
+    'Buyer consultation and home search guidance in New Jersey, including budget review, pre-approval, offers, inspections, attorney review, and closing next steps.',
   );
   return (
     <PublicLayout>
