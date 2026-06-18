@@ -64,9 +64,6 @@ function BookContact() {
               Tell Daiana what you need and she’ll point you to the right next step — a buyer consultation,
               seller strategy call, mobile notary appointment, or a general question. She’ll follow up by email.
             </p>
-            <div className="page-actions">
-              <a className="button button-primary" href="#appointment-types">Choose Appointment Type</a>
-            </div>
           </div>
           <div className="page-hero-visual contact-hero-visual" aria-label="Contact and appointment request visual" />
         </section>

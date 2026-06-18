@@ -18,6 +18,7 @@ function Footer() {
         <div className="footer-column footer-contact">
           <h3>Contact</h3>
           <p>Daiana Castro, Licensed NJ Real Estate Salesperson</p>
+          <p>NJ Real Estate License #2190570</p>
           <p><Phone size={14} /> Mobile: <a href="tel:19084996320">(908) 499-6320</a></p>
           <p><Mail size={14} /> listingsbyd@gmail.com</p>
           <p><MapPin size={14} /> Union, Middlesex &amp; Essex Counties, NJ</p>

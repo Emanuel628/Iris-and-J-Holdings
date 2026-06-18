@@ -17,10 +17,6 @@ function Buy() {
               Whether this is your first home or your next move, Daiana helps you understand your budget,
               narrow your search, prepare with confidence, and know what to expect before closing.
             </p>
-            <div className="page-actions">
-              <a className="button button-primary" href="/book?service=Buyer%20Consultation#contact-form">Schedule Buyer Consultation</a>
-              <a className="text-link" href="/book?service=Buyer%20Guide%20Request&message=I%20would%20like%20to%20request%20the%20buyer%20guide.#contact-form">Request Buyer Guide</a>
-            </div>
           </div>
           <div className="page-hero-visual" aria-label="Buyer consultation visual placeholder" />
         </section>

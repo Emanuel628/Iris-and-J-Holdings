@@ -490,3 +490,9 @@ summary:focus-visible,
     max-width: 100%;
   }
 }
+
+/* A quiet-band used as a split-section column shouldn't carry its standalone
+   top margin — keep it top-aligned with the panel beside it. */
+.split-section .quiet-band {
+  margin-top: 0;
+}
