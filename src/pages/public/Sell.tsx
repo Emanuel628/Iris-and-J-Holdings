@@ -21,7 +21,9 @@ function Sell() {
               <a className="button button-secondary" href="/home-value#home-value-form">Get Home Value Review →</a>
             </div>
           </div>
-          <div className="page-hero-visual seller-hero-visual" aria-label="Bright staged home interior visual" />
+          <div className="page-hero-visual page-hero-image-frame seller-hero-visual" aria-label="Seller strategy visual">
+            <img src="/images/site/sell-hero.jpg" alt="Refined staged interior for seller strategy" />
+          </div>
         </section>
 
         <section className="page-content split-section seller-intake" id="seller-form">
