@@ -43,7 +43,9 @@ function MobileNotary() {
               with additional areas available by request.
             </p>
           </div>
-          <div className="page-hero-visual" aria-label="Mobile notary visual placeholder" />
+          <div className="page-hero-visual page-hero-image-frame" aria-label="Mobile notary document signing visual">
+            <img src="/images/site/notary-hero.jpg" alt="Notary portfolio and signing pen" />
+          </div>
         </section>
 
         <section className="page-content" id="appointment">
