@@ -266,3 +266,25 @@
     min-height: 240px;
   }
 }
+
+.button-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0 1.35rem;
+  color: var(--color-ink);
+  background: transparent;
+  border: 1px solid var(--color-champagne-dark);
+  border-radius: var(--radius-button);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: background-color var(--speed) var(--ease-soft), transform var(--speed) var(--ease-soft), border-color var(--speed) var(--ease-soft);
+}
+
+.button-secondary:hover {
+  background: #f7ead8;
+  transform: translateY(-2px);
+}
