@@ -10,7 +10,7 @@ import { usePageMeta } from '../../lib/usePageMeta';
 function Home() {
   usePageMeta(
     '',
-    'New Jersey real estate guidance and mobile notary services. Buy, sell, home value, and notary help in Union, Middlesex, and Essex Counties.',
+    'New Jersey real estate guidance and mobile notary services. Buy, sell, home value, and notary help throughout all of Mew Jersey.',
   );
   return (
     <PublicLayout>
