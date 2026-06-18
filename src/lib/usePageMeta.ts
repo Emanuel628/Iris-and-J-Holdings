@@ -26,7 +26,7 @@ const ROUTE_META: Record<string, { title?: string; description?: string; robots?
       'Request a New Jersey home value review using recent comparable sales, nearby listings, condition, updates, and local market activity. Not a formal appraisal.',
   },
   '/mobile-notary': {
-    title: 'Mobile Notary in Union, Middlesex & Essex County',
+    title: 'Mobile Notary in Union, Middlesex & Essex Counties',
     description:
       'Mobile notary appointments for Union County, Middlesex County, and Essex County, NJ, including general notarizations, real estate documents, affidavits, and consent forms.',
   },
