@@ -2,7 +2,10 @@ import PublicLayout from '../../components/layout/PublicLayout';
 import { usePageMeta } from '../../lib/usePageMeta';
 
 function PrivacyPolicy() {
-  usePageMeta('Privacy Policy', 'How Iris & J Holdings collects, uses, and protects information submitted through the website.');
+  usePageMeta(
+    'Privacy Policy',
+    'How Iris & J Holdings handles information submitted through website forms without storing form submissions in a website database.'
+  );
   return (
     <PublicLayout>
       <main className="page-main">
@@ -11,8 +14,9 @@ function PrivacyPolicy() {
             <p className="eyebrow">Privacy Policy</p>
             <h1>How submitted information is handled.</h1>
             <p>
-              This page explains how information from contact forms, appointment requests, resource requests,
-              home value requests, and vacation rental interest requests may be used.
+              This page explains how information you choose to submit through contact forms, appointment
+              requests, resource requests, home value requests, and vacation rental interest requests is
+              delivered and used. This website does not store form submissions in a website database.
             </p>
           </div>
           <div className="page-hero-visual" aria-label="Privacy policy visual placeholder" />
@@ -20,40 +24,72 @@ function PrivacyPolicy() {
 
         <section className="page-content legal-copy">
           <article>
-            <h2>Information collected</h2>
+            <h2>Effective date</h2>
+            <p>Effective Date: June 18, 2026.</p>
+          </article>
+          <article>
+            <h2>Information you submit</h2>
             <p>
-              Visitors may submit details such as name, email, phone number, property information,
-              appointment information, resource interests, travel interests, and message details through website forms.
+              You may choose to submit details such as your name, email address, phone number, property
+              information, appointment information, resource interests, travel interests, and message details
+              through website forms.
             </p>
           </article>
           <article>
-            <h2>How information is used</h2>
+            <h2>No website database storage</h2>
             <p>
-              Submitted information is used to respond to requests, schedule conversations, provide requested
-              real estate or notary-related assistance, and send requested updates.
+              This website does not create user accounts and does not store form submissions in a website
+              database. When you submit a form, the information is delivered to Iris &amp; J Holdings by email
+              or through the website&apos;s message delivery system so we can respond to your request.
+            </p>
+          </article>
+          <article>
+            <h2>How submitted information is used</h2>
+            <p>
+              Submitted information is used only to respond to your request, schedule conversations or
+              appointments, provide requested real estate, notary, vacation rental, or property-related
+              assistance, and maintain ordinary communication about the request you submitted.
+            </p>
+          </article>
+          <article>
+            <h2>How submitted information is delivered</h2>
+            <p>
+              Form submissions may be processed by trusted website hosting, email, or form-delivery providers
+              only so the message can be delivered to us. Those providers may process limited technical
+              information as part of operating the website and delivering messages.
             </p>
           </article>
           <article>
             <h2>No selling of submitted information</h2>
             <p>
-              Information submitted through this website is not sold. Visitors may be contacted by phone, text, or
-              email regarding the request they submitted.
+              Information submitted through this website is not sold. Submitted phone numbers, email addresses,
+              and messages are not shared with third parties for their own marketing.
             </p>
           </article>
           <article>
-            <h2>How information is shared</h2>
+            <h2>Calls, texts, and emails</h2>
             <p>
-              Form submissions are delivered to Daiana by email, so trusted email and hosting providers process
-              your message to deliver it. These providers may have their own privacy terms, and information is
-              shared only to operate the site and respond to your request.
+              By submitting contact information, you agree that Iris &amp; J Holdings and/or Daiana Castro may
+              contact you by phone, text, or email regarding the request you submitted. Message and data rates
+              may apply. You can ask us to stop contacting you at any time, and you can stop text messages by
+              replying STOP.
+            </p>
+          </article>
+          <article>
+            <h2>Website operation and technical logs</h2>
+            <p>
+              This website does not use a user account system or store visitor profiles. Basic technical logs
+              may be created by the website host for security, performance, troubleshooting, and operation of
+              the website.
             </p>
           </article>
           <article>
             <h2>Your choices</h2>
             <p>
-              You can ask what information is on file, correct it, or have it deleted at any time. Email{' '}
-              <a href="mailto:listingsbyd@gmail.com">listingsbyd@gmail.com</a> or call{' '}
-              <a href="tel:19084996320">(908) 499-6320</a>. To stop receiving messages, just reply and say so.
+              You can ask what information is on file, correct it, or have it deleted from ordinary business
+              communications at any time. Email <a href="mailto:listingsbyd@gmail.com">listingsbyd@gmail.com</a>{' '}
+              or call <a href="tel:19084996320">(908) 499-6320</a>. To stop receiving messages, reply and ask
+              us to stop contacting you.
             </p>
           </article>
         </section>
