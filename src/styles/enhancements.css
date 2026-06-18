@@ -39,6 +39,20 @@ summary:focus-visible,
   color: #8a6220;
 }
 
+
+.clean-site-header .desktop-nav a.is-active {
+  color: var(--color-ink);
+  font-weight: 900;
+  border-bottom: 2px solid var(--color-champagne-dark);
+}
+
+.clean-site-header .mobile-nav a.is-active {
+  color: var(--color-ink);
+  background: #f7ead8;
+  border-color: var(--color-champagne-dark);
+  font-weight: 900;
+}
+
 /* ---- Mobile navigation (markup now rendered in Header) ---- */
 @media (max-width: 780px) {
   .clean-site-header {
