@@ -18,7 +18,7 @@ function Sell() {
             <h1>Selling your home takes more than a listing.</h1>
             <p>Pricing, preparation, timing, and presentation all matter. Daiana helps homeowners understand the market and move forward with a clear plan.</p>
             <div className="page-actions">
-              <a className="text-link" href="/home-value#home-value-form">Get Home Value Review</a>
+              <a className="button button-secondary" href="/home-value#home-value-form">Get Home Value Review →</a>
             </div>
           </div>
           <div className="page-hero-visual seller-hero-visual" aria-label="Bright staged home interior visual" />
