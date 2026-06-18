@@ -41,7 +41,10 @@ function HomeValue() {
               </p>
             </div>
             <div className="notice-box">
-              Home value reviews are estimates based on available market information and are not appraisals.
+              Home value reviews are informal estimates based on available market information and details you
+              choose to provide. They are not appraisals, broker price opinions for lending purposes, guarantees
+              of sale price, or legal, tax, financial, or appraisal advice. Submitting a request does not create a
+              brokerage relationship.
             </div>
           </div>
 
