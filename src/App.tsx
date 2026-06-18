@@ -1,4 +1,7 @@
 import Home from './pages/public/Home';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminLogin from './pages/admin/AdminLogin';
+import AdminRegister from './pages/admin/AdminRegister';
 import Buy from './pages/public/Buy';
 import Sell from './pages/public/Sell';
 import HomeValue from './pages/public/HomeValue';
@@ -22,6 +25,9 @@ import AccessibilityWidget from './components/ui/AccessibilityWidget';
 
 const routes = {
   '/': Home,
+  '/admin': AdminDashboard,
+  '/admin/login': AdminLogin,
+  '/admin/register': AdminRegister,
   '/buy': Buy,
   '/sell': Sell,
   '/home-value': HomeValue,

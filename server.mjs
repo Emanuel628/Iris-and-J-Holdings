@@ -1,8 +1,10 @@
 import express from 'express';
+import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import Stripe from 'stripe';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import pg from 'pg';
 import { getBlockedRanges, overlapsBlocked } from './server/airbnb.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -14,6 +16,12 @@ const resendApiKey = process.env.RESEND_API_KEY;
 const resendFrom = process.env.RESEND_FROM_EMAIL || 'Iris & J Holdings <onboarding@resend.dev>';
 const canonicalHost = 'www.irisjholdings.com';
 const apexHost = 'irisjholdings.com';
+const sessionCookieName = 'ijh_admin_session';
+const databaseUrl = process.env.DATABASE_URL || '';
+const adminSessionDays = Number(process.env.ADMIN_SESSION_DAYS || 14);
+const secureCookies = process.env.NODE_ENV === 'production';
+
+const pgPool = databaseUrl ? new pg.Pool({ connectionString: databaseUrl, ssl: databaseUrl.includes('localhost') ? false : { rejectUnauthorized: false } }) : null;
 
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 const booking = {
@@ -66,9 +74,11 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
 
     try {
       if (session.metadata?.type === 'notary') {
+        await persistNotaryRequest(session);
         await notifyNotaryBookingV2(session);
       } else {
         bookedCache = { at: 0, ranges: [] }; // vacation booking — refresh website/Airbnb availability merge
+        await persistVacationBooking(session);
         await notifyBookingV2(session);
       }
     } catch (notifyError) {
@@ -108,6 +118,31 @@ function clean(value) {
   return String(value ?? '').trim();
 }
 
+function parseCookies(req) {
+  const header = String(req.headers.cookie || '');
+  const cookies = {};
+  for (const pair of header.split(';')) {
+    const [key, ...rest] = pair.trim().split('=');
+    if (!key) continue;
+    cookies[key] = decodeURIComponent(rest.join('='));
+  }
+  return cookies;
+}
+
+function setCookie(res, name, value, options = {}) {
+  const parts = [`${name}=${encodeURIComponent(value)}`];
+  if (options.httpOnly !== false) parts.push('HttpOnly');
+  parts.push('Path=/');
+  parts.push(`SameSite=${options.sameSite || 'Lax'}`);
+  if (options.maxAge !== undefined) parts.push(`Max-Age=${options.maxAge}`);
+  if (options.secure) parts.push('Secure');
+  res.append('Set-Cookie', parts.join('; '));
+}
+
+function clearCookie(res, name) {
+  setCookie(res, name, '', { maxAge: 0, secure: secureCookies });
+}
+
 function metadataValue(value) {
   return clean(value).slice(0, 500);
 }
@@ -119,6 +154,22 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+function hashPassword(password, salt = randomBytes(16).toString('hex')) {
+  const derived = scryptSync(password, salt, 64).toString('hex');
+  return `${salt}:${derived}`;
+}
+
+function verifyPassword(password, stored) {
+  const [salt, hashed] = String(stored || '').split(':');
+  if (!salt || !hashed) return false;
+  const derived = scryptSync(password, salt, 64).toString('hex');
+  return timingSafeEqual(Buffer.from(derived), Buffer.from(hashed));
+}
+
+function hashSessionToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
 }
 
 async function sendResendEmail({ to, replyTo, subject, text, html }) {
@@ -226,6 +277,201 @@ function summarizeGuestList(primaryGuest, additionalGuests) {
   return lines.join('\n');
 }
 
+async function ensureAdminTables() {
+  if (!pgPool) return;
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS admin_users (
+      id SERIAL PRIMARY KEY,
+      full_name TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS admin_sessions (
+      id SERIAL PRIMARY KEY,
+      admin_user_id INTEGER NOT NULL REFERENCES admin_users(id) ON DELETE CASCADE,
+      token_hash TEXT NOT NULL UNIQUE,
+      expires_at TIMESTAMPTZ NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS rentals (
+      id SERIAL PRIMARY KEY,
+      slug TEXT NOT NULL UNIQUE,
+      title TEXT NOT NULL,
+      location_label TEXT NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
+      nightly_rate_cents INTEGER NOT NULL DEFAULT 0,
+      cleaning_fee_cents INTEGER NOT NULL DEFAULT 0,
+      max_guests INTEGER NOT NULL DEFAULT 10,
+      hero_image_url TEXT NOT NULL DEFAULT '',
+      gallery_image_urls JSONB NOT NULL DEFAULT '[]'::jsonb,
+      amenities JSONB NOT NULL DEFAULT '[]'::jsonb,
+      is_active BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS blocked_dates (
+      id SERIAL PRIMARY KEY,
+      rental_id INTEGER NOT NULL REFERENCES rentals(id) ON DELETE CASCADE,
+      start_date DATE NOT NULL,
+      end_date DATE NOT NULL,
+      reason TEXT NOT NULL DEFAULT '',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS site_content (
+      id SERIAL PRIMARY KEY,
+      page_key TEXT NOT NULL UNIQUE,
+      title TEXT NOT NULL,
+      body TEXT NOT NULL DEFAULT '',
+      hero_image_url TEXT NOT NULL DEFAULT '',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS vacation_bookings (
+      id SERIAL PRIMARY KEY,
+      stripe_session_id TEXT NOT NULL UNIQUE,
+      rental_id INTEGER REFERENCES rentals(id) ON DELETE SET NULL,
+      guest_name TEXT NOT NULL,
+      guest_email TEXT NOT NULL,
+      guest_phone TEXT NOT NULL DEFAULT '',
+      guest_count INTEGER NOT NULL DEFAULT 1,
+      guest_list_text TEXT NOT NULL DEFAULT '',
+      check_in DATE NOT NULL,
+      check_out DATE NOT NULL,
+      amount_total_cents INTEGER NOT NULL DEFAULT 0,
+      currency TEXT NOT NULL DEFAULT 'usd',
+      status TEXT NOT NULL DEFAULT 'paid',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS notary_requests (
+      id SERIAL PRIMARY KEY,
+      stripe_session_id TEXT NOT NULL UNIQUE,
+      full_name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      phone TEXT NOT NULL DEFAULT '',
+      city TEXT NOT NULL DEFAULT '',
+      appointment_date DATE NOT NULL,
+      appointment_time TEXT NOT NULL,
+      document_type TEXT NOT NULL DEFAULT '',
+      notes TEXT NOT NULL DEFAULT '',
+      amount_total_cents INTEGER NOT NULL DEFAULT 0,
+      currency TEXT NOT NULL DEFAULT 'usd',
+      status TEXT NOT NULL DEFAULT 'paid',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await seedControlCenterData();
+}
+
+async function seedControlCenterData() {
+  if (!pgPool) return;
+  await pgPool.query(
+    `INSERT INTO rentals (slug, title, location_label, description, nightly_rate_cents, cleaning_fee_cents, max_guests)
+     VALUES ('orlando-vacation-rental', 'Orlando Vacation Rental', 'Orlando / Central Florida', 'Primary Orlando vacation rental listing.', $1, $2, 10)
+     ON CONFLICT (slug) DO NOTHING`,
+    [booking.nightlyRateCents, booking.cleaningFeeCents],
+  );
+  const defaultPages = [
+    ['terms', 'Terms & Conditions'],
+    ['house-rules', 'House Rules'],
+    ['refund-cancellation-policy', 'Refund & Cancellation Policy'],
+    ['mobile-notary', 'Mobile Notary Page'],
+    ['vacation-rentals', 'Vacation Rentals Page'],
+  ];
+  for (const [pageKey, title] of defaultPages) {
+    await pgPool.query(
+      `INSERT INTO site_content (page_key, title)
+       VALUES ($1, $2)
+       ON CONFLICT (page_key) DO NOTHING`,
+      [pageKey, title],
+    );
+  }
+}
+
+async function adminUserCount() {
+  if (!pgPool) return 0;
+  const result = await pgPool.query('SELECT COUNT(*)::int AS count FROM admin_users');
+  return result.rows[0]?.count || 0;
+}
+
+async function createAdminSession(res, adminUserId) {
+  if (!pgPool) throw new Error('DATABASE_URL is not configured.');
+  const token = randomBytes(32).toString('hex');
+  const tokenHash = hashSessionToken(token);
+  const expiresAt = new Date(Date.now() + adminSessionDays * 24 * 60 * 60 * 1000);
+  await pgPool.query(
+    'INSERT INTO admin_sessions (admin_user_id, token_hash, expires_at) VALUES ($1, $2, $3)',
+    [adminUserId, tokenHash, expiresAt],
+  );
+  setCookie(res, sessionCookieName, token, {
+    maxAge: adminSessionDays * 24 * 60 * 60,
+    secure: secureCookies,
+  });
+}
+
+async function getAdminSession(req) {
+  if (!pgPool) return null;
+  const token = parseCookies(req)[sessionCookieName];
+  if (!token) return null;
+  const tokenHash = hashSessionToken(token);
+  const result = await pgPool.query(
+    `SELECT u.id, u.email, u.full_name, u.created_at
+     FROM admin_sessions s
+     JOIN admin_users u ON u.id = s.admin_user_id
+     WHERE s.token_hash = $1 AND s.expires_at > NOW()
+     LIMIT 1`,
+    [tokenHash],
+  );
+  return result.rows[0] || null;
+}
+
+async function destroyAdminSession(req, res) {
+  if (pgPool) {
+    const token = parseCookies(req)[sessionCookieName];
+    if (token) {
+      await pgPool.query('DELETE FROM admin_sessions WHERE token_hash = $1', [hashSessionToken(token)]).catch(() => undefined);
+    }
+  }
+  clearCookie(res, sessionCookieName);
+}
+
+async function requireAdmin(req, res) {
+  if (!pgPool) {
+    res.status(503).json({ message: 'DATABASE_URL is not configured.' });
+    return null;
+  }
+  const session = await getAdminSession(req);
+  if (!session) {
+    res.status(401).json({ message: 'Not signed in.' });
+    return null;
+  }
+  return session;
+}
+
+function parseJsonArray(value) {
+  if (Array.isArray(value)) {
+    return value.map((entry) => clean(entry)).filter(Boolean);
+  }
+  if (typeof value === 'string') {
+    return value
+      .split('\n')
+      .map((entry) => clean(entry))
+      .filter(Boolean);
+  }
+  return [];
+}
+
 // Website bookings are stored in Stripe itself: any paid Checkout Session carries
 // the booked dates in its metadata. We read those back and treat them as blocked,
 // so a date booked on the site grays out just like an Airbnb-blocked date.
@@ -257,12 +503,23 @@ async function getWebsiteBookedRanges() {
   }
 }
 
+async function getManualBlockedRanges() {
+  if (!pgPool) return [];
+  const result = await pgPool.query(
+    `SELECT start_date::text AS start, end_date::text AS end
+     FROM blocked_dates
+     ORDER BY start_date ASC`,
+  );
+  return result.rows;
+}
+
 async function getAllBlockedRanges() {
-  const [airbnb, website] = await Promise.all([
+  const [airbnb, website, manual] = await Promise.all([
     getBlockedRanges(booking.icalUrls),
     getWebsiteBookedRanges(),
+    getManualBlockedRanges(),
   ]);
-  return [...airbnb, ...website];
+  return [...airbnb, ...website, ...manual];
 }
 
 async function notifyBooking(session) {
@@ -518,8 +775,369 @@ async function notifyNotaryBookingV2(session) {
   });
 }
 
+async function persistVacationBooking(session) {
+  if (!pgPool) return;
+  const rental = await pgPool.query(`SELECT id FROM rentals WHERE slug = 'orlando-vacation-rental' LIMIT 1`);
+  await pgPool.query(
+    `INSERT INTO vacation_bookings (
+      stripe_session_id, rental_id, guest_name, guest_email, guest_phone, guest_count,
+      guest_list_text, check_in, check_out, amount_total_cents, currency, status
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8::date, $9::date, $10, $11, 'paid')
+    ON CONFLICT (stripe_session_id) DO UPDATE SET
+      guest_name = EXCLUDED.guest_name,
+      guest_email = EXCLUDED.guest_email,
+      guest_phone = EXCLUDED.guest_phone,
+      guest_count = EXCLUDED.guest_count,
+      guest_list_text = EXCLUDED.guest_list_text,
+      check_in = EXCLUDED.check_in,
+      check_out = EXCLUDED.check_out,
+      amount_total_cents = EXCLUDED.amount_total_cents,
+      currency = EXCLUDED.currency,
+      status = EXCLUDED.status`,
+    [
+      session.id,
+      rental.rows[0]?.id || null,
+      session.metadata?.primaryName || 'Guest',
+      session.customer_details?.email || session.customer_email || session.metadata?.email || '',
+      session.metadata?.primaryPhone || '',
+      Number(session.metadata?.guestCount || 1),
+      session.metadata?.guestList || '',
+      session.metadata?.checkIn,
+      session.metadata?.checkOut,
+      session.amount_total ?? 0,
+      session.currency || 'usd',
+    ],
+  );
+}
+
+async function persistNotaryRequest(session) {
+  if (!pgPool) return;
+  await pgPool.query(
+    `INSERT INTO notary_requests (
+      stripe_session_id, full_name, email, phone, city, appointment_date, appointment_time,
+      document_type, notes, amount_total_cents, currency, status
+    )
+    VALUES ($1, $2, $3, $4, $5, $6::date, $7, $8, $9, $10, $11, 'paid')
+    ON CONFLICT (stripe_session_id) DO UPDATE SET
+      full_name = EXCLUDED.full_name,
+      email = EXCLUDED.email,
+      phone = EXCLUDED.phone,
+      city = EXCLUDED.city,
+      appointment_date = EXCLUDED.appointment_date,
+      appointment_time = EXCLUDED.appointment_time,
+      document_type = EXCLUDED.document_type,
+      notes = EXCLUDED.notes,
+      amount_total_cents = EXCLUDED.amount_total_cents,
+      currency = EXCLUDED.currency,
+      status = EXCLUDED.status`,
+    [
+      session.id,
+      session.metadata?.name || '',
+      session.customer_details?.email || session.customer_email || session.metadata?.email || '',
+      session.metadata?.phone || '',
+      session.metadata?.city || '',
+      session.metadata?.appointmentDate,
+      session.metadata?.appointmentTime || '',
+      session.metadata?.documentType || '',
+      session.metadata?.notes || '',
+      session.amount_total ?? 0,
+      session.currency || 'usd',
+    ],
+  );
+}
+
 app.get('/health', (_req, res) => {
   res.json({ ok: true });
+});
+
+app.get('/api/admin/me', async (req, res) => {
+  try {
+    if (!pgPool) {
+      return res.status(503).json({ message: 'DATABASE_URL is not configured.' });
+    }
+    const session = await getAdminSession(req);
+    if (!session) {
+      return res.status(401).json({ message: 'Not signed in.' });
+    }
+    return res.json({
+      user: {
+        email: session.email,
+        name: session.full_name,
+        createdAt: session.created_at,
+      },
+    });
+  } catch (error) {
+    console.error('Admin session lookup failed:', error);
+    return res.status(500).json({ message: 'Could not load admin session.' });
+  }
+});
+
+app.post('/api/admin/register', async (req, res) => {
+  try {
+    if (!pgPool) {
+      return res.status(503).json({ message: 'DATABASE_URL is not configured.' });
+    }
+    await ensureAdminTables();
+    if (await adminUserCount()) {
+      return res.status(403).json({ message: 'Admin registration is closed.' });
+    }
+
+    const fullName = clean(req.body?.name);
+    const email = clean(req.body?.email).toLowerCase();
+    const password = String(req.body?.password || '');
+
+    if (!fullName || !email || password.length < 8) {
+      return res.status(400).json({ message: 'Name, email, and an 8-character password are required.' });
+    }
+
+    const result = await pgPool.query(
+      'INSERT INTO admin_users (full_name, email, password_hash) VALUES ($1, $2, $3) RETURNING id',
+      [fullName, email, hashPassword(password)],
+    );
+
+    await createAdminSession(res, result.rows[0].id);
+    return res.status(201).json({ ok: true });
+  } catch (error) {
+    console.error('Admin registration failed:', error);
+    return res.status(500).json({ message: 'Could not create the admin account.' });
+  }
+});
+
+app.post('/api/admin/login', async (req, res) => {
+  try {
+    if (!pgPool) {
+      return res.status(503).json({ message: 'DATABASE_URL is not configured.' });
+    }
+    await ensureAdminTables();
+    const email = clean(req.body?.email).toLowerCase();
+    const password = String(req.body?.password || '');
+
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required.' });
+    }
+
+    const result = await pgPool.query('SELECT id, password_hash FROM admin_users WHERE email = $1 LIMIT 1', [email]);
+    const user = result.rows[0];
+    if (!user || !verifyPassword(password, user.password_hash)) {
+      return res.status(401).json({ message: 'Invalid email or password.' });
+    }
+
+    await createAdminSession(res, user.id);
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin login failed:', error);
+    return res.status(500).json({ message: 'Could not sign in.' });
+  }
+});
+
+app.post('/api/admin/logout', async (req, res) => {
+  try {
+    await destroyAdminSession(req, res);
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin logout failed:', error);
+    return res.status(500).json({ message: 'Could not sign out.' });
+  }
+});
+
+app.get('/api/admin/dashboard', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+
+    const [rentals, blockedDates, vacationBookings, notaryRequests, siteContent] = await Promise.all([
+      pgPool.query('SELECT COUNT(*)::int AS count FROM rentals'),
+      pgPool.query('SELECT COUNT(*)::int AS count FROM blocked_dates'),
+      pgPool.query('SELECT COUNT(*)::int AS count FROM vacation_bookings'),
+      pgPool.query('SELECT COUNT(*)::int AS count FROM notary_requests'),
+      pgPool.query(`SELECT page_key, title, hero_image_url, updated_at FROM site_content ORDER BY page_key ASC LIMIT 12`),
+    ]);
+
+    return res.json({
+      admin: { email: admin.email, name: admin.full_name },
+      summary: {
+        rentals: rentals.rows[0]?.count || 0,
+        blockedDates: blockedDates.rows[0]?.count || 0,
+        vacationBookings: vacationBookings.rows[0]?.count || 0,
+        notaryRequests: notaryRequests.rows[0]?.count || 0,
+      },
+      siteContent: siteContent.rows,
+    });
+  } catch (error) {
+    console.error('Admin dashboard load failed:', error);
+    return res.status(500).json({ message: 'Could not load dashboard data.' });
+  }
+});
+
+app.get('/api/admin/rentals', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+
+    const result = await pgPool.query(
+      `SELECT id, slug, title, location_label, description, nightly_rate_cents, cleaning_fee_cents,
+              max_guests, hero_image_url, gallery_image_urls, amenities, is_active, created_at, updated_at
+       FROM rentals
+       ORDER BY created_at ASC`,
+    );
+    return res.json({ rentals: result.rows });
+  } catch (error) {
+    console.error('Admin rentals load failed:', error);
+    return res.status(500).json({ message: 'Could not load rentals.' });
+  }
+});
+
+app.post('/api/admin/rentals', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+
+    const id = Number(req.body?.id || 0);
+    const slug = clean(req.body?.slug);
+    const title = clean(req.body?.title);
+    const locationLabel = clean(req.body?.locationLabel);
+    const description = clean(req.body?.description);
+    const nightlyRateCents = Number(req.body?.nightlyRateCents || 0);
+    const cleaningFeeCents = Number(req.body?.cleaningFeeCents || 0);
+    const maxGuests = Number(req.body?.maxGuests || 10);
+    const heroImageUrl = clean(req.body?.heroImageUrl);
+    const galleryImageUrls = parseJsonArray(req.body?.galleryImageUrls);
+    const amenities = parseJsonArray(req.body?.amenities);
+    const isActive = Boolean(req.body?.isActive);
+
+    if (!slug || !title || !locationLabel) {
+      return res.status(400).json({ message: 'Slug, title, and location are required.' });
+    }
+
+    if (id > 0) {
+      await pgPool.query(
+        `UPDATE rentals
+         SET slug = $2, title = $3, location_label = $4, description = $5,
+             nightly_rate_cents = $6, cleaning_fee_cents = $7, max_guests = $8,
+             hero_image_url = $9, gallery_image_urls = $10::jsonb, amenities = $11::jsonb,
+             is_active = $12, updated_at = NOW()
+         WHERE id = $1`,
+        [id, slug, title, locationLabel, description, nightlyRateCents, cleaningFeeCents, maxGuests, heroImageUrl, JSON.stringify(galleryImageUrls), JSON.stringify(amenities), isActive],
+      );
+    } else {
+      await pgPool.query(
+        `INSERT INTO rentals (
+          slug, title, location_label, description, nightly_rate_cents, cleaning_fee_cents,
+          max_guests, hero_image_url, gallery_image_urls, amenities, is_active
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10::jsonb, $11)`,
+        [slug, title, locationLabel, description, nightlyRateCents, cleaningFeeCents, maxGuests, heroImageUrl, JSON.stringify(galleryImageUrls), JSON.stringify(amenities), isActive],
+      );
+    }
+
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin rental save failed:', error);
+    return res.status(500).json({ message: 'Could not save rental.' });
+  }
+});
+
+app.get('/api/admin/blocked-dates', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+
+    const result = await pgPool.query(
+      `SELECT b.id, b.rental_id, r.title AS rental_title, b.start_date::text AS start_date, b.end_date::text AS end_date, b.reason, b.created_at
+       FROM blocked_dates b
+       JOIN rentals r ON r.id = b.rental_id
+       ORDER BY b.start_date ASC`,
+    );
+    return res.json({ blockedDates: result.rows });
+  } catch (error) {
+    console.error('Admin blocked dates load failed:', error);
+    return res.status(500).json({ message: 'Could not load blocked dates.' });
+  }
+});
+
+app.post('/api/admin/blocked-dates', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const rentalId = Number(req.body?.rentalId || 0);
+    const startDate = clean(req.body?.startDate);
+    const endDate = clean(req.body?.endDate);
+    const reason = clean(req.body?.reason);
+
+    if (!rentalId || !isIsoDate(startDate) || !isIsoDate(endDate) || endDate < startDate) {
+      return res.status(400).json({ message: 'Valid rental, start date, and end date are required.' });
+    }
+
+    await pgPool.query(
+      `INSERT INTO blocked_dates (rental_id, start_date, end_date, reason)
+       VALUES ($1, $2::date, $3::date, $4)`,
+      [rentalId, startDate, endDate, reason],
+    );
+    bookedCache = { at: 0, ranges: [] };
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin blocked date create failed:', error);
+    return res.status(500).json({ message: 'Could not create blocked date.' });
+  }
+});
+
+app.post('/api/admin/blocked-dates/delete', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const id = Number(req.body?.id || 0);
+    if (!id) {
+      return res.status(400).json({ message: 'Blocked date id is required.' });
+    }
+    await pgPool.query('DELETE FROM blocked_dates WHERE id = $1', [id]);
+    bookedCache = { at: 0, ranges: [] };
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin blocked date delete failed:', error);
+    return res.status(500).json({ message: 'Could not delete blocked date.' });
+  }
+});
+
+app.get('/api/admin/site-content', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const result = await pgPool.query(
+      `SELECT id, page_key, title, body, hero_image_url, updated_at
+       FROM site_content
+       ORDER BY page_key ASC`,
+    );
+    return res.json({ entries: result.rows });
+  } catch (error) {
+    console.error('Admin site content load failed:', error);
+    return res.status(500).json({ message: 'Could not load site content.' });
+  }
+});
+
+app.post('/api/admin/site-content', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const pageKey = clean(req.body?.pageKey);
+    const title = clean(req.body?.title);
+    const body = clean(req.body?.body);
+    const heroImageUrl = clean(req.body?.heroImageUrl);
+    if (!pageKey || !title) {
+      return res.status(400).json({ message: 'Page key and title are required.' });
+    }
+    await pgPool.query(
+      `INSERT INTO site_content (page_key, title, body, hero_image_url, updated_at)
+       VALUES ($1, $2, $3, $4, NOW())
+       ON CONFLICT (page_key) DO UPDATE
+       SET title = EXCLUDED.title, body = EXCLUDED.body, hero_image_url = EXCLUDED.hero_image_url, updated_at = NOW()`,
+      [pageKey, title, body, heroImageUrl],
+    );
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin site content save failed:', error);
+    return res.status(500).json({ message: 'Could not save site content.' });
+  }
 });
 
 app.get('/api/availability', async (_req, res) => {
@@ -927,6 +1545,17 @@ app.get('*', (_req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-app.listen(port, '0.0.0.0', () => {
-  console.log(`Iris & J Holdings server listening on ${port}`);
+async function startServer() {
+  if (pgPool) {
+    await ensureAdminTables();
+  }
+
+  app.listen(port, '0.0.0.0', () => {
+    console.log(`Iris & J Holdings server listening on ${port}`);
+  });
+}
+
+startServer().catch((error) => {
+  console.error('Server startup failed:', error);
+  process.exit(1);
 });

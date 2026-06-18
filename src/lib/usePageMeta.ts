@@ -10,6 +10,21 @@ const ROUTE_META: Record<string, { title?: string; description?: string; robots?
     description:
       'Iris & J Holdings helps New Jersey buyers and sellers, offers mobile notary appointments in Union, Middlesex, and Essex Counties, and provides Orlando vacation rental booking.',
   },
+  '/admin': {
+    title: 'Control Center',
+    description: 'Admin control center for Iris & J Holdings.',
+    robots: 'noindex,nofollow',
+  },
+  '/admin/login': {
+    title: 'Admin Login',
+    description: 'Secure admin login for Iris & J Holdings.',
+    robots: 'noindex,nofollow',
+  },
+  '/admin/register': {
+    title: 'Admin Register',
+    description: 'Create the first admin user for Iris & J Holdings.',
+    robots: 'noindex,nofollow',
+  },
   '/buy': {
     title: 'Buy a Home in New Jersey',
     description:
