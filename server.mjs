@@ -16,7 +16,7 @@ const apexHost = 'irisjholdings.com';
 
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 const booking = {
-  icalUrl: process.env.AIRBNB_ICAL_URL || '',
+  icalUrls: process.env.AIRBNB_ICAL_URLS || process.env.AIRBNB_ICAL_URL || '',
   currency: (process.env.STRIPE_CURRENCY || 'usd').toLowerCase(),
   nightlyRateCents: Number(process.env.VACATION_RENTAL_NIGHTLY_RATE_CENTS || 0),
   cleaningFeeCents: Number(process.env.VACATION_RENTAL_CLEANING_FEE_CENTS || 0),
@@ -61,78 +61,21 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
   }
 
   if (event.type === 'checkout.session.completed') {
-    bookedCache = { at: 0, ranges: [] }; // a new paid booking — refresh availability
+    const session = event.data.object;
+
     try {
-      await notifyBooking(event.data.object);
+      if (session.metadata?.type === 'notary') {
+        await notifyNotaryBooking(session);
+      } else {
+        bookedCache = { at: 0, ranges: [] }; // vacation booking — refresh website/Airbnb availability merge
+        await notifyBooking(session);
+      }
     } catch (notifyError) {
-      console.error('Booking notification failed:', notifyError);
+      console.error('Checkout notification failed:', notifyError);
     }
   }
 
   return res.json({ received: true });
-});
-
-app.post('/api/notary-checkout', async (req, res) => {
-  try {
-    if (!stripe) {
-      return res.status(503).json({ message: 'Online payment is not available yet. Please send the request instead.' });
-    }
-
-    if (!(notary.bookingFeeCents > 0)) {
-      return res.status(503).json({ message: 'Notary booking fee is not configured yet.' });
-    }
-
-    const name = clean(req.body?.name);
-    const email = clean(req.body?.email);
-    const phone = clean(req.body?.phone);
-    const city = clean(req.body?.city);
-    const appointmentDate = clean(req.body?.appointmentDate);
-    const appointmentTime = clean(req.body?.appointmentTime);
-    const documentType = clean(req.body?.documentType);
-    const notes = clean(req.body?.notes);
-
-    if (!name || !email || !appointmentDate || !appointmentTime) {
-      return res.status(400).json({ message: 'Name, email, date, and time are required.' });
-    }
-
-    const origin = `${req.protocol}://${req.get('host')}`;
-
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: notary.currency,
-            unit_amount: notary.bookingFeeCents,
-            product_data: {
-              name: 'Mobile notary travel / booking fee',
-              description: `${appointmentDate} at ${appointmentTime}`,
-            },
-          },
-        },
-      ],
-      success_url: notary.successUrl || `${origin}/notary-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: notary.cancelUrl || `${origin}/mobile-notary`,
-      customer_email: email,
-      metadata: {
-        type: 'notary',
-        name,
-        email,
-        phone,
-        city,
-        appointmentDate,
-        appointmentTime,
-        documentType,
-        notes,
-      },
-    });
-
-    return res.json({ url: session.url });
-  } catch (error) {
-    console.error('Notary checkout failed:', error);
-    return res.status(500).json({ message: 'Could not start checkout. Please try again.' });
-  }
 });
 
 app.use(express.json({ limit: '100kb' }));
@@ -162,6 +105,10 @@ function isRateLimited(ip) {
 
 function clean(value) {
   return String(value ?? '').trim();
+}
+
+function metadataValue(value) {
+  return clean(value).slice(0, 500);
 }
 
 function escapeHtml(value) {
@@ -260,7 +207,7 @@ async function getWebsiteBookedRanges() {
 
 async function getAllBlockedRanges() {
   const [airbnb, website] = await Promise.all([
-    getBlockedRanges(booking.icalUrl),
+    getBlockedRanges(booking.icalUrls),
     getWebsiteBookedRanges(),
   ]);
   return [...airbnb, ...website];
@@ -277,6 +224,49 @@ async function notifyBooking(session) {
   });
 }
 
+async function notifyNotaryBooking(session) {
+  const {
+    name = '',
+    email = '',
+    phone = '',
+    city = '',
+    appointmentDate = '',
+    appointmentTime = '',
+    documentType = '',
+    notes = '',
+  } = session.metadata || {};
+
+  await sendResendEmail({
+    to: contactTo,
+    replyTo: email || undefined,
+    subject: `Paid notary booking fee — ${appointmentDate} at ${appointmentTime}`,
+    text:
+      `A notary booking fee was paid through Stripe.\n\n` +
+      `Name: ${name}\n` +
+      `Email: ${email}\n` +
+      `Phone: ${phone}\n` +
+      `City / Town: ${city}\n` +
+      `Preferred date: ${appointmentDate}\n` +
+      `Preferred time: ${appointmentTime}\n` +
+      `Document type: ${documentType}\n` +
+      `Notes: ${notes}\n` +
+      `Amount: ${money(session.amount_total ?? 0, session.currency || 'usd')}\n` +
+      `Stripe session: ${session.id}`,
+    html:
+      `<h2>Paid notary booking fee</h2>` +
+      `<p><strong>Name:</strong> ${escapeHtml(name)}<br>` +
+      `<strong>Email:</strong> ${escapeHtml(email)}<br>` +
+      `<strong>Phone:</strong> ${escapeHtml(phone)}<br>` +
+      `<strong>City / Town:</strong> ${escapeHtml(city)}<br>` +
+      `<strong>Preferred date:</strong> ${escapeHtml(appointmentDate)}<br>` +
+      `<strong>Preferred time:</strong> ${escapeHtml(appointmentTime)}<br>` +
+      `<strong>Document type:</strong> ${escapeHtml(documentType)}<br>` +
+      `<strong>Notes:</strong> ${escapeHtml(notes)}<br>` +
+      `<strong>Amount:</strong> ${escapeHtml(money(session.amount_total ?? 0, session.currency || 'usd'))}<br>` +
+      `<strong>Stripe session:</strong> ${escapeHtml(session.id)}</p>`,
+  });
+}
+
 app.get('/health', (_req, res) => {
   res.json({ ok: true });
 });
@@ -289,6 +279,7 @@ app.get('/api/availability', async (_req, res) => {
     cleaningFeeCents: booking.cleaningFeeCents,
     currency: booking.currency,
     bookingEnabled: Boolean(stripe && booking.nightlyRateCents > 0),
+    airbnbSyncEnabled: Boolean(booking.icalUrls),
   });
 });
 
@@ -346,12 +337,75 @@ app.post('/api/checkout', async (req, res) => {
       success_url: booking.successUrl || `${origin}/booking-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: booking.cancelUrl || `${origin}/vacation-rentals`,
       customer_email: email || undefined,
-      metadata: { checkIn, checkOut, nights: String(stay.nights) },
+      metadata: { type: 'vacation', checkIn, checkOut, nights: String(stay.nights) },
     });
 
     return res.json({ url: session.url });
   } catch (error) {
     console.error('Checkout failed:', error);
+    return res.status(500).json({ message: 'Could not start checkout. Please try again.' });
+  }
+});
+
+app.post('/api/notary-checkout', async (req, res) => {
+  try {
+    if (!stripe) {
+      return res.status(503).json({ message: 'Online payment is not available yet. Please send the request instead.' });
+    }
+
+    if (!(notary.bookingFeeCents > 0)) {
+      return res.status(503).json({ message: 'Notary booking fee is not configured yet.' });
+    }
+
+    const name = clean(req.body?.name);
+    const email = clean(req.body?.email);
+    const phone = clean(req.body?.phone);
+    const city = clean(req.body?.city);
+    const appointmentDate = clean(req.body?.appointmentDate);
+    const appointmentTime = clean(req.body?.appointmentTime);
+    const documentType = clean(req.body?.documentType);
+    const notes = clean(req.body?.notes);
+
+    if (!name || !email || !appointmentDate || !appointmentTime) {
+      return res.status(400).json({ message: 'Name, email, preferred date, and preferred time are required.' });
+    }
+
+    const origin = `${req.protocol}://${req.get('host')}`;
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: notary.currency,
+            unit_amount: notary.bookingFeeCents,
+            product_data: {
+              name: 'Mobile notary travel / booking fee',
+              description: `${appointmentDate} at ${appointmentTime}`,
+            },
+          },
+        },
+      ],
+      success_url: notary.successUrl || `${origin}/notary-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: notary.cancelUrl || `${origin}/mobile-notary`,
+      customer_email: email,
+      metadata: {
+        type: 'notary',
+        name: metadataValue(name),
+        email: metadataValue(email),
+        phone: metadataValue(phone),
+        city: metadataValue(city),
+        appointmentDate: metadataValue(appointmentDate),
+        appointmentTime: metadataValue(appointmentTime),
+        documentType: metadataValue(documentType),
+        notes: metadataValue(notes),
+      },
+    });
+
+    return res.json({ url: session.url });
+  } catch (error) {
+    console.error('Notary checkout failed:', error);
     return res.status(500).json({ message: 'Could not start checkout. Please try again.' });
   }
 });
@@ -370,9 +424,16 @@ app.get('/api/checkout-session', async (req, res) => {
       status: session.payment_status,
       amountTotal: session.amount_total,
       currency: session.currency,
+      type: session.metadata?.type || 'vacation',
       checkIn: session.metadata?.checkIn || '',
       checkOut: session.metadata?.checkOut || '',
       email: session.customer_details?.email || session.customer_email || '',
+      name: session.metadata?.name || '',
+      phone: session.metadata?.phone || '',
+      city: session.metadata?.city || '',
+      appointmentDate: session.metadata?.appointmentDate || '',
+      appointmentTime: session.metadata?.appointmentTime || '',
+      documentType: session.metadata?.documentType || '',
     });
   } catch (error) {
     console.error('Checkout session lookup failed:', error);
