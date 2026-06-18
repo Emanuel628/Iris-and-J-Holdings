@@ -19,7 +19,7 @@ function Buy() {
             </p>
           </div>
           <div className="page-hero-visual page-hero-image-frame" aria-label="Buyer guidance visual">
-            <img src="/images/site/buy-hero.jpg" alt="Architectural home model for buyer guidance" />
+            <img src="/images/site/buy-hero.svg" alt="Architectural home model for buyer guidance" />
           </div>
         </section>
 
