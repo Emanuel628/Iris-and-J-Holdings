@@ -24,7 +24,9 @@ function HomeValue() {
               <a className="button button-primary" href="#home-value-form">Send My Home Value Request</a>
             </div>
           </div>
-          <div className="page-hero-visual home-value-hero-visual" aria-label="Architectural home value visual" />
+          <div className="page-hero-visual page-hero-image-frame home-value-hero-visual" aria-label="Home value review visual">
+            <img src="/images/site/home-value-hero.jpg" alt="Market analysis tablet for home value review" />
+          </div>
         </section>
 
         <section className="page-content split-section" id="home-value-form">
