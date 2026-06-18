@@ -75,6 +75,12 @@ function NotaryBooking() {
         <label htmlFor="notary-notes">Notes</label>
         <textarea id="notary-notes" name="notes" placeholder="Number of signers, address, anything else" />
       </div>
+      <label className="form-note" htmlFor="notary-policy-agree">
+        <input id="notary-policy-agree" name="policyAgreement" type="checkbox" required /> I agree to the{' '}
+        <a href="/refund-cancellation-policy#mobile-notary" target="_blank" rel="noreferrer">
+          Notary Refund &amp; Cancellation Policy
+        </a>.
+      </label>
       <button className="button button-primary" type="submit" disabled={status === 'sending'}>
         {status === 'sending' ? 'Starting checkout…' : 'Pay Booking Fee & Request Appointment'}
       </button>
@@ -86,7 +92,8 @@ function NotaryBooking() {
       <p className="form-note">
         This pays the travel / booking fee. Daiana will confirm the appointment time, service area, and any
         separate notary fees by email. Payment does not guarantee that a notarial act can be completed if legal,
-        signer, document, or identification requirements cannot be satisfied.
+        signer, document, or identification requirements cannot be satisfied. Refunds and cancellations are handled
+        according to the applicable Refund &amp; Cancellation Policy.
       </p>
     </form>
   );
