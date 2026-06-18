@@ -1,5 +1,6 @@
 import express from 'express';
 import Stripe from 'stripe';
+import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getBlockedRanges, overlapsBlocked } from './server/airbnb.mjs';
@@ -65,10 +66,10 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
 
     try {
       if (session.metadata?.type === 'notary') {
-        await notifyNotaryBooking(session);
+        await notifyNotaryBookingV2(session);
       } else {
         bookedCache = { at: 0, ranges: [] }; // vacation booking — refresh website/Airbnb availability merge
-        await notifyBooking(session);
+        await notifyBookingV2(session);
       }
     } catch (notifyError) {
       console.error('Checkout notification failed:', notifyError);
@@ -172,6 +173,57 @@ function validateStay(checkIn, checkOut) {
 
 function money(cents, currency) {
   return `${(cents / 100).toFixed(2)} ${String(currency).toUpperCase()}`;
+}
+
+function buildOrigin(req) {
+  return `${req.protocol}://${req.get('host')}`;
+}
+
+function managementSecret() {
+  return booking.webhookSecret || process.env.MANAGE_BOOKING_SECRET || process.env.STRIPE_SECRET_KEY || 'iris-j-manage-booking';
+}
+
+function createManageToken(sessionId) {
+  return crypto.createHmac('sha256', managementSecret()).update(sessionId).digest('hex');
+}
+
+function verifyManageToken(sessionId, token) {
+  if (!sessionId || !token) return false;
+  const expected = createManageToken(sessionId);
+  const expectedBuffer = Buffer.from(expected);
+  const actualBuffer = Buffer.from(clean(token));
+  if (expectedBuffer.length !== actualBuffer.length) return false;
+  return crypto.timingSafeEqual(expectedBuffer, actualBuffer);
+}
+
+function manageUrl(origin, sessionId) {
+  const params = new URLSearchParams({ session_id: sessionId, token: createManageToken(sessionId) });
+  return `${origin}/manage-booking?${params.toString()}`;
+}
+
+function formatTimeLabel(value) {
+  const match = /^(\d{2}):(\d{2})$/.exec(clean(value));
+  if (!match) return clean(value);
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  const suffix = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 || 12;
+  return `${hour12}:${String(minute).padStart(2, '0')} ${suffix}`;
+}
+
+function summarizeGuestList(primaryGuest, additionalGuests) {
+  const lines = [];
+  const allGuests = [primaryGuest, ...additionalGuests].filter(Boolean);
+
+  for (const [index, guest] of allGuests.entries()) {
+    const label = index === 0 ? 'Primary Guest #1' : `Guest #${index + 1}`;
+    const parts = [clean(guest.fullName)];
+    if (clean(guest.email)) parts.push(`email: ${clean(guest.email)}`);
+    if (clean(guest.phone)) parts.push(`phone: ${clean(guest.phone)}`);
+    lines.push(`${label}: ${parts.filter(Boolean).join(' | ')}`);
+  }
+
+  return lines.join('\n');
 }
 
 // Website bookings are stored in Stripe itself: any paid Checkout Session carries
@@ -318,6 +370,154 @@ async function notifyNotaryBooking(session) {
   }
 }
 
+async function notifyBookingV2(session) {
+  const {
+    checkIn = '',
+    checkOut = '',
+    email = '',
+    primaryName = '',
+    primaryPhone = '',
+    guestCount = '',
+    guestList = '',
+    origin = `https://${canonicalHost}`,
+  } = session.metadata || {};
+  const guestEmail = session.customer_details?.email || session.customer_email || email || '';
+  const amount = money(session.amount_total ?? 0, session.currency || 'usd');
+  const link = manageUrl(origin, session.id);
+
+  await sendResendEmail({
+    to: contactTo,
+    subject: `New vacation rental booking - ${checkIn} to ${checkOut}`,
+    text:
+      `A vacation rental booking was paid through Stripe.\n\n` +
+      `Dates: ${checkIn} to ${checkOut}\n` +
+      `Primary guest: ${primaryName || 'unknown'}\n` +
+      `Email: ${guestEmail || 'unknown'}\n` +
+      `Phone: ${primaryPhone || 'Not provided'}\n` +
+      `Guest count: ${guestCount || 'unknown'}\n\n` +
+      `Guest list:\n${guestList || 'Not provided'}\n\n` +
+      `Amount: ${amount}\n` +
+      `Manage link: ${link}\n` +
+      `Stripe session: ${session.id}`,
+    html:
+      `<h2>New vacation rental booking</h2>` +
+      `<p><strong>Dates:</strong> ${escapeHtml(checkIn)} to ${escapeHtml(checkOut)}<br>` +
+      `<strong>Primary guest:</strong> ${escapeHtml(primaryName || 'unknown')}<br>` +
+      `<strong>Email:</strong> ${escapeHtml(guestEmail || 'unknown')}<br>` +
+      `<strong>Phone:</strong> ${escapeHtml(primaryPhone || 'Not provided')}<br>` +
+      `<strong>Guest count:</strong> ${escapeHtml(guestCount || 'unknown')}<br>` +
+      `<strong>Amount:</strong> ${escapeHtml(amount)}<br>` +
+      `<strong>Manage link:</strong> <a href="${escapeHtml(link)}">${escapeHtml(link)}</a><br>` +
+      `<strong>Stripe session:</strong> ${escapeHtml(session.id)}</p>` +
+      `<p><strong>Guest list</strong><br>${escapeHtml(guestList || 'Not provided').replace(/\n/g, '<br>')}</p>`,
+  });
+
+  if (!guestEmail) return;
+
+  await sendResendEmail({
+    to: guestEmail,
+    replyTo: contactTo,
+    subject: 'Your Orlando vacation rental booking is confirmed',
+    text:
+      `Hi ${primaryName || 'there'},\n\n` +
+      `Your Orlando vacation rental booking has been paid and received.\n\n` +
+      `Dates: ${checkIn} to ${checkOut}\n` +
+      `Amount paid: ${amount}\n\n` +
+      `A Stripe receipt should arrive separately by email.\n` +
+      `Manage your booking here: ${link}\n\n` +
+      `Date changes and cancellation requests are reviewed manually and are not confirmed automatically.\n\n` +
+      `- Iris & J Holdings`,
+    html:
+      `<p>Hi ${escapeHtml(primaryName || 'there')},</p>` +
+      `<p>Your Orlando vacation rental booking has been paid and received.</p>` +
+      `<p><strong>Dates:</strong> ${escapeHtml(checkIn)} to ${escapeHtml(checkOut)}<br>` +
+      `<strong>Amount paid:</strong> ${escapeHtml(amount)}</p>` +
+      `<p>A Stripe receipt should arrive separately by email.</p>` +
+      `<p><a href="${escapeHtml(link)}">Request a cancellation or date change</a></p>` +
+      `<p>Date changes and cancellation requests are reviewed manually and are not confirmed automatically.</p>` +
+      `<p>- Iris &amp; J Holdings</p>`,
+  });
+}
+
+async function notifyNotaryBookingV2(session) {
+  const {
+    name = '',
+    email = '',
+    phone = '',
+    city = '',
+    appointmentDate = '',
+    appointmentTime = '',
+    documentType = '',
+    notes = '',
+    origin = `https://${canonicalHost}`,
+  } = session.metadata || {};
+  const amount = money(session.amount_total ?? 0, session.currency || 'usd');
+  const formattedTime = formatTimeLabel(appointmentTime);
+  const link = manageUrl(origin, session.id);
+
+  await sendResendEmail({
+    to: contactTo,
+    replyTo: email || undefined,
+    subject: `Paid notary booking fee - ${appointmentDate} at ${formattedTime}`,
+    text:
+      `A notary booking fee was paid through Stripe.\n\n` +
+      `Name: ${name}\n` +
+      `Email: ${email}\n` +
+      `Phone: ${phone}\n` +
+      `City / Town: ${city}\n` +
+      `Preferred date: ${appointmentDate}\n` +
+      `Preferred time: ${formattedTime}\n` +
+      `Document type: ${documentType}\n` +
+      `Notes: ${notes}\n` +
+      `Amount: ${amount}\n` +
+      `Manage link: ${link}\n` +
+      `Stripe session: ${session.id}`,
+    html:
+      `<h2>Paid notary booking fee</h2>` +
+      `<p><strong>Name:</strong> ${escapeHtml(name)}<br>` +
+      `<strong>Email:</strong> ${escapeHtml(email)}<br>` +
+      `<strong>Phone:</strong> ${escapeHtml(phone)}<br>` +
+      `<strong>City / Town:</strong> ${escapeHtml(city)}<br>` +
+      `<strong>Preferred date:</strong> ${escapeHtml(appointmentDate)}<br>` +
+      `<strong>Preferred time:</strong> ${escapeHtml(formattedTime)}<br>` +
+      `<strong>Document type:</strong> ${escapeHtml(documentType)}<br>` +
+      `<strong>Notes:</strong> ${escapeHtml(notes)}<br>` +
+      `<strong>Amount:</strong> ${escapeHtml(amount)}<br>` +
+      `<strong>Manage link:</strong> <a href="${escapeHtml(link)}">${escapeHtml(link)}</a><br>` +
+      `<strong>Stripe session:</strong> ${escapeHtml(session.id)}</p>`,
+  });
+
+  if (!email) return;
+
+  await sendResendEmail({
+    to: email,
+    replyTo: contactTo,
+    subject: 'Your mobile notary booking fee was received',
+    text:
+      `Hi ${name || 'there'},\n\n` +
+      `Your mobile notary travel / booking fee has been paid and received.\n\n` +
+      `Preferred appointment: ${appointmentDate} at ${formattedTime}\n` +
+      `Document type: ${documentType || 'Not provided'}\n` +
+      `Amount paid: ${amount}\n\n` +
+      `A Stripe receipt should arrive separately by email.\n` +
+      `Request a cancellation or schedule change here: ${link}\n\n` +
+      `Daiana will follow up to confirm the appointment time, service area, signer requirements, and any separate notary fees.\n\n` +
+      `Payment does not guarantee that a notarial act can be completed if legal, signer, document, or identification requirements cannot be satisfied.\n\n` +
+      `- Iris & J Holdings`,
+    html:
+      `<p>Hi ${escapeHtml(name || 'there')},</p>` +
+      `<p>Your mobile notary travel / booking fee has been paid and received.</p>` +
+      `<p><strong>Preferred appointment:</strong> ${escapeHtml(appointmentDate)} at ${escapeHtml(formattedTime)}<br>` +
+      `<strong>Document type:</strong> ${escapeHtml(documentType || 'Not provided')}<br>` +
+      `<strong>Amount paid:</strong> ${escapeHtml(amount)}</p>` +
+      `<p>A Stripe receipt should arrive separately by email.</p>` +
+      `<p><a href="${escapeHtml(link)}">Request a cancellation or schedule change</a></p>` +
+      `<p>Daiana will follow up to confirm the appointment time, service area, signer requirements, and any separate notary fees.</p>` +
+      `<p>Payment does not guarantee that a notarial act can be completed if legal, signer, document, or identification requirements cannot be satisfied.</p>` +
+      `<p>- Iris &amp; J Holdings</p>`,
+  });
+}
+
 app.get('/health', (_req, res) => {
   res.json({ ok: true });
 });
@@ -345,10 +545,27 @@ app.post('/api/checkout', async (req, res) => {
 
     const checkIn = clean(req.body?.checkIn);
     const checkOut = clean(req.body?.checkOut);
-    const email = clean(req.body?.email);
+    const primaryGuest = req.body?.primaryGuest && typeof req.body.primaryGuest === 'object' ? req.body.primaryGuest : {};
+    const additionalGuestsRaw = Array.isArray(req.body?.additionalGuests) ? req.body.additionalGuests : [];
+    const additionalGuests = additionalGuestsRaw.slice(0, 9).map((guest) => ({
+      fullName: clean(guest?.fullName),
+      email: clean(guest?.email),
+      phone: clean(guest?.phone),
+    }));
+    const primaryName = clean(primaryGuest?.fullName);
+    const email = clean(primaryGuest?.email);
+    const primaryPhone = clean(primaryGuest?.phone);
+    const houseRulesAgreed = Boolean(req.body?.houseRulesAgreed);
+    const termsAgreed = Boolean(req.body?.termsAgreed);
 
-    if (!email) {
-      return res.status(400).json({ message: 'Email is required so we can send your confirmation and receipt.' });
+    if (!primaryName || !email || !primaryPhone) {
+      return res.status(400).json({ message: 'Primary Guest #1 must include full name, email, and phone number.' });
+    }
+    if (additionalGuests.some((guest) => !guest.fullName)) {
+      return res.status(400).json({ message: 'Each added guest must include a full name.' });
+    }
+    if (!houseRulesAgreed || !termsAgreed) {
+      return res.status(400).json({ message: 'You must agree to the terms, house rules, and cancellation policy before checkout.' });
     }
 
     const stay = validateStay(checkIn, checkOut);
@@ -361,7 +578,7 @@ app.post('/api/checkout', async (req, res) => {
       return res.status(409).json({ message: 'Some of those nights are no longer available. Please choose different dates.' });
     }
 
-    const origin = `${req.protocol}://${req.get('host')}`;
+    const origin = buildOrigin(req);
     const lineItems = [
       {
         quantity: 1,
@@ -386,6 +603,8 @@ app.post('/api/checkout', async (req, res) => {
       });
     }
 
+    const guestList = summarizeGuestList({ fullName: primaryName, email, phone: primaryPhone }, additionalGuests);
+
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       line_items: lineItems,
@@ -393,7 +612,20 @@ app.post('/api/checkout', async (req, res) => {
       cancel_url: booking.cancelUrl || `${origin}/vacation-rentals`,
       customer_email: email,
       payment_intent_data: { receipt_email: email },
-      metadata: { type: 'vacation', checkIn, checkOut, nights: String(stay.nights), email: metadataValue(email) },
+      metadata: {
+        type: 'vacation',
+        origin: metadataValue(origin),
+        checkIn,
+        checkOut,
+        nights: String(stay.nights),
+        email: metadataValue(email),
+        primaryName: metadataValue(primaryName),
+        primaryPhone: metadataValue(primaryPhone),
+        guestCount: String(additionalGuests.length + 1),
+        guestList: metadataValue(guestList),
+        houseRulesAgreed: 'true',
+        termsAgreed: 'true',
+      },
     });
 
     return res.json({ url: session.url });
@@ -426,7 +658,11 @@ app.post('/api/notary-checkout', async (req, res) => {
       return res.status(400).json({ message: 'Name, email, preferred date, and preferred time are required.' });
     }
 
-    const origin = `${req.protocol}://${req.get('host')}`;
+    if (!/^([0][9]|1[0-7]):(00|15|30|45)$|^18:00$/.test(appointmentTime)) {
+      return res.status(400).json({ message: 'Preferred time must be between 9:00 AM and 6:00 PM in 15-minute increments.' });
+    }
+
+    const origin = buildOrigin(req);
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
@@ -449,6 +685,7 @@ app.post('/api/notary-checkout', async (req, res) => {
       payment_intent_data: { receipt_email: email },
       metadata: {
         type: 'notary',
+        origin: metadataValue(origin),
         name: metadataValue(name),
         email: metadataValue(email),
         phone: metadataValue(phone),
@@ -495,6 +732,138 @@ app.get('/api/checkout-session', async (req, res) => {
   } catch (error) {
     console.error('Checkout session lookup failed:', error);
     return res.status(404).json({ message: 'Booking not found.' });
+  }
+});
+
+app.get('/api/manage-booking-session', async (req, res) => {
+  try {
+    if (!stripe) {
+      return res.status(503).json({ message: 'Not available.' });
+    }
+
+    const sessionId = clean(req.query?.session_id);
+    const token = clean(req.query?.token);
+    if (!verifyManageToken(sessionId, token)) {
+      return res.status(403).json({ message: 'Invalid booking link.' });
+    }
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    return res.json({
+      status: session.payment_status,
+      amountTotal: session.amount_total,
+      currency: session.currency,
+      type: session.metadata?.type || 'vacation',
+      checkIn: session.metadata?.checkIn || '',
+      checkOut: session.metadata?.checkOut || '',
+      email: session.customer_details?.email || session.customer_email || session.metadata?.email || '',
+      name: session.metadata?.name || session.metadata?.primaryName || '',
+      appointmentDate: session.metadata?.appointmentDate || '',
+      appointmentTime: session.metadata?.appointmentTime ? formatTimeLabel(session.metadata.appointmentTime) : '',
+      documentType: session.metadata?.documentType || '',
+    });
+  } catch (error) {
+    console.error('Manage booking session lookup failed:', error);
+    return res.status(404).json({ message: 'Booking not found.' });
+  }
+});
+
+app.post('/api/manage-booking-request', async (req, res) => {
+  try {
+    if (!stripe) {
+      return res.status(503).json({ message: 'Not available.' });
+    }
+
+    const sessionId = clean(req.body?.sessionId);
+    const token = clean(req.body?.token);
+    if (!verifyManageToken(sessionId, token)) {
+      return res.status(403).json({ message: 'Invalid booking link.' });
+    }
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const requestType = clean(req.body?.action);
+    const newDate = clean(req.body?.newDate);
+    const newTime = clean(req.body?.newTime);
+    const newCheckIn = clean(req.body?.newCheckIn);
+    const newCheckOut = clean(req.body?.newCheckOut);
+    const message = clean(req.body?.message);
+    const bookingType = session.metadata?.type || 'vacation';
+    const requesterEmail = session.customer_details?.email || session.customer_email || session.metadata?.email || '';
+    const requesterName = session.metadata?.name || session.metadata?.primaryName || 'Guest';
+    const origin = session.metadata?.origin || `https://${canonicalHost}`;
+    const link = manageUrl(origin, sessionId);
+
+    if (!requestType) {
+      return res.status(400).json({ message: 'Request type is required.' });
+    }
+    if (bookingType === 'notary' && requestType === 'reschedule' && !newDate && !newTime) {
+      return res.status(400).json({ message: 'Add a new date, a new time, or both.' });
+    }
+    if (bookingType === 'vacation' && requestType === 'change-dates' && (!newCheckIn || !newCheckOut)) {
+      return res.status(400).json({ message: 'Add both the requested new check-in and check-out dates.' });
+    }
+
+    const currentBooking = bookingType === 'notary'
+      ? `${session.metadata?.appointmentDate || ''} at ${formatTimeLabel(session.metadata?.appointmentTime || '')}`
+      : `${session.metadata?.checkIn || ''} to ${session.metadata?.checkOut || ''}`;
+
+    await sendResendEmail({
+      to: contactTo,
+      replyTo: requesterEmail || undefined,
+      subject: `${bookingType === 'notary' ? 'Notary' : 'Vacation'} booking change request - ${requestType}`,
+      text:
+        `A booking management request was submitted.\n\n` +
+        `Type: ${bookingType}\n` +
+        `Request: ${requestType}\n` +
+        `Current booking: ${currentBooking}\n` +
+        `Name: ${requesterName}\n` +
+        `Email: ${requesterEmail || 'unknown'}\n` +
+        `${newDate ? `Requested new date: ${newDate}\n` : ''}` +
+        `${newTime ? `Requested new time: ${formatTimeLabel(newTime)}\n` : ''}` +
+        `${newCheckIn ? `Requested check-in: ${newCheckIn}\n` : ''}` +
+        `${newCheckOut ? `Requested check-out: ${newCheckOut}\n` : ''}` +
+        `Message: ${message || 'None'}\n` +
+        `Manage link: ${link}\n` +
+        `Stripe session: ${sessionId}`,
+      html:
+        `<h2>Booking management request</h2>` +
+        `<p><strong>Type:</strong> ${escapeHtml(bookingType)}<br>` +
+        `<strong>Request:</strong> ${escapeHtml(requestType)}<br>` +
+        `<strong>Current booking:</strong> ${escapeHtml(currentBooking)}<br>` +
+        `<strong>Name:</strong> ${escapeHtml(requesterName)}<br>` +
+        `<strong>Email:</strong> ${escapeHtml(requesterEmail || 'unknown')}<br>` +
+        `${newDate ? `<strong>Requested new date:</strong> ${escapeHtml(newDate)}<br>` : ''}` +
+        `${newTime ? `<strong>Requested new time:</strong> ${escapeHtml(formatTimeLabel(newTime))}<br>` : ''}` +
+        `${newCheckIn ? `<strong>Requested check-in:</strong> ${escapeHtml(newCheckIn)}<br>` : ''}` +
+        `${newCheckOut ? `<strong>Requested check-out:</strong> ${escapeHtml(newCheckOut)}<br>` : ''}` +
+        `<strong>Message:</strong> ${escapeHtml(message || 'None')}<br>` +
+        `<strong>Manage link:</strong> <a href="${escapeHtml(link)}">${escapeHtml(link)}</a><br>` +
+        `<strong>Stripe session:</strong> ${escapeHtml(sessionId)}</p>`,
+    });
+
+    if (requesterEmail) {
+      await sendResendEmail({
+        to: requesterEmail,
+        replyTo: contactTo,
+        subject: 'We received your booking change request',
+        text:
+          `Hi ${requesterName || 'there'},\n\n` +
+          `We received your ${requestType} request for ${currentBooking}.\n` +
+          `Daiana will review it and follow up by email.\n\n` +
+          `Manage link: ${link}\n\n` +
+          `- Iris & J Holdings`,
+        html:
+          `<p>Hi ${escapeHtml(requesterName || 'there')},</p>` +
+          `<p>We received your ${escapeHtml(requestType)} request for ${escapeHtml(currentBooking)}.</p>` +
+          `<p>Daiana will review it and follow up by email.</p>` +
+          `<p><a href="${escapeHtml(link)}">View your booking request page</a></p>` +
+          `<p>- Iris &amp; J Holdings</p>`,
+      });
+    }
+
+    return res.status(200).json({ message: 'Request sent.' });
+  } catch (error) {
+    console.error('Manage booking request failed:', error);
+    return res.status(500).json({ message: 'Could not send the request.' });
   }
 });
 

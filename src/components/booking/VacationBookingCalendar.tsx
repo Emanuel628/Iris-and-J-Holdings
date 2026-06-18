@@ -69,7 +69,7 @@ function createGuest(): Guest {
   return guest;
 }
 
-function AvailabilityCalendar() {
+function VacationBookingCalendar() {
   const [data, setData] = useState<Availability | null>(null);
   const [loadError, setLoadError] = useState(false);
   const today = todayIso();
@@ -77,7 +77,6 @@ function AvailabilityCalendar() {
   const [view, setView] = useState({ year: now.getFullYear(), month: now.getMonth() });
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
-  const [email, setEmail] = useState('');
   const [primaryGuest, setPrimaryGuest] = useState<Guest>({ id: 1, fullName: '', email: '', phone: '' });
   const [additionalGuests, setAdditionalGuests] = useState<Guest[]>([]);
   const [policyAgreed, setPolicyAgreed] = useState(false);
@@ -150,7 +149,7 @@ function AvailabilityCalendar() {
 
   function selectDate(date: string) {
     setBookingError('');
-    if (!checkIn || (checkIn && checkOut)) {
+    if (!checkIn || checkOut) {
       setCheckIn(date);
       setCheckOut('');
       return;
@@ -238,7 +237,7 @@ function AvailabilityCalendar() {
   const atCurrentMonth = view.year === now.getFullYear() && view.month === now.getMonth();
 
   return (
-    <div className="availability-calendar">
+    <div className="availability-calendar availability-calendar-extended">
       <div className="cal-bar">
         <button type="button" className="cal-arrow" onClick={() => goToMonth(-1)} disabled={atCurrentMonth} aria-label="Previous month">
           <ChevronLeft size={18} />
@@ -250,9 +249,9 @@ function AvailabilityCalendar() {
       </div>
 
       {loadError ? (
-        <p className="cal-note">The calendar couldn’t load right now. Please refresh, or send Daiana a question below.</p>
+        <p className="cal-note">The calendar could not load right now. Please refresh, or send Daiana a question below.</p>
       ) : !data ? (
-        <p className="cal-note">Loading availability…</p>
+        <p className="cal-note">Loading availability...</p>
       ) : (
         <>
           <div className="cal-grid">
@@ -285,7 +284,7 @@ function AvailabilityCalendar() {
                   key={date}
                   disabled={disabled}
                   aria-pressed={isStart || isEnd}
-                  aria-label={`${MONTHS[view.month]} ${day}, ${view.year}${isBlocked ? ' — booked' : ''}`}
+                  aria-label={`${MONTHS[view.month]} ${day}, ${view.year}${isBlocked ? ' - booked' : ''}`}
                   onClick={() => selectDate(date)}
                 >
                   {day}
@@ -310,7 +309,7 @@ function AvailabilityCalendar() {
                 </div>
                 <dl className="cal-price">
                   <div>
-                    <dt>{formatMoney(data.nightlyRateCents, currency)} × {nights} night{nights > 1 ? 's' : ''}</dt>
+                    <dt>{formatMoney(data.nightlyRateCents, currency)} x {nights} night{nights > 1 ? 's' : ''}</dt>
                     <dd>{formatMoney(nightlyTotal, currency)}</dd>
                   </div>
                   {cleaning > 0 && (
@@ -326,38 +325,157 @@ function AvailabilityCalendar() {
                 </dl>
                 {data.bookingEnabled ? (
                   <>
-                    <div className="input-group">
-                      <label htmlFor="vacation-booking-email">Email for confirmation and receipt</label>
-                      <input
-                        id="vacation-booking-email"
-                        name="email"
-                        type="email"
-                        autoComplete="email"
-                        value={email}
-                        onChange={(event) => setEmail(event.target.value)}
-                        required
-                      />
+                    <div className="booking-intake">
+                      <div className="booking-intake-header">
+                        <div>
+                          <p className="eyebrow">Guest intake</p>
+                          <h3>Guest details for this stay.</h3>
+                        </div>
+                        <p className="guest-count">{guestCount} of 10 guests</p>
+                      </div>
+
+                      <div className="guest-card">
+                        <div className="guest-card-header">
+                          <strong>Primary Guest #1</strong>
+                        </div>
+                        <div className="form-row">
+                          <div className="input-group">
+                            <label htmlFor="vacation-primary-name">Full Name</label>
+                            <input
+                              id="vacation-primary-name"
+                              autoComplete="name"
+                              value={primaryGuest.fullName}
+                              onChange={(event) => updatePrimaryGuest('fullName', event.target.value)}
+                              required
+                            />
+                          </div>
+                          <div className="input-group">
+                            <label htmlFor="vacation-primary-email">Email</label>
+                            <input
+                              id="vacation-primary-email"
+                              type="email"
+                              autoComplete="email"
+                              value={primaryGuest.email}
+                              onChange={(event) => updatePrimaryGuest('email', event.target.value)}
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="input-group">
+                          <label htmlFor="vacation-primary-phone">Phone Number</label>
+                          <input
+                            id="vacation-primary-phone"
+                            type="tel"
+                            autoComplete="tel"
+                            value={primaryGuest.phone}
+                            onChange={(event) => updatePrimaryGuest('phone', event.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="guest-section">
+                        <div className="guest-section-header">
+                          <strong>Additional Guests</strong>
+                          <button className="button-secondary guest-add-button" type="button" onClick={addGuest} disabled={guestCount >= 10}>
+                            <Plus size={16} /> Add Guest
+                          </button>
+                        </div>
+                        {additionalGuests.length === 0 ? (
+                          <p className="cal-note">Add each additional guest staying at the property. Maximum occupancy is 10 guests.</p>
+                        ) : (
+                          <div className="guest-list">
+                            {additionalGuests.map((guest, index) => (
+                              <div className="guest-card" key={guest.id}>
+                                <div className="guest-card-header">
+                                  <strong>Guest #{index + 2}</strong>
+                                  <button className="guest-remove-button" type="button" onClick={() => removeGuest(guest.id)}>
+                                    <Minus size={14} /> Remove
+                                  </button>
+                                </div>
+                                <div className="form-row">
+                                  <div className="input-group">
+                                    <label htmlFor={`vacation-guest-name-${guest.id}`}>Full Name</label>
+                                    <input
+                                      id={`vacation-guest-name-${guest.id}`}
+                                      value={guest.fullName}
+                                      onChange={(event) => updateAdditionalGuest(guest.id, 'fullName', event.target.value)}
+                                      required
+                                    />
+                                  </div>
+                                  <div className="input-group">
+                                    <label htmlFor={`vacation-guest-email-${guest.id}`}>Email</label>
+                                    <input
+                                      id={`vacation-guest-email-${guest.id}`}
+                                      type="email"
+                                      value={guest.email}
+                                      onChange={(event) => updateAdditionalGuest(guest.id, 'email', event.target.value)}
+                                    />
+                                  </div>
+                                </div>
+                                <div className="input-group">
+                                  <label htmlFor={`vacation-guest-phone-${guest.id}`}>Phone Number</label>
+                                  <input
+                                    id={`vacation-guest-phone-${guest.id}`}
+                                    type="tel"
+                                    value={guest.phone}
+                                    onChange={(event) => updateAdditionalGuest(guest.id, 'phone', event.target.value)}
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="rules-scroll-shell">
+                        <div className="guest-card-header">
+                          <strong>House rules and booking terms</strong>
+                          <span className="scroll-status">{rulesScrolled ? 'Scroll complete' : 'Scroll to unlock agreement'}</span>
+                        </div>
+                        <div className="rules-scroll-box" ref={rulesRef} onScroll={handleRulesScroll} tabIndex={0}>
+                          <p>
+                            Please review the house rules, terms, and cancellation details before checkout. This stay is
+                            not confirmed until Stripe payment is fully completed and a confirmation email is issued.
+                          </p>
+                          <ul className="detail-list">
+                            {vacationHouseRules.map((rule) => (
+                              <li key={rule}>{rule}</li>
+                            ))}
+                          </ul>
+                          <p>
+                            Review the full documents before paying: <a href="/house-rules" target="_blank" rel="noreferrer">House Rules</a>,{' '}
+                            <a href="/terms" target="_blank" rel="noreferrer">Terms &amp; Conditions</a>, and{' '}
+                            <a href="/refund-cancellation-policy#vacation-rentals" target="_blank" rel="noreferrer">
+                              Vacation Rental Refund &amp; Cancellation Policy
+                            </a>.
+                          </p>
+                        </div>
+                      </div>
+
+                      <label className="form-note agreement-note" htmlFor="vacation-policy-agree">
+                        <input
+                          id="vacation-policy-agree"
+                          name="policyAgreement"
+                          type="checkbox"
+                          checked={policyAgreed}
+                          onChange={(event) => setPolicyAgreed(event.target.checked)}
+                          disabled={!rulesScrolled}
+                        />{' '}
+                        I agree to the <a href="/terms" target="_blank" rel="noreferrer">Terms &amp; Conditions</a>,{' '}
+                        <a href="/house-rules" target="_blank" rel="noreferrer">House Rules</a>, and{' '}
+                        <a href="/refund-cancellation-policy#vacation-rentals" target="_blank" rel="noreferrer">
+                          Vacation Rental Refund &amp; Cancellation Policy
+                        </a>.
+                      </label>
                     </div>
-                    <label className="form-note" htmlFor="vacation-policy-agree">
-                      <input
-                        id="vacation-policy-agree"
-                        name="policyAgreement"
-                        type="checkbox"
-                        checked={policyAgreed}
-                        onChange={(event) => setPolicyAgreed(event.target.checked)}
-                      />{' '}
-                      I agree to the{' '}
-                      <a href="/refund-cancellation-policy#vacation-rentals" target="_blank" rel="noreferrer">
-                        Vacation Rental Refund &amp; Cancellation Policy
-                      </a>.
-                    </label>
                     <button className="button button-primary" type="button" onClick={startCheckout} disabled={submitting}>
-                      {submitting ? 'Starting checkout…' : 'Check out & book'} <ArrowRight size={16} />
+                      {submitting ? 'Starting checkout...' : 'Continue to secure checkout'} <ArrowRight size={16} />
                     </button>
                   </>
                 ) : (
                   <p className="cal-note">
-                    Online checkout is coming soon. <a className="text-link" href="#interest-list">Send Daiana a question</a> and she’ll confirm these dates.
+                    Online checkout is coming soon. <a className="text-link" href="#questions">Send Daiana a question</a> and she will confirm these dates.
                   </p>
                 )}
                 {bookingError && <p className="form-status form-status-error" role="alert">{bookingError}</p>}
@@ -374,4 +492,4 @@ function AvailabilityCalendar() {
   );
 }
 
-export default AvailabilityCalendar;
+export default VacationBookingCalendar;

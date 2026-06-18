@@ -1,10 +1,41 @@
-import { useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 
 type CheckoutStatus = 'idle' | 'sending' | 'error';
+
+function formatTimeLabel(value: string) {
+  const [hourText = '0', minuteText = '00'] = value.split(':');
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+
+  if (Number.isNaN(hour) || Number.isNaN(minute)) {
+    return value;
+  }
+
+  const suffix = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 || 12;
+  return `${hour12}:${String(minute).padStart(2, '0')} ${suffix}`;
+}
 
 function NotaryBooking() {
   const [status, setStatus] = useState<CheckoutStatus>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const timeOptions = useMemo(() => {
+    const options: { value: string; label: string }[] = [];
+
+    for (let hour = 9; hour <= 18; hour += 1) {
+      for (const minute of [0, 15, 30, 45]) {
+        if (hour === 18 && minute > 0) continue;
+        const value = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+        options.push({ value, label: formatTimeLabel(value) });
+      }
+    }
+
+    return options;
+  }, []);
+
+  function openNativePicker(event: { currentTarget: HTMLInputElement }) {
+    event.currentTarget.showPicker?.();
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -60,11 +91,16 @@ function NotaryBooking() {
       <div className="form-row">
         <div className="input-group">
           <label htmlFor="notary-date">Preferred Date</label>
-          <input id="notary-date" name="appointmentDate" type="date" required />
+          <input id="notary-date" name="appointmentDate" type="date" required onClick={openNativePicker} onFocus={openNativePicker} />
         </div>
         <div className="input-group">
           <label htmlFor="notary-time">Preferred Time</label>
-          <input id="notary-time" name="appointmentTime" type="time" required />
+          <select id="notary-time" name="appointmentTime" defaultValue="" required>
+            <option value="" disabled>Select a time</option>
+            {timeOptions.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
         </div>
       </div>
       <div className="input-group">
@@ -77,6 +113,7 @@ function NotaryBooking() {
       </div>
       <label className="form-note" htmlFor="notary-policy-agree">
         <input id="notary-policy-agree" name="policyAgreement" type="checkbox" required /> I agree to the{' '}
+        <a href="/terms" target="_blank" rel="noreferrer">Terms &amp; Conditions</a>, including the{' '}
         <a href="/refund-cancellation-policy#mobile-notary" target="_blank" rel="noreferrer">
           Notary Refund &amp; Cancellation Policy
         </a>.

@@ -1,7 +1,8 @@
 import PublicLayout from '../../components/layout/PublicLayout';
-import AvailabilityCalendar from '../../components/booking/AvailabilityCalendar';
+import VacationBookingCalendar from '../../components/booking/VacationBookingCalendar';
 import Faq from '../../components/sections/Faq';
 import FormStatus from '../../components/ui/FormStatus';
+import { vacationHouseRules } from '../../content/vacationHouseRules';
 import { useContactForm } from '../../lib/useContactForm';
 import { usePageMeta } from '../../lib/usePageMeta';
 
@@ -36,7 +37,7 @@ const orlandoFaqs = [
   {
     question: 'How do I book?',
     answer:
-      'Pick your dates on the availability calendar above and check out securely. A stay is confirmed after payment is completed and a booking confirmation is issued by email.',
+      'Pick your dates on the availability calendar above, complete the guest intake form, review the house rules, and check out securely. A stay is confirmed after payment is completed and a booking confirmation is issued by email.',
   },
   {
     question: 'What’s included in the price?',
@@ -80,7 +81,7 @@ function VacationRentals() {
               <h2>Available dates for the rental.</h2>
               <p>
                 Open dates are available to book; grayed-out dates are already taken. Pick your check-in and
-                check-out, see the total, and continue to secure checkout.
+                check-out, complete the guest intake, review the house rules, and continue to secure checkout.
               </p>
               <div className="notice-box">
                 Availability and pricing may change until payment is completed and a booking confirmation is issued.
@@ -88,8 +89,24 @@ function VacationRentals() {
                 real estate brokerage services.
               </div>
             </div>
-            <AvailabilityCalendar />
+            <VacationBookingCalendar />
           </div>
+        </section>
+
+        <section className="page-content" id="house-rules-preview">
+          <div className="page-intro">
+            <p className="eyebrow">House Rules</p>
+            <h2>Before checkout, review the stay expectations.</h2>
+            <p>
+              These are the core guest rules shown again in the booking form. The full house rules page and terms
+              are linked before checkout and in the confirmation email.
+            </p>
+          </div>
+          <ul className="detail-list">
+            {vacationHouseRules.map((rule) => (
+              <li key={rule}>{rule}</li>
+            ))}
+          </ul>
         </section>
 
         <section className="page-content" id="amenities">

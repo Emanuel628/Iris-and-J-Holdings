@@ -61,7 +61,8 @@ function NotarySuccess() {
                 We received {info.amountTotal ? formatMoney(info.amountTotal, info.currency) : 'your payment'}
                 {info.appointmentDate ? <> for your preferred appointment on <strong>{info.appointmentDate}</strong></> : null}
                 {info.appointmentTime ? <> at <strong>{info.appointmentTime}</strong></> : null}. Daiana will follow up by email
-                to confirm the appointment time, service area, and any separate notary fees.
+                to confirm the appointment time, service area, and any separate notary fees. Your confirmation email will
+                include a secure link to request a cancellation or scheduling change.
               </p>
             ) : (
               <p>

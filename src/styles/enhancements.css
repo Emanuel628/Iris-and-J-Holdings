@@ -406,6 +406,10 @@ summary:focus-visible,
   box-shadow: var(--shadow-card);
 }
 
+.availability-calendar-extended {
+  max-width: 560px;
+}
+
 .cal-bar {
   display: flex;
   align-items: center;
@@ -627,6 +631,87 @@ summary:focus-visible,
 
 .availability-calendar .button {
   width: 100%;
+}
+
+.booking-intake {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.booking-intake-header,
+.guest-card-header,
+.guest-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.booking-intake-header h3 {
+  margin-top: 0.3rem;
+  font-size: 1.1rem;
+}
+
+.guest-count,
+.scroll-status {
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.guest-card,
+.rules-scroll-shell {
+  padding: 1rem;
+  background: var(--color-warm-white);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+
+.guest-list,
+.guest-section {
+  display: grid;
+  gap: 1rem;
+}
+
+.guest-add-button,
+.guest-remove-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.guest-add-button {
+  min-height: 40px;
+  padding: 0 0.9rem;
+}
+
+.guest-remove-button {
+  padding: 0;
+  color: var(--color-champagne-dark);
+  background: none;
+  border: 0;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.rules-scroll-box {
+  max-height: 240px;
+  margin-top: 0.85rem;
+  padding-right: 0.35rem;
+  overflow-y: auto;
+  color: var(--color-ink-soft);
+}
+
+.rules-scroll-box p:first-child {
+  margin-top: 0;
+}
+
+.agreement-note {
+  margin-top: 0;
 }
 
 .cal-note {

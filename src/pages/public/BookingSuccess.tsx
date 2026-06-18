@@ -52,7 +52,8 @@ function BookingSuccess() {
               <p>
                 You’re booked from <strong>{info.checkIn}</strong> to <strong>{info.checkOut}</strong>
                 {info.amountTotal ? <> for {formatMoney(info.amountTotal, info.currency)}</> : null}. A receipt is on
-                its way to {info.email || 'your email'}, and Daiana will follow up with the details.
+                its way to {info.email || 'your email'}, and Daiana will follow up with the details. Your confirmation
+                email will include a secure link to request a cancellation or date change.
               </p>
             ) : info && info.checkIn ? (
               <p>
