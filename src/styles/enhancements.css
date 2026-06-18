@@ -239,6 +239,28 @@ summary:focus-visible,
   text-transform: uppercase;
 }
 
+.contact-select-card {
+  cursor: pointer;
+  transition: transform var(--speed) var(--ease-soft), border-color var(--speed) var(--ease-soft), box-shadow var(--speed) var(--ease-soft);
+}
+
+.contact-select-card:hover,
+.contact-select-card:focus-visible {
+  transform: translateY(-3px);
+  border-color: var(--color-champagne-dark);
+  box-shadow: 0 18px 38px rgba(78, 63, 48, 0.14);
+}
+
+.contact-select-card .card-link {
+  display: inline-flex;
+  margin-top: 1rem;
+  color: var(--color-champagne-dark);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
 @media (max-width: 900px) {
   .testimonial-grid {
     grid-template-columns: 1fr;
