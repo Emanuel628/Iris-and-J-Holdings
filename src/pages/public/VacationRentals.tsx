@@ -37,7 +37,7 @@ const orlandoFaqs = [
   {
     question: 'How do I book?',
     answer:
-      'Pick your dates on the availability calendar above, complete the guest intake form, review the house rules, and check out securely. A stay is confirmed after payment is completed and a booking confirmation is issued by email.',
+      'Pick your dates on the availability calendar above, continue to the guest intake page, review the house rules, and check out securely. A stay is confirmed after payment is completed and a booking confirmation is issued by email.',
   },
   {
     question: 'What’s included in the price?',
@@ -81,7 +81,7 @@ function VacationRentals() {
               <h2>Available dates for the rental.</h2>
               <p>
                 Open dates are available to book; grayed-out dates are already taken. Pick your check-in and
-                check-out, complete the guest intake, review the house rules, and continue to secure checkout.
+                check-out here, then continue to a separate intake page for guest details, house rules, and checkout.
               </p>
               <div className="notice-box">
                 Availability and pricing may change until payment is completed and a booking confirmation is issued.
@@ -98,7 +98,7 @@ function VacationRentals() {
             <p className="eyebrow">House Rules</p>
             <h2>Before checkout, review the stay expectations.</h2>
             <p>
-              These are the core guest rules shown again in the booking form. The full house rules page and terms
+              These are the core guest rules shown again in the intake form. The full house rules page and terms
               are linked before checkout and in the confirmation email.
             </p>
           </div>
