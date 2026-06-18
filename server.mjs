@@ -25,6 +25,13 @@ const booking = {
   webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
 };
 
+const notary = {
+  currency: (process.env.NOTARY_CURRENCY || process.env.STRIPE_CURRENCY || 'usd').toLowerCase(),
+  bookingFeeCents: Number(process.env.NOTARY_BOOKING_FEE_CENTS || 0),
+  successUrl: process.env.NOTARY_SUCCESS_URL || '',
+  cancelUrl: process.env.NOTARY_CANCEL_URL || '',
+};
+
 app.set('trust proxy', 1);
 
 app.use((req, res, next) => {
@@ -63,6 +70,69 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
   }
 
   return res.json({ received: true });
+});
+
+app.post('/api/notary-checkout', async (req, res) => {
+  try {
+    if (!stripe) {
+      return res.status(503).json({ message: 'Online payment is not available yet. Please send the request instead.' });
+    }
+
+    if (!(notary.bookingFeeCents > 0)) {
+      return res.status(503).json({ message: 'Notary booking fee is not configured yet.' });
+    }
+
+    const name = clean(req.body?.name);
+    const email = clean(req.body?.email);
+    const phone = clean(req.body?.phone);
+    const city = clean(req.body?.city);
+    const appointmentDate = clean(req.body?.appointmentDate);
+    const appointmentTime = clean(req.body?.appointmentTime);
+    const documentType = clean(req.body?.documentType);
+    const notes = clean(req.body?.notes);
+
+    if (!name || !email || !appointmentDate || !appointmentTime) {
+      return res.status(400).json({ message: 'Name, email, date, and time are required.' });
+    }
+
+    const origin = `${req.protocol}://${req.get('host')}`;
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: notary.currency,
+            unit_amount: notary.bookingFeeCents,
+            product_data: {
+              name: 'Mobile notary travel / booking fee',
+              description: `${appointmentDate} at ${appointmentTime}`,
+            },
+          },
+        },
+      ],
+      success_url: notary.successUrl || `${origin}/notary-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: notary.cancelUrl || `${origin}/mobile-notary`,
+      customer_email: email,
+      metadata: {
+        type: 'notary',
+        name,
+        email,
+        phone,
+        city,
+        appointmentDate,
+        appointmentTime,
+        documentType,
+        notes,
+      },
+    });
+
+    return res.json({ url: session.url });
+  } catch (error) {
+    console.error('Notary checkout failed:', error);
+    return res.status(500).json({ message: 'Could not start checkout. Please try again.' });
+  }
 });
 
 app.use(express.json({ limit: '100kb' }));
