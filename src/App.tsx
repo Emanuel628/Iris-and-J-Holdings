@@ -9,6 +9,7 @@ import BookContact from './pages/public/BookContact';
 import VacationRentals from './pages/public/VacationRentals';
 import BookingSuccess from './pages/public/BookingSuccess';
 import NotarySuccess from './pages/public/NotarySuccess';
+import RefundCancellationPolicy from './pages/public/RefundCancellationPolicy';
 import PrivacyPolicy from './pages/public/PrivacyPolicy';
 import TermsOfUse from './pages/public/TermsOfUse';
 import Accessibility from './pages/public/Accessibility';
@@ -29,6 +30,7 @@ const routes = {
   '/vacation-rentals': VacationRentals,
   '/booking-success': BookingSuccess,
   '/notary-success': NotarySuccess,
+  '/refund-cancellation-policy': RefundCancellationPolicy,
   '/privacy': PrivacyPolicy,
   '/terms': TermsOfUse,
   '/accessibility': Accessibility,
