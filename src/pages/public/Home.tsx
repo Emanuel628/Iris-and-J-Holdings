@@ -10,7 +10,7 @@ import { usePageMeta } from '../../lib/usePageMeta';
 function Home() {
   usePageMeta(
     '',
-    'New Jersey real estate guidance and mobile notary services. Buy, sell, home value, and notary help throughout all of Mew Jersey.',
+    'New Jersey real estate guidance and mobile notary services. Buy, sell, home value, and notary help throughout all of New Jersey.',
   );
   return (
     <PublicLayout>
