@@ -49,7 +49,18 @@ function TermsOfUse() {
               Viewing this website, submitting a form, requesting information, or scheduling a conversation does
               not create a real estate agency relationship, brokerage agreement, attorney-client relationship,
               fiduciary relationship, or notary-client relationship. Real estate representation begins only when
-              confirmed through the required written brokerage agreement with the licensed brokerage.
+              confirmed through the required New Jersey disclosures and written brokerage agreement with the
+              licensed brokerage.
+            </p>
+          </article>
+          <article>
+            <h2>Real estate brokerage disclosures and compensation</h2>
+            <p>
+              Before brokerage services begin, All Star Real Estate Agency will provide required New Jersey real
+              estate disclosures, including the Consumer Information Statement and any required agency disclosure
+              and brokerage services agreement. Any brokerage services agreement controls the services provided,
+              the type of business relationship, the term of the agreement, and compensation. Broker compensation
+              is fully negotiable and is not set by law.
             </p>
           </article>
           <article>
@@ -75,8 +86,11 @@ function TermsOfUse() {
             <p>
               Real estate services are offered without unlawful discrimination and in accordance with applicable
               fair housing laws. This website may not be used to request or encourage housing preferences,
-              limitations, steering, or discrimination based on race, color, religion, sex, disability or
-              handicap, familial status, national origin, or any other protected category under applicable law.
+              limitations, steering, blockbusting, or discrimination based on race, creed, color, religion,
+              national origin, ancestry, sex, gender identity or expression, sexual orientation, marital status,
+              civil union status, domestic partnership status, familial status, disability, source of lawful income
+              used for rental or mortgage payments, liability for service in the Armed Forces, nationality, or any
+              other protected category under applicable law.
             </p>
           </article>
           <article>
@@ -115,8 +129,9 @@ function TermsOfUse() {
             <p>
               You agree to submit accurate information and not use the website to send spam, unlawful content,
               abusive messages, or false requests. By submitting contact information, you authorize Iris &amp; J
-              Holdings and/or Daiana Castro to contact you about the request you submitted. The Privacy Policy
-              explains how submitted information is handled.
+              Holdings and/or Daiana Castro to contact you about the request you submitted. Do not submit
+              confidential legal, financial, medical, or highly sensitive information through website forms. The
+              Privacy Policy explains how submitted information is handled.
             </p>
           </article>
           <article>
