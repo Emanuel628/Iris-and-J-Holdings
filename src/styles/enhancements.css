@@ -873,3 +873,15 @@ html.a11y-contrast a,
 html.a11y-underline a {
   text-decoration: underline;
 }
+
+/* ---- Native date/time inputs: stop them overflowing their grid column ----
+   WebKit gives date/time inputs an intrinsic widget width that ignores
+   width:100%; removing the native appearance lets them shrink to the cell. */
+.input-group input[type="date"],
+.input-group input[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
