@@ -1,3 +1,21 @@
+const navLinks = [
+  { href: '/buy', label: 'Buy' },
+  { href: '/sell', label: 'Sell' },
+  { href: '/mobile-notary', label: 'Notary' },
+  { href: '/vacation-rentals', label: 'Vacation Rentals' },
+  { href: '/about', label: 'About' },
+];
+
+function isActivePath(href: string) {
+  const pathname = window.location.pathname;
+
+  if (href === '/') {
+    return pathname === '/';
+  }
+
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 function Header() {
   return (
     <header className="site-header clean-site-header" aria-label="Site header">
@@ -11,21 +29,31 @@ function Header() {
       </a>
 
       <nav className="desktop-nav" aria-label="Main navigation">
-        <a href="/buy">Buy</a>
-        <a href="/sell">Sell</a>
-        <a href="/mobile-notary">Notary</a>
-        <a href="/vacation-rentals">Vacation Rentals</a>
-        <a href="/about">About</a>
+        {navLinks.map((link) => (
+          <a
+            key={link.href}
+            href={link.href}
+            className={isActivePath(link.href) ? 'is-active' : undefined}
+            aria-current={isActivePath(link.href) ? 'page' : undefined}
+          >
+            {link.label}
+          </a>
+        ))}
       </nav>
 
       <a className="nav-cta" href="/book?service=General%20Question#contact-form">Book a Call</a>
 
       <nav className="mobile-nav" aria-label="Mobile navigation">
-        <a href="/buy">Buy</a>
-        <a href="/sell">Sell</a>
-        <a href="/mobile-notary">Notary</a>
-        <a href="/vacation-rentals">Vacation Rentals</a>
-        <a href="/about">About</a>
+        {navLinks.map((link) => (
+          <a
+            key={link.href}
+            href={link.href}
+            className={isActivePath(link.href) ? 'is-active' : undefined}
+            aria-current={isActivePath(link.href) ? 'page' : undefined}
+          >
+            {link.label}
+          </a>
+        ))}
         <a className="mobile-nav-call" href="tel:19084996320">Call</a>
       </nav>
     </header>
