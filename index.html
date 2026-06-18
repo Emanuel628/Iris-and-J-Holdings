@@ -58,6 +58,20 @@
         }
       }
     </script>
+
+    <!-- Open the full desktop layout on wide screens before first paint (avoids a
+         flash of the mobile layout). Mirrors getInitialMode in ViewportModeToggle. -->
+    <script>
+      (function () {
+        try {
+          var saved = window.localStorage.getItem('iris-view-mode');
+          var wide = window.innerWidth >= 820;
+          if (saved === 'desktop' || (saved !== 'mobile' && wide)) {
+            document.documentElement.classList.add('desktop-view');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

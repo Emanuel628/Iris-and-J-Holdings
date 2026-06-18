@@ -6,10 +6,17 @@ const STORAGE_KEY = 'iris-view-mode';
 
 function getInitialMode(): ViewMode {
   if (typeof window === 'undefined') {
-    return 'mobile';
+    return 'desktop';
   }
 
-  return window.localStorage.getItem(STORAGE_KEY) === 'desktop' ? 'desktop' : 'mobile';
+  const stored = window.localStorage.getItem(STORAGE_KEY);
+  if (stored === 'desktop' || stored === 'mobile') {
+    return stored;
+  }
+
+  // No saved preference: open the full desktop layout on wide screens, and the
+  // mobile layout on phones.
+  return window.innerWidth >= 820 ? 'desktop' : 'mobile';
 }
 
 function ViewportModeToggle() {
