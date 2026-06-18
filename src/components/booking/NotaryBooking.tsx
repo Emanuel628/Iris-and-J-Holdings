@@ -1,9 +1,50 @@
-import FormStatus from '../ui/FormStatus';
-import { useContactForm } from '../../lib/useContactForm';
+import { useState, type FormEvent } from 'react';
 
-/** Mobile notary appointment request: pick a date and time, email goes to Daiana. */
+type CheckoutStatus = 'idle' | 'sending' | 'error';
+
 function NotaryBooking() {
-  const { status, submit } = useContactForm('Mobile Notary Appointment Request');
+  const [status, setStatus] = useState<CheckoutStatus>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setStatus('sending');
+    setErrorMessage('');
+
+    const form = new FormData(event.currentTarget);
+    const payload = {
+      name: String(form.get('name') || '').trim(),
+      email: String(form.get('email') || '').trim(),
+      phone: String(form.get('phone') || '').trim(),
+      city: String(form.get('city') || '').trim(),
+      appointmentDate: String(form.get('appointmentDate') || '').trim(),
+      appointmentTime: String(form.get('appointmentTime') || '').trim(),
+      documentType: String(form.get('documentType') || '').trim(),
+      notes: String(form.get('notes') || '').trim(),
+    };
+
+    try {
+      const res = await fetch('/api/notary-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data.url) {
+        throw new Error(data.message || 'Could not start checkout. Please try again.');
+      }
+
+      window.location.href = data.url;
+    } catch (error) {
+      setStatus('error');
+      setErrorMessage(error instanceof Error ? error.message : 'Could not start checkout.');
+    }
+  }
 
   return (
     <form className="info-panel form-shell" id="notary-booking" onSubmit={submit}>
@@ -35,10 +76,18 @@ function NotaryBooking() {
         <textarea id="notary-notes" name="notes" placeholder="Number of signers, address, anything else" />
       </div>
       <button className="button button-primary" type="submit" disabled={status === 'sending'}>
-        {status === 'sending' ? 'Sending…' : 'Request Appointment'}
+        {status === 'sending' ? 'Starting checkout…' : 'Pay Booking Fee & Request Appointment'}
       </button>
-      <FormStatus status={status} />
-      <p className="form-note">This sends a request. Daiana will confirm the time and any travel or notary fees by email.</p>
+      {status === 'error' && (
+        <p className="form-status form-status-error" role="alert">
+          {errorMessage}
+        </p>
+      )}
+      <p className="form-note">
+        This pays the travel / booking fee. Daiana will confirm the appointment time, service area, and any
+        separate notary fees by email. Payment does not guarantee that a notarial act can be completed if legal,
+        signer, document, or identification requirements cannot be satisfied.
+      </p>
     </form>
   );
 }
