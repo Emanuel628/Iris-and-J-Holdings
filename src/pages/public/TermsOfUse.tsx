@@ -125,6 +125,15 @@ function TermsOfUse() {
             </p>
           </article>
           <article>
+            <h2>Refunds, cancellations, rescheduling, and no-shows</h2>
+            <p>
+              Refunds, cancellations, rescheduling, and no-shows are governed by the{' '}
+              <a href="/refund-cancellation-policy">Refund &amp; Cancellation Policy</a>. Guests and clients must
+              review and agree to the applicable policy before checkout for mobile notary booking / travel fees
+              or vacation rental bookings.
+            </p>
+          </article>
+          <article>
             <h2>Submitted requests and communications</h2>
             <p>
               You agree to submit accurate information and not use the website to send spam, unlawful content,
