@@ -207,7 +207,7 @@ function AdminVacationBookings() {
                   <div className="admin-record-copy">
                     <strong>{booking.guest_name}</strong>
                     <p>{booking.rental_title || 'Rental'} | {booking.check_in} to {booking.check_out}</p>
-                    <p>{booking.guest_email} | {booking.guest_phone || 'No phone'} | {booking.guest_count} guests</p>
+                    <p><a href={`mailto:${booking.guest_email}`}>{booking.guest_email}</a> | {booking.guest_phone || 'No phone'} | {booking.guest_count} guests</p>
                     <p>Status: {booking.status} | Total: {formatCurrency(booking.amount_total_cents, booking.currency)}</p>
                     <p>Guest list: {booking.guest_list_text}</p>
                   </div>

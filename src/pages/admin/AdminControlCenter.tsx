@@ -19,6 +19,7 @@ type ReminderItem = {
   sortDate: string;
   title: string;
   subtitle: string;
+  email: string;
   detail: string;
   href: string;
 };
@@ -65,7 +66,8 @@ function AdminControlCenter() {
         sortDate: booking.check_in,
         title: booking.guest_name,
         subtitle: `${booking.check_in} to ${booking.check_out}`,
-        detail: `${booking.rental_title || 'Rental'} | ${booking.guest_email} | ${booking.guest_count} guests`,
+        email: booking.guest_email,
+        detail: `${booking.rental_title || 'Rental'} | ${booking.guest_count} guests`,
         href: `/admin/vacation-bookings?edit=${booking.id}`,
       }));
 
@@ -78,7 +80,8 @@ function AdminControlCenter() {
         sortDate: request.appointment_date,
         title: request.full_name,
         subtitle: `${request.appointment_date} at ${request.appointment_time}`,
-        detail: `${request.email} | ${request.document_type || 'No document type'} | ${request.notes || 'No notes'}`,
+        email: request.email,
+        detail: `${request.document_type || 'No document type'} | ${request.notes || 'No notes'}`,
         href: `/admin/notary-requests?edit=${request.id}`,
       }));
 
@@ -178,80 +181,43 @@ function AdminControlCenter() {
           </div>
         </section>
 
-        <div className="admin-dashboard-grid">
-          <section className="admin-panel">
-            <div className="admin-section-head">
-              <h2>Upcoming reminders</h2>
-              <div className="admin-queue-toolbar">
-                <p>{reminders.length} queued</p>
-                <div className="admin-select-shell admin-sort-shell">
-                  <label className="sr-only" htmlFor="control-center-sort">Sort reminders</label>
-                  <select id="control-center-sort" value={sortBy} onChange={(event) => setSortBy(event.target.value as ReminderSortOption)}>
-                    <option value="upcoming">Upcoming first</option>
-                    <option value="type">Type</option>
-                    <option value="name">Name</option>
-                  </select>
-                  <ChevronsUpDown size={16} aria-hidden="true" />
-                </div>
+        <section className="admin-panel">
+          <div className="admin-section-head">
+            <h2>Upcoming reminders</h2>
+            <div className="admin-queue-toolbar">
+              <p>{reminders.length} queued</p>
+              <div className="admin-select-shell admin-sort-shell">
+                <label className="sr-only" htmlFor="control-center-sort">Sort reminders</label>
+                <select id="control-center-sort" value={sortBy} onChange={(event) => setSortBy(event.target.value as ReminderSortOption)}>
+                  <option value="upcoming">Upcoming first</option>
+                  <option value="type">Type</option>
+                  <option value="name">Name</option>
+                </select>
+                <ChevronsUpDown size={16} aria-hidden="true" />
               </div>
             </div>
-            <div className="admin-reminder-list">
-              {sortedReminders.map((item) => (
-                <article className="admin-reminder-row" key={`${item.kind}-${item.id}`}>
-                  <div className={`admin-reminder-kind admin-reminder-kind-${item.kind}`}>
-                    {item.kind === 'vacation' ? 'Vacation' : 'Notary'}
-                  </div>
-                  <div className="admin-reminder-copy">
-                    <strong>{item.title}</strong>
-                    <p>{item.subtitle}</p>
-                    <p>{item.detail}</p>
-                  </div>
-                  <div className="admin-reminder-actions">
-                    <a className="button-secondary" href={item.href}>Edit</a>
-                    <button className="button-secondary" type="button" onClick={() => deleteReminder(item)} disabled={busyKey === `${item.kind}-${item.id}`}>Delete</button>
-                  </div>
-                </article>
-              ))}
-              {!sortedReminders.length ? <p className="admin-empty-note">No upcoming appointments or stays are in the queue yet.</p> : null}
-            </div>
-          </section>
-
-          <section className="admin-panel">
-            <div className="admin-section-head">
-              <h2>Primary controls</h2>
-            </div>
-            <div className="admin-quick-grid">
-              <a href="/admin/rentals">
-                <strong>Rentals</strong>
-                <span>Add rentals, update pricing, control availability, and keep public listings current.</span>
-              </a>
-              <a href="/admin/vacation-bookings">
-                <strong>Vacation queue</strong>
-                <span>Review bookings, cancellations, date changes, and reservation details.</span>
-              </a>
-              <a href="/admin/notary-requests">
-                <strong>Notary queue</strong>
-                <span>Review appointments, signer details, notes, cancellations, and confirmations.</span>
-              </a>
-              <a href="/admin/site-content">
-                <strong>Site content</strong>
-                <span>Update public page copy, hero image URLs, and live page content.</span>
-              </a>
-              <a href="/admin/realtor-tools">
-                <strong>Realtor tools</strong>
-                <span>Store buyer and seller intake records, budgets, notes, and follow-up details.</span>
-              </a>
-              <a href="/admin/home-value-lab">
-                <strong>Home value lab</strong>
-                <span>Build the data-backed estimator workflow instead of publishing a fake calculator.</span>
-              </a>
-              <a href="/admin/invoices">
-                <strong>Quotes and invoices</strong>
-                <span>Create invoices, send payment links, and approve records into the live queues.</span>
-              </a>
-            </div>
-          </section>
-        </div>
+          </div>
+          <div className="admin-reminder-list">
+            {sortedReminders.map((item) => (
+              <article className="admin-reminder-row" key={`${item.kind}-${item.id}`}>
+                <div className={`admin-reminder-kind admin-reminder-kind-${item.kind}`}>
+                  {item.kind === 'vacation' ? 'Vacation' : 'Notary'}
+                </div>
+                <div className="admin-reminder-copy">
+                  <strong>{item.title}</strong>
+                  <p>{item.subtitle}</p>
+                  <p><a href={`mailto:${item.email}`}>{item.email}</a></p>
+                  <p>{item.detail}</p>
+                </div>
+                <div className="admin-reminder-actions">
+                  <a className="button-secondary" href={item.href}>Edit</a>
+                  <button className="button-secondary" type="button" onClick={() => deleteReminder(item)} disabled={busyKey === `${item.kind}-${item.id}`}>Delete</button>
+                </div>
+              </article>
+            ))}
+            {!sortedReminders.length ? <p className="admin-empty-note">No upcoming appointments or stays are in the queue yet.</p> : null}
+          </div>
+        </section>
 
         <section className="admin-section admin-section-compact">
           <div className="admin-section-head">

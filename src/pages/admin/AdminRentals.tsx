@@ -64,6 +64,18 @@ function dollarsToCents(value: string) {
   return Math.round(amount * 100);
 }
 
+function formatCurrencyInput(value: string) {
+  const normalized = value.replace(/[^0-9.]/g, '');
+  if (!normalized) return '';
+  const [whole, decimal = ''] = normalized.split('.');
+  const formattedWhole = new Intl.NumberFormat('en-US').format(Number(whole || 0));
+  return decimal.length ? `$${formattedWhole}.${decimal.slice(0, 2)}` : `$${formattedWhole}`;
+}
+
+function parseCurrencyInput(value: string) {
+  return value.replace(/[^0-9.]/g, '');
+}
+
 function AdminRentals() {
   usePageMeta('Admin Rentals', 'Manage rentals and availability controls.', { robots: 'noindex,nofollow' });
   const [rentals, setRentals] = useState<RentalRecord[]>([]);
@@ -246,8 +258,8 @@ function AdminRentals() {
             </div>
             <div className="input-group"><label htmlFor="admin-rental-description">Description</label><textarea id="admin-rental-description" value={rentalForm.description} onChange={(event) => setRentalForm({ ...rentalForm, description: event.target.value })} /></div>
             <div className="form-row">
-              <div className="input-group"><label htmlFor="admin-rental-rate">Nightly Rate</label><input id="admin-rental-rate" inputMode="decimal" placeholder="100.00" value={rentalForm.nightlyRate} onChange={(event) => setRentalForm({ ...rentalForm, nightlyRate: event.target.value })} /></div>
-              <div className="input-group"><label htmlFor="admin-rental-cleaning">Cleaning Fee</label><input id="admin-rental-cleaning" inputMode="decimal" placeholder="75.00" value={rentalForm.cleaningFee} onChange={(event) => setRentalForm({ ...rentalForm, cleaningFee: event.target.value })} /></div>
+              <div className="input-group"><label htmlFor="admin-rental-rate">Nightly Rate</label><input id="admin-rental-rate" inputMode="decimal" placeholder="$100.00" value={formatCurrencyInput(rentalForm.nightlyRate)} onChange={(event) => setRentalForm({ ...rentalForm, nightlyRate: parseCurrencyInput(event.target.value) })} /></div>
+              <div className="input-group"><label htmlFor="admin-rental-cleaning">Cleaning Fee</label><input id="admin-rental-cleaning" inputMode="decimal" placeholder="$75.00" value={formatCurrencyInput(rentalForm.cleaningFee)} onChange={(event) => setRentalForm({ ...rentalForm, cleaningFee: parseCurrencyInput(event.target.value) })} /></div>
             </div>
             <div className="form-row">
               <div className="input-group"><label htmlFor="admin-rental-max-guests">Max Guests</label><input id="admin-rental-max-guests" type="number" value={rentalForm.maxGuests} onChange={(event) => setRentalForm({ ...rentalForm, maxGuests: event.target.value })} /></div>

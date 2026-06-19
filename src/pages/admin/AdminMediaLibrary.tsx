@@ -51,7 +51,13 @@ function AdminMediaLibrary() {
                 <div className="admin-data-row" key={template.pageKey}>
                   <div><strong>{template.pageLabel}</strong></div>
                   <div><p>{template.route}</p></div>
-                  <div><p>{entry?.hero_image_url || template.heroImageUrl || 'No override saved'}</p></div>
+                  <div>
+                    {entry?.hero_image_url || template.heroImageUrl ? (
+                      <p><a href={entry?.hero_image_url || template.heroImageUrl || '#'} target="_blank" rel="noreferrer">{entry?.hero_image_url || template.heroImageUrl}</a></p>
+                    ) : (
+                      <p>No override saved</p>
+                    )}
+                  </div>
                   <div><a href="/admin/site-content">Edit in Site Content</a></div>
                 </div>
               );
@@ -69,8 +75,18 @@ function AdminMediaLibrary() {
               <div className="admin-list-row admin-record" key={rental.id}>
                 <div className="admin-record-copy">
                   <strong>{rental.title}</strong>
-                  <p>Hero: {rental.hero_image_url || 'No hero image set'}</p>
+                  <p>
+                    Hero:{' '}
+                    {rental.hero_image_url ? <a href={rental.hero_image_url} target="_blank" rel="noreferrer">{rental.hero_image_url}</a> : 'No hero image set'}
+                  </p>
                   <p>Gallery images: {(rental.gallery_image_urls || []).length}</p>
+                  {(rental.gallery_image_urls || []).length ? (
+                    <div className="admin-route-list">
+                      {(rental.gallery_image_urls || []).map((url) => (
+                        <a key={url} href={url} target="_blank" rel="noreferrer">{url}</a>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
                 <a className="button-secondary" href="/admin/rentals">Manage rental media</a>
               </div>

@@ -50,8 +50,14 @@ type EstimateResponse = {
 };
 
 function formatCurrency(value?: number) {
-  if (!value) return 'Not returned';
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
+  if (value === undefined || value === null) return 'Not returned';
+  const hasCents = Math.abs(value % 1) > 0;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: hasCents ? 2 : 0,
+    maximumFractionDigits: hasCents ? 2 : 0,
+  }).format(value);
 }
 
 function formatNumber(value?: number) {

@@ -66,6 +66,18 @@ function formatCurrency(amountTotalCents: number, currency: string) {
   }).format(amountTotalCents / 100);
 }
 
+function formatCurrencyInput(value: string) {
+  const normalized = value.replace(/[^0-9.]/g, '');
+  if (!normalized) return '';
+  const [whole, decimal = ''] = normalized.split('.');
+  const formattedWhole = new Intl.NumberFormat('en-US').format(Number(whole || 0));
+  return decimal.length ? `$${formattedWhole}.${decimal.slice(0, 2)}` : `$${formattedWhole}`;
+}
+
+function parseCurrencyInput(value: string) {
+  return value.replace(/[^0-9.]/g, '');
+}
+
 function toInvoiceForm(invoice: AdminInvoiceRecord): InvoiceForm {
   return {
     id: invoice.id,
@@ -283,7 +295,7 @@ function AdminInvoices() {
               </div>
               <div className="form-row">
                 <div className="input-group"><label htmlFor="invoice-recipient-phone">Recipient Phone</label><input id="invoice-recipient-phone" value={invoiceForm.recipientPhone} onChange={(event) => setInvoiceForm({ ...invoiceForm, recipientPhone: event.target.value })} /></div>
-                <div className="input-group"><label htmlFor="invoice-amount">Amount</label><input id="invoice-amount" inputMode="decimal" placeholder="100.00" value={invoiceForm.amount} onChange={(event) => setInvoiceForm({ ...invoiceForm, amount: event.target.value })} /></div>
+                <div className="input-group"><label htmlFor="invoice-amount">Amount</label><input id="invoice-amount" inputMode="decimal" placeholder="$100.00" value={formatCurrencyInput(invoiceForm.amount)} onChange={(event) => setInvoiceForm({ ...invoiceForm, amount: parseCurrencyInput(event.target.value) })} /></div>
               </div>
               <div className="input-group"><label htmlFor="invoice-description">Description</label><input id="invoice-description" value={invoiceForm.description} onChange={(event) => setInvoiceForm({ ...invoiceForm, description: event.target.value })} /></div>
               <div className="input-group"><label htmlFor="invoice-notes">Notes</label><textarea id="invoice-notes" value={invoiceForm.notes} onChange={(event) => setInvoiceForm({ ...invoiceForm, notes: event.target.value })} /></div>
@@ -326,6 +338,7 @@ function AdminInvoices() {
 
               <div className="admin-inline-actions">
                 <button className="button button-primary" type="button" onClick={saveInvoice} disabled={busy}>Save invoice</button>
+                {invoiceForm.id ? <button className="button-secondary" type="button" onClick={() => sendInvoice(invoiceForm.id!)} disabled={busy}>Send invoice</button> : null}
                 {invoiceForm.id ? <button className="button-secondary" type="button" onClick={() => setInvoiceForm(emptyInvoiceForm())} disabled={busy}>New invoice</button> : null}
               </div>
             </div>
@@ -364,13 +377,13 @@ function AdminInvoices() {
                 <div className="admin-record-copy">
                   <strong>{invoice.recipient_name}</strong>
                   <p>{invoice.service_type === 'vacation' ? `${invoice.check_in || ''} to ${invoice.check_out || ''}` : `${invoice.appointment_date || ''} at ${invoice.appointment_time || ''}`}</p>
-                  <p>{invoice.recipient_email} | {invoice.recipient_phone || 'No phone'} | {invoice.service_type}</p>
+                  <p><a href={`mailto:${invoice.recipient_email}`}>{invoice.recipient_email}</a> | {invoice.recipient_phone || 'No phone'} | {invoice.service_type}</p>
                   <p>Status: {invoice.status} | Total: {formatCurrency(invoice.amount_total_cents, invoice.currency)}</p>
                   <p>{invoice.description || 'No description entered.'}</p>
                 </div>
                 <div className="admin-inline-actions">
                   <button className="button-secondary" type="button" onClick={() => setInvoiceForm(toInvoiceForm(invoice))} disabled={busy}>Edit</button>
-                  <button className="button-secondary" type="button" onClick={() => sendInvoice(invoice.id)} disabled={busy}>Email</button>
+                  <button className="button-secondary" type="button" onClick={() => sendInvoice(invoice.id)} disabled={busy}>Send</button>
                   {invoice.stripe_checkout_url ? <a className="button-secondary" href={invoice.stripe_checkout_url} target="_blank" rel="noreferrer">Payment link</a> : null}
                   <button className="button-secondary" type="button" onClick={() => updateInvoiceStatus(invoice.id, 'approved')} disabled={busy}>Approve</button>
                   <button className="button-secondary" type="button" onClick={() => updateInvoiceStatus(invoice.id, 'cancelled')} disabled={busy}>Cancel</button>

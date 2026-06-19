@@ -76,6 +76,23 @@ function formatCurrency(amount: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
 }
 
+function formatCurrencyInput(value: string) {
+  const normalized = value.replace(/[^0-9.]/g, '');
+  if (!normalized) return '';
+  const [whole, decimal = ''] = normalized.split('.');
+  const formattedWhole = new Intl.NumberFormat('en-US').format(Number(whole || 0));
+  return decimal.length ? `$${formattedWhole}.${decimal.slice(0, 2)}` : `$${formattedWhole}`;
+}
+
+function parseCurrencyInput(value: string) {
+  return value.replace(/[^0-9.]/g, '');
+}
+
+function renderEmailLink(email: string) {
+  if (!email) return 'No email';
+  return <a href={`mailto:${email}`}>{email}</a>;
+}
+
 function renderSelectWithCustom({
   id,
   label,
@@ -326,8 +343,8 @@ function AdminRealtorTools() {
                 <div className="input-group"><label htmlFor="buyer-areas">Target Areas</label><input id="buyer-areas" value={buyerForm.targetAreas} onChange={(event) => setBuyerForm({ ...buyerForm, targetAreas: event.target.value })} placeholder="Union, Middlesex, Essex..." /></div>
               </div>
               <div className="form-row">
-                <div className="input-group"><label htmlFor="buyer-budget-min">Budget Min</label><input id="buyer-budget-min" type="number" value={buyerForm.budgetMin} onChange={(event) => setBuyerForm({ ...buyerForm, budgetMin: event.target.value })} /></div>
-                <div className="input-group"><label htmlFor="buyer-budget-max">Budget Max</label><input id="buyer-budget-max" type="number" value={buyerForm.budgetMax} onChange={(event) => setBuyerForm({ ...buyerForm, budgetMax: event.target.value })} /></div>
+                <div className="input-group"><label htmlFor="buyer-budget-min">Budget Min</label><input id="buyer-budget-min" inputMode="decimal" placeholder="$0" value={formatCurrencyInput(buyerForm.budgetMin)} onChange={(event) => setBuyerForm({ ...buyerForm, budgetMin: parseCurrencyInput(event.target.value) })} /></div>
+                <div className="input-group"><label htmlFor="buyer-budget-max">Budget Max</label><input id="buyer-budget-max" inputMode="decimal" placeholder="$0" value={formatCurrencyInput(buyerForm.budgetMax)} onChange={(event) => setBuyerForm({ ...buyerForm, budgetMax: parseCurrencyInput(event.target.value) })} /></div>
               </div>
               <div className="form-row">
                 {renderSelectWithCustom({
@@ -394,7 +411,7 @@ function AdminRealtorTools() {
                 <div className="input-group"><label htmlFor="seller-address">Property Address</label><input id="seller-address" value={sellerForm.propertyAddress} onChange={(event) => setSellerForm({ ...sellerForm, propertyAddress: event.target.value })} /></div>
               </div>
               <div className="form-row">
-                <div className="input-group"><label htmlFor="seller-target-price">Target Price</label><input id="seller-target-price" type="number" value={sellerForm.targetPrice} onChange={(event) => setSellerForm({ ...sellerForm, targetPrice: event.target.value })} /></div>
+                <div className="input-group"><label htmlFor="seller-target-price">Target Price</label><input id="seller-target-price" inputMode="decimal" placeholder="$0" value={formatCurrencyInput(sellerForm.targetPrice)} onChange={(event) => setSellerForm({ ...sellerForm, targetPrice: parseCurrencyInput(event.target.value) })} /></div>
                 {renderSelectWithCustom({
                   id: 'seller-timeline',
                   label: 'Timeline',
@@ -450,7 +467,7 @@ function AdminRealtorTools() {
                   <p>{new Date(lead.created_at).toLocaleDateString('en-US')}</p>
                 </div>
                 <div>
-                  <p>{lead.email}</p>
+                  <p>{renderEmailLink(lead.email)}</p>
                   <p>{lead.phone || 'No phone'}</p>
                 </div>
                 <div>
@@ -508,7 +525,7 @@ function AdminRealtorTools() {
                   <p>{new Date(lead.created_at).toLocaleDateString('en-US')}</p>
                 </div>
                 <div>
-                  <p>{lead.email}</p>
+                  <p>{renderEmailLink(lead.email)}</p>
                   <p>{lead.phone || 'No phone'}</p>
                 </div>
                 <div>

@@ -210,7 +210,7 @@ function AdminNotaryRequests() {
                   <div className="admin-record-copy">
                     <strong>{request.full_name}</strong>
                     <p>{request.appointment_date} at {request.appointment_time} | {request.city || 'No city provided'}</p>
-                    <p>{request.email} | {request.phone || 'No phone'} | {request.document_type || 'No document type'}</p>
+                    <p><a href={`mailto:${request.email}`}>{request.email}</a> | {request.phone || 'No phone'} | {request.document_type || 'No document type'}</p>
                     <p>Status: {request.status} | Total: {formatCurrency(request.amount_total_cents, request.currency)}</p>
                     <p>Notes: {request.notes || 'No notes submitted.'}</p>
                   </div>
