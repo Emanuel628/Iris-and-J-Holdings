@@ -595,6 +595,15 @@
   text-align: center;
 }
 
+.footer-bottom-links {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2rem;
+  white-space: nowrap;
+}
+
 .footer-bottom-inner > p {
   margin: 0;
 }
@@ -710,5 +719,9 @@
 
   .footer-bottom div {
     flex-wrap: wrap;
+  }
+
+  .footer-bottom-links {
+    white-space: normal;
   }
 }

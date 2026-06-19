@@ -527,6 +527,10 @@ html.desktop-view .service-grid {
   width: 100%;
 }
 
+.compact-footer .footer-bottom-links {
+  gap: 1rem;
+}
+
 .compact-footer .footer-bottom-inner > div,
 .compact-footer .footer-bottom-inner {
   align-items: center;
