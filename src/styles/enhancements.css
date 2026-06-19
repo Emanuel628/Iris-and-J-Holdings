@@ -975,15 +975,19 @@ summary:focus-visible,
   gap: 1rem;
 }
 
-.admin-route-list a {
+.admin-route-list a,
+.admin-route-list > div {
   display: grid;
   gap: 0.35rem;
   padding: 0.15rem 0;
   color: var(--color-ink);
+}
+
+.admin-route-list a {
   text-decoration: none;
 }
 
-.admin-route-list a + a {
+.admin-route-list > * + * {
   padding-top: 1rem;
   border-top: 1px solid var(--color-border);
 }
@@ -1088,6 +1092,41 @@ summary:focus-visible,
   display: grid;
   gap: 0.75rem;
   margin-top: 1rem;
+}
+
+.admin-data-table {
+  display: grid;
+  margin-top: 1rem;
+  border-top: 1px solid #ddd3c7;
+}
+
+.admin-data-head,
+.admin-data-row {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 1.2fr 1.2fr;
+  gap: 1rem;
+  padding: 0.95rem 0;
+}
+
+.admin-data-head {
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.admin-data-row {
+  border-top: 1px solid #ece4d8;
+}
+
+.admin-data-row strong,
+.admin-data-row p {
+  margin: 0;
+}
+
+.admin-data-row p + p {
+  margin-top: 0.2rem;
 }
 
 .admin-list-row {
@@ -1210,6 +1249,15 @@ html.desktop-view .notary-hero {
   .admin-dashboard-grid,
   .admin-quick-grid {
     grid-template-columns: 1fr;
+  }
+
+  .admin-data-head {
+    display: none;
+  }
+
+  .admin-data-row {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
   }
 
   .admin-auth-visual {

@@ -11,6 +11,8 @@ const adminLinks = [
   { href: '/admin/bookings', label: 'Bookings' },
   { href: '/admin/vacation-bookings', label: 'Vacation Queue' },
   { href: '/admin/notary-requests', label: 'Notary Queue' },
+  { href: '/admin/realtor-tools', label: 'Realtor Tools' },
+  { href: '/admin/home-value-lab', label: 'Home Value Lab' },
   { href: '/admin/site-content', label: 'Site Content' },
   { href: '/admin/media', label: 'Media' },
   { href: '/admin/policies', label: 'Policies' },
@@ -63,6 +65,7 @@ function AdminLayout({ children, showNav = true }: AdminLayoutProps) {
                 <a href="/admin/rentals">New rental</a>
                 <a href="/admin/vacation-bookings">Booked dates</a>
                 <a href="/admin/notary-requests">Notary queue</a>
+                <a href="/admin/realtor-tools">Buyer and seller intake</a>
               </div>
             </div>
           ) : null}

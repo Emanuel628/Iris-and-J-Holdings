@@ -169,6 +169,14 @@ function AdminControlCenter() {
                 <strong>Site content</strong>
                 <span>Update public page copy, hero image URLs, and live page content.</span>
               </a>
+              <a href="/admin/realtor-tools">
+                <strong>Realtor tools</strong>
+                <span>Store buyer and seller intake records, budgets, notes, and follow-up details.</span>
+              </a>
+              <a href="/admin/home-value-lab">
+                <strong>Home value lab</strong>
+                <span>Build the data-backed estimator workflow instead of publishing a fake calculator.</span>
+              </a>
             </div>
           </section>
         </div>
@@ -201,6 +209,14 @@ function AdminControlCenter() {
             <a href="/admin/site-content">
               <strong>Site Content</strong>
               <span>Edit page copy and hero image URLs for the public-facing site.</span>
+            </a>
+            <a href="/admin/realtor-tools">
+              <strong>Realtor Tools</strong>
+              <span>Capture buyer and seller intake information and keep consultation records in one place.</span>
+            </a>
+            <a href="/admin/home-value-lab">
+              <strong>Home Value Lab</strong>
+              <span>Plan the estimator stack, data vendors, response storage, and public valuation workflow.</span>
             </a>
           </div>
         </section>

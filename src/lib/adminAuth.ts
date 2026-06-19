@@ -79,6 +79,33 @@ export type NotaryRequestRecord = {
   created_at: string;
 };
 
+export type BuyerLeadRecord = {
+  id: number;
+  client_name: string;
+  email: string;
+  phone: string;
+  target_areas: string;
+  budget_min: number;
+  budget_max: number;
+  timeline: string;
+  financing_status: string;
+  notes: string;
+  created_at: string;
+};
+
+export type SellerLeadRecord = {
+  id: number;
+  client_name: string;
+  email: string;
+  phone: string;
+  property_address: string;
+  target_price: number;
+  timeline: string;
+  occupancy_status: string;
+  notes: string;
+  created_at: string;
+};
+
 export async function fetchAdminMe() {
   const res = await fetch('/api/admin/me', {
     headers: { Accept: 'application/json' },
@@ -125,4 +152,12 @@ export function fetchAdminVacationBookings() {
 
 export function fetchAdminNotaryRequests() {
   return fetchJson<{ requests: NotaryRequestRecord[] }>('/api/admin/notary-requests');
+}
+
+export function fetchAdminBuyerLeads() {
+  return fetchJson<{ leads: BuyerLeadRecord[] }>('/api/admin/buyer-leads');
+}
+
+export function fetchAdminSellerLeads() {
+  return fetchJson<{ leads: SellerLeadRecord[] }>('/api/admin/seller-leads');
 }

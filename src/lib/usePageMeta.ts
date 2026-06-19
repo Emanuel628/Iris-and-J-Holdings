@@ -40,6 +40,11 @@ const ROUTE_META: Record<string, { title?: string; description?: string; robots?
     description: 'Manage policy-related routes and content.',
     robots: 'noindex,nofollow',
   },
+  '/admin/realtor-tools': {
+    title: 'Admin Realtor Tools',
+    description: 'Manage buyer and seller intake records.',
+    robots: 'noindex,nofollow',
+  },
   '/admin/forgot-password': {
     title: 'Forgot Password',
     description: 'Reset the Iris & J Holdings admin password.',
@@ -73,6 +78,11 @@ const ROUTE_META: Record<string, { title?: string; description?: string; robots?
   '/admin/vacation-bookings': {
     title: 'Booked Dates',
     description: 'Review vacation rental bookings and guest details.',
+    robots: 'noindex,nofollow',
+  },
+  '/admin/home-value-lab': {
+    title: 'Admin Home Value Lab',
+    description: 'Plan the data-backed home value estimator workflow.',
     robots: 'noindex,nofollow',
   },
   '/buy': {

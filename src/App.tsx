@@ -6,12 +6,14 @@ import AdminLogin from './pages/admin/AdminLogin';
 import AdminMediaLibrary from './pages/admin/AdminMediaLibrary';
 import AdminNotaryRequests from './pages/admin/AdminNotaryRequests';
 import AdminPolicies from './pages/admin/AdminPolicies';
+import AdminRealtorTools from './pages/admin/AdminRealtorTools';
 import AdminRegister from './pages/admin/AdminRegister';
 import AdminRentals from './pages/admin/AdminRentals';
 import AdminResetPassword from './pages/admin/AdminResetPassword';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminSiteContent from './pages/admin/AdminSiteContent';
 import AdminVacationBookings from './pages/admin/AdminVacationBookings';
+import AdminHomeValueLab from './pages/admin/AdminHomeValueLab';
 import Buy from './pages/public/Buy';
 import Sell from './pages/public/Sell';
 import HomeValue from './pages/public/HomeValue';
@@ -42,12 +44,14 @@ const routes = {
   '/admin/media': AdminMediaLibrary,
   '/admin/notary-requests': AdminNotaryRequests,
   '/admin/policies': AdminPolicies,
+  '/admin/realtor-tools': AdminRealtorTools,
   '/admin/register': AdminRegister,
   '/admin/rentals': AdminRentals,
   '/admin/reset-password': AdminResetPassword,
   '/admin/settings': AdminSettings,
   '/admin/site-content': AdminSiteContent,
   '/admin/vacation-bookings': AdminVacationBookings,
+  '/admin/home-value-lab': AdminHomeValueLab,
   '/buy': Buy,
   '/sell': Sell,
   '/home-value': HomeValue,

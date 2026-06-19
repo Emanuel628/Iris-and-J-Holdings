@@ -432,6 +432,35 @@ async function ensureAdminTables() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS buyer_leads (
+      id SERIAL PRIMARY KEY,
+      client_name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      phone TEXT NOT NULL DEFAULT '',
+      target_areas TEXT NOT NULL DEFAULT '',
+      budget_min INTEGER NOT NULL DEFAULT 0,
+      budget_max INTEGER NOT NULL DEFAULT 0,
+      timeline TEXT NOT NULL DEFAULT '',
+      financing_status TEXT NOT NULL DEFAULT '',
+      notes TEXT NOT NULL DEFAULT '',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS seller_leads (
+      id SERIAL PRIMARY KEY,
+      client_name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      phone TEXT NOT NULL DEFAULT '',
+      property_address TEXT NOT NULL DEFAULT '',
+      target_price INTEGER NOT NULL DEFAULT 0,
+      timeline TEXT NOT NULL DEFAULT '',
+      occupancy_status TEXT NOT NULL DEFAULT '',
+      notes TEXT NOT NULL DEFAULT '',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
   await seedControlCenterData();
 }
 
@@ -1363,6 +1392,118 @@ app.post('/api/admin/notary-requests/status', async (req, res) => {
   } catch (error) {
     console.error('Admin notary request status update failed:', error);
     return res.status(500).json({ message: 'Could not update notary request status.' });
+  }
+});
+
+app.get('/api/admin/buyer-leads', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const result = await pgPool.query(
+      `SELECT *
+       FROM buyer_leads
+       ORDER BY created_at DESC
+       LIMIT 200`,
+    );
+    return res.json({ leads: result.rows });
+  } catch (error) {
+    console.error('Admin buyer leads load failed:', error);
+    return res.status(500).json({ message: 'Could not load buyer leads.' });
+  }
+});
+
+app.post('/api/admin/buyer-leads', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const clientName = clean(req.body?.clientName);
+    const email = clean(req.body?.email);
+    const phone = clean(req.body?.phone);
+    const targetAreas = clean(req.body?.targetAreas);
+    const budgetMin = Number(req.body?.budgetMin || 0);
+    const budgetMax = Number(req.body?.budgetMax || 0);
+    const timeline = clean(req.body?.timeline);
+    const financingStatus = clean(req.body?.financingStatus);
+    const notes = clean(req.body?.notes);
+
+    if (!clientName || !email) {
+      return res.status(400).json({ message: 'Client name and email are required.' });
+    }
+
+    await pgPool.query(
+      `INSERT INTO buyer_leads (
+        client_name,
+        email,
+        phone,
+        target_areas,
+        budget_min,
+        budget_max,
+        timeline,
+        financing_status,
+        notes
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [clientName, email, phone, targetAreas, budgetMin, budgetMax, timeline, financingStatus, notes],
+    );
+
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin buyer lead save failed:', error);
+    return res.status(500).json({ message: 'Could not save buyer lead.' });
+  }
+});
+
+app.get('/api/admin/seller-leads', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const result = await pgPool.query(
+      `SELECT *
+       FROM seller_leads
+       ORDER BY created_at DESC
+       LIMIT 200`,
+    );
+    return res.json({ leads: result.rows });
+  } catch (error) {
+    console.error('Admin seller leads load failed:', error);
+    return res.status(500).json({ message: 'Could not load seller leads.' });
+  }
+});
+
+app.post('/api/admin/seller-leads', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const clientName = clean(req.body?.clientName);
+    const email = clean(req.body?.email);
+    const phone = clean(req.body?.phone);
+    const propertyAddress = clean(req.body?.propertyAddress);
+    const targetPrice = Number(req.body?.targetPrice || 0);
+    const timeline = clean(req.body?.timeline);
+    const occupancyStatus = clean(req.body?.occupancyStatus);
+    const notes = clean(req.body?.notes);
+
+    if (!clientName || !email) {
+      return res.status(400).json({ message: 'Client name and email are required.' });
+    }
+
+    await pgPool.query(
+      `INSERT INTO seller_leads (
+        client_name,
+        email,
+        phone,
+        property_address,
+        target_price,
+        timeline,
+        occupancy_status,
+        notes
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [clientName, email, phone, propertyAddress, targetPrice, timeline, occupancyStatus, notes],
+    );
+
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin seller lead save failed:', error);
+    return res.status(500).json({ message: 'Could not save seller lead.' });
   }
 });
 
