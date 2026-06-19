@@ -1,4 +1,6 @@
-﻿import PublicLayout from '../../components/layout/PublicLayout';
+﻿import { useEffect, useMemo, useState } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import PublicLayout from '../../components/layout/PublicLayout';
 import VacationBookingCalendar from '../../components/booking/VacationBookingCalendar';
 import Faq from '../../components/sections/Faq';
 import FormStatus from '../../components/ui/FormStatus';
@@ -7,16 +9,28 @@ import { useContactForm } from '../../lib/useContactForm';
 import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
 import { usePageMeta } from '../../lib/usePageMeta';
 
-const photoSlots = [
+type PublicRental = {
+  id: number;
+  slug: string;
+  title: string;
+  location_label: string;
+  description: string;
+  nightly_rate_cents: number;
+  cleaning_fee_cents: number;
+  max_guests: number;
+  hero_image_url: string;
+  gallery_image_urls: string[];
+  amenities: string[];
+};
+
+const fallbackPhotoSlots = [
   'Exterior photo',
   'Living room photo',
   'Kitchen photo',
   'Bedroom photo',
-  'Outdoor space photo',
-  'Area photo',
 ];
 
-const amenities = [
+const fallbackAmenities = [
   'Fully equipped kitchen',
   'Fast Wi-Fi',
   'Free parking',
@@ -58,6 +72,50 @@ function VacationRentals() {
   const { status, submit } = useContactForm('Orlando Vacation Rental Question');
   const template = getSiteContentTemplate('vacation-rentals');
   const { content, heroImageUrl } = usePublicSiteContent('vacation-rentals', template?.defaults || {});
+  const [rentals, setRentals] = useState<PublicRental[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/public-rentals')
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))
+      .then((payload: { rentals: PublicRental[] }) => {
+        if (!active) return;
+        setRentals(Array.isArray(payload.rentals) ? payload.rentals : []);
+      })
+      .catch(() => {
+        if (active) setRentals([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    setSelectedIndex((current) => {
+      if (!rentals.length) return 0;
+      return Math.min(current, rentals.length - 1);
+    });
+  }, [rentals]);
+
+  const selectedRental = rentals[selectedIndex] || null;
+  const rentalAmenities = useMemo(
+    () => (selectedRental?.amenities?.length ? selectedRental.amenities : fallbackAmenities),
+    [selectedRental],
+  );
+  const rentalPhotos = useMemo(() => {
+    const images = [selectedRental?.hero_image_url, ...(selectedRental?.gallery_image_urls || [])].filter(Boolean) as string[];
+    return images.length ? images : fallbackPhotoSlots;
+  }, [selectedRental]);
+
+  function isImageValue(value: string) {
+    return value.startsWith('data:') || value.startsWith('http') || value.startsWith('/');
+  }
+
+  function cycleRental(direction: number) {
+    if (rentals.length < 2) return;
+    setSelectedIndex((current) => (current + direction + rentals.length) % rentals.length);
+  }
 
   return (
     <PublicLayout>
@@ -65,27 +123,62 @@ function VacationRentals() {
         <section className="page-hero page-hero-vacation">
           <div className="page-hero-content">
             <p className="eyebrow">{content.heroEyebrow}</p>
-            <h1>{content.heroTitle}</h1>
-            <p>{content.heroDescription}</p>
+            <h1>{selectedRental?.title || content.heroTitle}</h1>
+            <p>{selectedRental?.description || content.heroDescription}</p>
+            {selectedRental ? (
+              <dl className="rental-hero-meta" aria-label="Selected rental summary">
+                <div>
+                  <dt>Location</dt>
+                  <dd>{selectedRental.location_label}</dd>
+                </div>
+                <div>
+                  <dt>Guests</dt>
+                  <dd>Up to {selectedRental.max_guests}</dd>
+                </div>
+              </dl>
+            ) : null}
           </div>
           <div className="page-hero-visual page-hero-image-frame vacation-hero-visual" aria-label="Orlando vacation rental visual">
-            <img src={heroImageUrl || '/images/site/vacation-hero.jpg'} alt="Sunlit Orlando vacation rental interior and patio" />
+            <img src={selectedRental?.hero_image_url || heroImageUrl || '/images/site/vacation-hero.jpg'} alt="Sunlit Orlando vacation rental interior and patio" />
           </div>
         </section>
 
         <section className="page-content" id="availability">
-          <div className="split-section vacation-booking">
-            <div className="page-intro">
+          <div className="split-section vacation-booking vacation-booking-layout">
+            <div className="page-intro vacation-booking-intro">
               <p className="eyebrow">{content.availabilityEyebrow}</p>
               <h2>{content.availabilityTitle}</h2>
               <p>{content.availabilityDescription}</p>
+              {selectedRental ? (
+                <section className="rental-selector" aria-label="Available rentals">
+                  <div className="rental-selector-head">
+                    <div>
+                      <p className="eyebrow">Available rental</p>
+                      <h3>{selectedRental.title}</h3>
+                    </div>
+                    {rentals.length > 1 ? (
+                      <div className="rental-selector-controls">
+                        <button type="button" className="rental-selector-button" onClick={() => cycleRental(-1)} aria-label="Previous rental">
+                          <ChevronUp size={18} />
+                        </button>
+                        <span className="rental-selector-status">{selectedIndex + 1} / {rentals.length}</span>
+                        <button type="button" className="rental-selector-button" onClick={() => cycleRental(1)} aria-label="Next rental">
+                          <ChevronDown size={18} />
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                  <p className="rental-selector-location">{selectedRental.location_label}</p>
+                  <p className="rental-selector-copy">{selectedRental.description}</p>
+                </section>
+              ) : null}
               <div className="notice-box">
                 Availability and pricing may change until payment is completed and a booking confirmation is issued.
                 Vacation rental accommodations are offered independently through Iris &amp; J Holdings and are not
                 real estate brokerage services.
               </div>
             </div>
-            <VacationBookingCalendar />
+            <VacationBookingCalendar key={selectedRental?.id || 'default-rental'} rentalId={selectedRental?.id} />
           </div>
         </section>
 
@@ -108,14 +201,15 @@ function VacationRentals() {
         <section className="page-content" id="amenities">
           <div className="page-intro">
             <p className="eyebrow">Amenities</p>
-            <h2>Comfortable, practical, and close to the parks.</h2>
+            <h2>{selectedRental ? `${selectedRental.title} at a glance.` : 'Comfortable, practical, and close to the parks.'}</h2>
             <p>
-              This section can be updated with the property’s exact photos, amenities, house rules, and guest
-              instructions once those details are finalized.
+              {selectedRental
+                ? 'The amenities below come directly from the active rental record in the control center.'
+                : 'This section can be updated with the property’s exact photos, amenities, house rules, and guest instructions once those details are finalized.'}
             </p>
           </div>
           <ul className="amenity-grid">
-            {amenities.map((amenity) => (
+            {rentalAmenities.map((amenity) => (
               <li className="amenity-item" key={amenity}>{amenity}</li>
             ))}
           </ul>
@@ -124,14 +218,22 @@ function VacationRentals() {
         <section className="page-content" id="photos">
           <div className="page-intro">
             <p className="eyebrow">Photos</p>
-            <h2>Property photos coming soon.</h2>
+            <h2>{selectedRental ? `${selectedRental.title} photos.` : 'Property photos coming soon.'}</h2>
             <p>
-              Replace these placeholders with the rental’s actual photos before promoting the listing.
+              {selectedRental
+                ? 'These images come directly from the rental record in the control center.'
+                : 'Replace these placeholders with the rental’s actual photos before promoting the listing.'}
             </p>
           </div>
           <div className="vacation-photo-grid">
-            {photoSlots.map((slot) => (
-              <div className="vacation-photo-card" key={slot}>{slot}</div>
+            {rentalPhotos.map((item, index) => (
+              isImageValue(String(item)) ? (
+                <div className="vacation-photo-card has-photo" key={`photo-${index}`}>
+                  <img src={String(item)} alt={selectedRental ? `${selectedRental.title} photo ${index + 1}` : `Vacation rental photo ${index + 1}`} />
+                </div>
+              ) : (
+                <div className="vacation-photo-card" key={`placeholder-${index}`}>{String(item)}</div>
+              )
             ))}
           </div>
         </section>
@@ -154,7 +256,7 @@ function VacationRentals() {
               </div>
               <div className="input-group"><label htmlFor="vacation-question">Your Question</label><textarea id="vacation-question" name="question" required /></div>
               <button className="button button-primary" type="submit" disabled={status === 'sending'}>
-                {status === 'sending' ? 'Sending…' : 'Send Question'}
+                {status === 'sending' ? 'Sending...' : 'Send Question'}
               </button>
               <FormStatus status={status} />
             </form>
@@ -176,4 +278,5 @@ function VacationRentals() {
 }
 
 export default VacationRentals;
+
 

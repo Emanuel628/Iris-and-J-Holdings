@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
+import { ChevronsUpDown } from 'lucide-react';
 import AdminImagePicker from '../../components/admin/AdminImagePicker';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { fetchAdminBlockedDates, fetchAdminMe, fetchAdminRentals, type BlockedDateRecord, type RentalRecord } from '../../lib/adminAuth';
@@ -6,12 +7,11 @@ import { usePageMeta } from '../../lib/usePageMeta';
 
 type RentalForm = {
   id?: number;
-  slug: string;
   title: string;
   locationLabel: string;
   description: string;
-  nightlyRateCents: string;
-  cleaningFeeCents: string;
+  nightlyRate: string;
+  cleaningFee: string;
   maxGuests: string;
   heroImages: string[];
   galleryImages: string[];
@@ -28,12 +28,11 @@ type BlockForm = {
 
 function emptyRentalForm(): RentalForm {
   return {
-    slug: '',
     title: '',
     locationLabel: '',
     description: '',
-    nightlyRateCents: '',
-    cleaningFeeCents: '',
+    nightlyRate: '',
+    cleaningFee: '',
     maxGuests: '10',
     heroImages: [],
     galleryImages: [],
@@ -45,18 +44,24 @@ function emptyRentalForm(): RentalForm {
 function toRentalForm(rental: RentalRecord): RentalForm {
   return {
     id: rental.id,
-    slug: rental.slug,
     title: rental.title,
     locationLabel: rental.location_label,
     description: rental.description,
-    nightlyRateCents: String(rental.nightly_rate_cents),
-    cleaningFeeCents: String(rental.cleaning_fee_cents),
+    nightlyRate: (rental.nightly_rate_cents / 100).toFixed(2),
+    cleaningFee: (rental.cleaning_fee_cents / 100).toFixed(2),
     maxGuests: String(rental.max_guests),
     heroImages: rental.hero_image_url ? [rental.hero_image_url] : [],
     galleryImages: rental.gallery_image_urls || [],
     amenities: (rental.amenities || []).join('\n'),
     isActive: rental.is_active,
   };
+}
+
+function dollarsToCents(value: string) {
+  const normalized = value.replace(/[^0-9.]/g, '');
+  const amount = Number(normalized);
+  if (!Number.isFinite(amount) || amount < 0) return 0;
+  return Math.round(amount * 100);
 }
 
 function AdminRentals() {
@@ -68,6 +73,10 @@ function AdminRentals() {
   const [busy, setBusy] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const selectedRentalLabel = useMemo(
+    () => rentals.find((item) => item.id === rentalForm.id)?.title ?? 'New rental',
+    [rentals, rentalForm.id],
+  );
 
   async function loadData() {
     const [me, rentalsPayload, blockedPayload] = await Promise.all([
@@ -102,12 +111,11 @@ function AdminRentals() {
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
           id: rentalForm.id,
-          slug: rentalForm.slug,
           title: rentalForm.title,
           locationLabel: rentalForm.locationLabel,
           description: rentalForm.description,
-          nightlyRateCents: Number(rentalForm.nightlyRateCents || 0),
-          cleaningFeeCents: Number(rentalForm.cleaningFeeCents || 0),
+          nightlyRateCents: dollarsToCents(rentalForm.nightlyRate),
+          cleaningFeeCents: dollarsToCents(rentalForm.cleaningFee),
           maxGuests: Number(rentalForm.maxGuests || 10),
           heroImageUrl: rentalForm.heroImages[0] || '',
           galleryImageUrls: rentalForm.galleryImages.join('\n'),
@@ -213,26 +221,33 @@ function AdminRentals() {
         <section className="admin-section">
           <div className="admin-section-head">
             <h2>Rental Editor</h2>
-            <select value={rentalForm.id || ''} onChange={(event) => {
-              const rental = rentals.find((item) => item.id === Number(event.target.value));
-              setRentalForm(rental ? toRentalForm(rental) : emptyRentalForm());
-            }}>
-              <option value="">New rental</option>
-              {rentals.map((rental) => (
-                <option key={rental.id} value={rental.id}>{rental.title}</option>
-              ))}
-            </select>
+            <div className="admin-select-shell">
+              <label className="sr-only" htmlFor="admin-rental-select">Select rental</label>
+              <select
+                id="admin-rental-select"
+                value={rentalForm.id || ''}
+                onChange={(event) => {
+                  const rental = rentals.find((item) => item.id === Number(event.target.value));
+                  setRentalForm(rental ? toRentalForm(rental) : emptyRentalForm());
+                }}
+              >
+                <option value="">{selectedRentalLabel}</option>
+                {rentals.map((rental) => (
+                  <option key={rental.id} value={rental.id}>{rental.title}</option>
+                ))}
+              </select>
+              <ChevronsUpDown size={16} aria-hidden="true" />
+            </div>
           </div>
           <div className="form-shell">
             <div className="form-row">
-              <div className="input-group"><label htmlFor="admin-rental-slug">Slug</label><input id="admin-rental-slug" value={rentalForm.slug} onChange={(event) => setRentalForm({ ...rentalForm, slug: event.target.value })} /></div>
               <div className="input-group"><label htmlFor="admin-rental-title">Title</label><input id="admin-rental-title" value={rentalForm.title} onChange={(event) => setRentalForm({ ...rentalForm, title: event.target.value })} /></div>
+              <div className="input-group"><label htmlFor="admin-rental-location">Location</label><input id="admin-rental-location" value={rentalForm.locationLabel} onChange={(event) => setRentalForm({ ...rentalForm, locationLabel: event.target.value })} /></div>
             </div>
-            <div className="input-group"><label htmlFor="admin-rental-location">Location</label><input id="admin-rental-location" value={rentalForm.locationLabel} onChange={(event) => setRentalForm({ ...rentalForm, locationLabel: event.target.value })} /></div>
             <div className="input-group"><label htmlFor="admin-rental-description">Description</label><textarea id="admin-rental-description" value={rentalForm.description} onChange={(event) => setRentalForm({ ...rentalForm, description: event.target.value })} /></div>
             <div className="form-row">
-              <div className="input-group"><label htmlFor="admin-rental-rate">Nightly Rate (cents)</label><input id="admin-rental-rate" type="number" value={rentalForm.nightlyRateCents} onChange={(event) => setRentalForm({ ...rentalForm, nightlyRateCents: event.target.value })} /></div>
-              <div className="input-group"><label htmlFor="admin-rental-cleaning">Cleaning Fee (cents)</label><input id="admin-rental-cleaning" type="number" value={rentalForm.cleaningFeeCents} onChange={(event) => setRentalForm({ ...rentalForm, cleaningFeeCents: event.target.value })} /></div>
+              <div className="input-group"><label htmlFor="admin-rental-rate">Nightly Rate</label><input id="admin-rental-rate" inputMode="decimal" placeholder="100.00" value={rentalForm.nightlyRate} onChange={(event) => setRentalForm({ ...rentalForm, nightlyRate: event.target.value })} /></div>
+              <div className="input-group"><label htmlFor="admin-rental-cleaning">Cleaning Fee</label><input id="admin-rental-cleaning" inputMode="decimal" placeholder="75.00" value={rentalForm.cleaningFee} onChange={(event) => setRentalForm({ ...rentalForm, cleaningFee: event.target.value })} /></div>
             </div>
             <div className="form-row">
               <div className="input-group"><label htmlFor="admin-rental-max-guests">Max Guests</label><input id="admin-rental-max-guests" type="number" value={rentalForm.maxGuests} onChange={(event) => setRentalForm({ ...rentalForm, maxGuests: event.target.value })} /></div>

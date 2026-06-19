@@ -166,6 +166,13 @@ function clean(value) {
   return String(value ?? '').trim();
 }
 
+function slugify(value) {
+  return clean(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 function parseCookies(req) {
   const header = String(req.headers.cookie || '');
   const cookies = {};
@@ -641,6 +648,27 @@ async function getManualBlockedRanges() {
   return result.rows;
 }
 
+async function getRentalBlockedRanges(rentalId) {
+  if (!pgPool || !rentalId) return [];
+  const [manual, bookingsResult] = await Promise.all([
+    pgPool.query(
+      `SELECT start_date::text AS start, end_date::text AS end
+       FROM blocked_dates
+       WHERE rental_id = $1
+       ORDER BY start_date ASC`,
+      [rentalId],
+    ),
+    pgPool.query(
+      `SELECT check_in::text AS start, check_out::text AS end
+       FROM vacation_bookings
+       WHERE rental_id = $1 AND status <> 'cancelled'
+       ORDER BY check_in ASC`,
+      [rentalId],
+    ),
+  ]);
+  return [...manual.rows, ...bookingsResult.rows];
+}
+
 async function getAllBlockedRanges() {
   const [airbnb, website, manual] = await Promise.all([
     getBlockedRanges(booking.icalUrls),
@@ -905,7 +933,7 @@ async function notifyNotaryBookingV2(session) {
 
 async function persistVacationBooking(session) {
   if (!pgPool) return;
-  const rental = await pgPool.query(`SELECT id FROM rentals WHERE slug = 'orlando-vacation-rental' LIMIT 1`);
+  const rentalId = Number(session.metadata?.rentalId || 0) || null;
   await pgPool.query(
     `INSERT INTO vacation_bookings (
       stripe_session_id, rental_id, guest_name, guest_email, guest_phone, guest_count,
@@ -925,7 +953,7 @@ async function persistVacationBooking(session) {
       status = EXCLUDED.status`,
     [
       session.id,
-      rental.rows[0]?.id || null,
+      rentalId,
       session.metadata?.primaryName || 'Guest',
       session.customer_details?.email || session.customer_email || session.metadata?.email || '',
       session.metadata?.primaryPhone || '',
@@ -1211,13 +1239,32 @@ app.get('/api/admin/rentals', async (req, res) => {
   }
 });
 
+app.get('/api/public-rentals', async (_req, res) => {
+  try {
+    if (!pgPool) {
+      return res.json({ rentals: [] });
+    }
+    const result = await pgPool.query(
+      `SELECT id, slug, title, location_label, description, nightly_rate_cents, cleaning_fee_cents,
+              max_guests, hero_image_url, gallery_image_urls, amenities, is_active, updated_at
+       FROM rentals
+       WHERE is_active = TRUE
+       ORDER BY created_at ASC`,
+    );
+    return res.json({ rentals: result.rows });
+  } catch (error) {
+    console.error('Public rentals load failed:', error);
+    return res.status(500).json({ message: 'Could not load rentals.' });
+  }
+});
+
 app.post('/api/admin/rentals', async (req, res) => {
   try {
     const admin = await requireAdmin(req, res);
     if (!admin) return;
 
     const id = Number(req.body?.id || 0);
-    const slug = clean(req.body?.slug);
+    const slug = clean(req.body?.slug) || slugify(req.body?.title);
     const title = clean(req.body?.title);
     const locationLabel = clean(req.body?.locationLabel);
     const description = clean(req.body?.description);
@@ -1230,7 +1277,7 @@ app.post('/api/admin/rentals', async (req, res) => {
     const isActive = Boolean(req.body?.isActive);
 
     if (!slug || !title || !locationLabel) {
-      return res.status(400).json({ message: 'Slug, title, and location are required.' });
+      return res.status(400).json({ message: 'Title and location are required.' });
     }
 
     if (id > 0) {
@@ -1787,7 +1834,31 @@ app.post('/api/home-value-estimate', async (req, res) => {
   }
 });
 
-app.get('/api/availability', async (_req, res) => {
+app.get('/api/availability', async (req, res) => {
+  const rentalId = Number(req.query?.rentalId || 0);
+  if (pgPool && rentalId > 0) {
+    const rentalResult = await pgPool.query(
+      `SELECT id, nightly_rate_cents, cleaning_fee_cents
+       FROM rentals
+       WHERE id = $1 AND is_active = TRUE
+       LIMIT 1`,
+      [rentalId],
+    );
+    const rental = rentalResult.rows[0];
+    if (!rental) {
+      return res.status(404).json({ message: 'Rental not found.' });
+    }
+    const blocked = await getRentalBlockedRanges(rentalId);
+    return res.json({
+      blocked,
+      nightlyRateCents: rental.nightly_rate_cents,
+      cleaningFeeCents: rental.cleaning_fee_cents,
+      currency: booking.currency,
+      bookingEnabled: Boolean(stripe && rental.nightly_rate_cents > 0),
+      airbnbSyncEnabled: false,
+    });
+  }
+
   const blocked = await getAllBlockedRanges();
   res.json({
     blocked,
@@ -1804,12 +1875,10 @@ app.post('/api/checkout', async (req, res) => {
     if (!stripe) {
       return res.status(503).json({ message: 'Online booking isnâ€™t available yet. Please join the interest list.' });
     }
-    if (!(booking.nightlyRateCents > 0)) {
-      return res.status(503).json({ message: 'Pricing isnâ€™t set up yet. Please join the interest list.' });
-    }
-
+    
     const checkIn = clean(req.body?.checkIn);
     const checkOut = clean(req.body?.checkOut);
+    const rentalId = Number(req.body?.rentalId || 0);
     const primaryGuest = req.body?.primaryGuest && typeof req.body.primaryGuest === 'object' ? req.body.primaryGuest : {};
     const additionalGuestsRaw = Array.isArray(req.body?.additionalGuests) ? req.body.additionalGuests : [];
     const additionalGuests = additionalGuestsRaw.slice(0, 9).map((guest) => ({
@@ -1838,7 +1907,32 @@ app.post('/api/checkout', async (req, res) => {
       return res.status(400).json({ message: stay.message });
     }
 
-    const blocked = await getAllBlockedRanges();
+    let rentalRate = booking.nightlyRateCents;
+    let cleaningFee = booking.cleaningFeeCents;
+    let rentalTitle = 'Orlando vacation rental';
+
+    if (pgPool && rentalId > 0) {
+      const rentalResult = await pgPool.query(
+        `SELECT id, title, nightly_rate_cents, cleaning_fee_cents
+         FROM rentals
+         WHERE id = $1 AND is_active = TRUE
+         LIMIT 1`,
+        [rentalId],
+      );
+      const rental = rentalResult.rows[0];
+      if (!rental) {
+        return res.status(404).json({ message: 'Rental not found.' });
+      }
+      rentalRate = rental.nightly_rate_cents;
+      cleaningFee = rental.cleaning_fee_cents;
+      rentalTitle = rental.title;
+    }
+
+    if (!(rentalRate > 0)) {
+      return res.status(503).json({ message: 'Pricing isnâ€™t set up yet. Please join the interest list.' });
+    }
+
+    const blocked = rentalId > 0 ? await getRentalBlockedRanges(rentalId) : await getAllBlockedRanges();
     if (overlapsBlocked(checkIn, checkOut, blocked)) {
       return res.status(409).json({ message: 'Some of those nights are no longer available. Please choose different dates.' });
     }
@@ -1849,20 +1943,20 @@ app.post('/api/checkout', async (req, res) => {
         quantity: 1,
         price_data: {
           currency: booking.currency,
-          unit_amount: booking.nightlyRateCents * stay.nights,
+          unit_amount: rentalRate * stay.nights,
           product_data: {
-            name: `Orlando vacation rental â€” ${stay.nights} night${stay.nights > 1 ? 's' : ''}`,
+            name: `${rentalTitle} â€” ${stay.nights} night${stay.nights > 1 ? 's' : ''}`,
             description: `${checkIn} to ${checkOut}`,
           },
         },
       },
     ];
-    if (booking.cleaningFeeCents > 0) {
+    if (cleaningFee > 0) {
       lineItems.push({
         quantity: 1,
         price_data: {
           currency: booking.currency,
-          unit_amount: booking.cleaningFeeCents,
+          unit_amount: cleaningFee,
           product_data: { name: 'Cleaning fee' },
         },
       });
@@ -1890,6 +1984,8 @@ app.post('/api/checkout', async (req, res) => {
         guestList: metadataValue(guestList),
         houseRulesAgreed: 'true',
         termsAgreed: 'true',
+        rentalId: String(rentalId || ''),
+        rentalTitle: metadataValue(rentalTitle),
       },
     });
 

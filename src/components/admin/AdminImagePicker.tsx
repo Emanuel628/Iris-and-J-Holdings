@@ -1,4 +1,4 @@
-import { useId, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 type AdminImagePickerProps = {
   label: string;
@@ -14,6 +14,12 @@ function emptySlots(images: string[]) {
 function AdminImagePicker({ label, images, onChange, helperText }: AdminImagePickerProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const inputId = useId();
+  const [slotCount, setSlotCount] = useState(emptySlots(images));
+  const [targetIndex, setTargetIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    setSlotCount((current) => Math.max(current, emptySlots(images)));
+  }, [images]);
 
   async function handleFiles(fileList: FileList | null) {
     if (!fileList?.length) return;
@@ -30,19 +36,28 @@ function AdminImagePicker({ label, images, onChange, helperText }: AdminImagePic
       ),
     );
 
-    onChange([...images, ...nextImages.filter(Boolean)]);
+    const filtered = nextImages.filter(Boolean);
+    if (targetIndex !== null) {
+      const next = [...images];
+      if (filtered[0]) {
+        next[targetIndex] = filtered[0];
+      }
+      onChange(next);
+      setTargetIndex(null);
+    } else {
+      onChange([...images, ...filtered]);
+    }
+    setSlotCount((current) => Math.max(current, images.length + filtered.length, 4));
     if (inputRef.current) {
       inputRef.current.value = '';
     }
   }
 
-  const slotCount = emptySlots(images);
-
   return (
     <div className="input-group">
       <div className="admin-image-picker-head">
         <label htmlFor={inputId}>{label}</label>
-        <button className="button-secondary" type="button" onClick={() => inputRef.current?.click()}>Add Pic</button>
+        <button className="button-secondary" type="button" onClick={() => setSlotCount((current) => current + 1)}>Add Pic</button>
       </div>
       <input
         id={inputId}
@@ -63,7 +78,10 @@ function AdminImagePicker({ label, images, onChange, helperText }: AdminImagePic
               <button
                 type="button"
                 className={`admin-image-frame${image ? ' has-image' : ''}`}
-                onClick={() => inputRef.current?.click()}
+                onClick={() => {
+                  setTargetIndex(index);
+                  inputRef.current?.click();
+                }}
                 aria-label={image ? `Replace image ${index + 1}` : `Add image ${index + 1}`}
               >
                 {image ? <img src={image} alt="" /> : <span>Add Pic</span>}

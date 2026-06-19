@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, Minus, Plus } from 'lucide-react';
 import PublicLayout from '../../components/layout/PublicLayout';
 import { vacationHouseRules } from '../../content/vacationHouseRules';
@@ -60,6 +60,7 @@ function VacationRentalIntake() {
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
   const checkIn = params.get('checkIn') || '';
   const checkOut = params.get('checkOut') || '';
+  const rentalId = Number(params.get('rentalId') || 0) || undefined;
   const [data, setData] = useState<Availability | null>(null);
   const [loadError, setLoadError] = useState('');
   const [primaryGuest, setPrimaryGuest] = useState<Guest>({ id: 1, fullName: '', email: '', phone: '' });
@@ -77,7 +78,9 @@ function VacationRentalIntake() {
     }
 
     let active = true;
-    fetch('/api/availability')
+    const query = new URLSearchParams();
+    if (rentalId) query.set('rentalId', String(rentalId));
+    fetch(`/api/availability${query.toString() ? `?${query.toString()}` : ''}`)
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))
       .then((payload: Availability) => {
         if (active) setData(payload);
@@ -86,7 +89,7 @@ function VacationRentalIntake() {
     return () => {
       active = false;
     };
-  }, [checkIn, checkOut]);
+  }, [checkIn, checkOut, rentalId]);
 
   const nights = checkIn && checkOut ? nightsBetween(checkIn, checkOut) : 0;
   const nightlyTotal = nights * (data?.nightlyRateCents ?? 0);
@@ -148,6 +151,7 @@ function VacationRentalIntake() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
+          rentalId,
           checkIn,
           checkOut,
           primaryGuest: {
@@ -174,6 +178,9 @@ function VacationRentalIntake() {
       setSubmitting(false);
     }
   }
+
+  const backParams = new URLSearchParams({ checkIn, checkOut });
+  if (rentalId) backParams.set('rentalId', String(rentalId));
 
   return (
     <PublicLayout>
@@ -315,7 +322,7 @@ function VacationRentalIntake() {
               </div>
 
               <div className="page-actions">
-                <a className="button-secondary" href={`/vacation-rentals?checkIn=${encodeURIComponent(checkIn)}&checkOut=${encodeURIComponent(checkOut)}`}>Back to dates</a>
+                <a className="button-secondary" href={`/vacation-rentals?${backParams.toString()}`}>Back to dates</a>
                 <button className="button button-primary" type="button" onClick={startCheckout} disabled={submitting || Boolean(loadError) || !data?.bookingEnabled}>
                   {submitting ? 'Starting checkout...' : 'Continue to secure checkout'} <ArrowRight size={16} />
                 </button>

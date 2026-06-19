@@ -1625,3 +1625,141 @@ html.a11y-underline a {
   min-width: 0;
 }
 
+
+.admin-select-shell {
+  position: relative;
+  min-width: 220px;
+}
+
+.admin-select-shell select {
+  width: 100%;
+  padding-right: 2.5rem;
+  appearance: none;
+  background: #fffdf9;
+}
+
+.admin-select-shell svg {
+  position: absolute;
+  right: 0.85rem;
+  top: 50%;
+  color: var(--color-muted);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.rental-hero-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, max-content));
+  gap: 1rem 2rem;
+  margin-top: 1.5rem;
+}
+
+.rental-hero-meta dt,
+.rental-selector-head .eyebrow {
+  margin-bottom: 0.35rem;
+}
+
+.rental-hero-meta dt {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.rental-hero-meta dd {
+  margin: 0;
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.vacation-booking-layout {
+  align-items: start;
+}
+
+.rental-selector {
+  margin: 1.5rem 0;
+  padding: 1.25rem 0 0;
+  border-top: 1px solid #ddd3c7;
+}
+
+.rental-selector-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.rental-selector-head h3 {
+  margin: 0;
+  font-size: 1.45rem;
+}
+
+.rental-selector-controls {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+}
+
+.rental-selector-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  color: var(--color-ink);
+  background: #fffdf9;
+  border: 1px solid #ddd3c7;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.rental-selector-button:hover {
+  border-color: var(--color-champagne-dark);
+}
+
+.rental-selector-status {
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.rental-selector-location {
+  margin: 0.75rem 0 0;
+  color: var(--color-champagne-dark);
+  font-weight: 700;
+}
+
+.rental-selector-copy {
+  margin: 0.6rem 0 0;
+}
+
+.vacation-photo-card.has-photo {
+  padding: 0;
+  overflow: hidden;
+}
+
+.vacation-photo-card.has-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (max-width: 840px) {
+  .admin-select-shell {
+    width: 100%;
+  }
+
+  .rental-hero-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .rental-selector-head {
+    align-items: center;
+  }
+
+  .rental-selector-controls {
+    grid-auto-flow: column;
+    align-items: center;
+  }
+}

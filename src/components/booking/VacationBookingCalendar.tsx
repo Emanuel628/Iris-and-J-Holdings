@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 
 type BlockedRange = { start: string; end: string };
@@ -9,6 +9,10 @@ type Availability = {
   cleaningFeeCents: number;
   currency: string;
   bookingEnabled: boolean;
+};
+
+type VacationBookingCalendarProps = {
+  rentalId?: number;
 };
 
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -64,7 +68,7 @@ function formatShortDate(value: string) {
   }).format(date);
 }
 
-function VacationBookingCalendar() {
+function VacationBookingCalendar({ rentalId }: VacationBookingCalendarProps) {
   const [data, setData] = useState<Availability | null>(null);
   const [loadError, setLoadError] = useState(false);
   const today = todayIso();
@@ -76,7 +80,9 @@ function VacationBookingCalendar() {
 
   useEffect(() => {
     let active = true;
-    fetch('/api/availability')
+    const params = new URLSearchParams();
+    if (rentalId) params.set('rentalId', String(rentalId));
+    fetch(`/api/availability${params.toString() ? `?${params.toString()}` : ''}`)
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error('failed'))))
       .then((payload: Availability) => {
         if (active) setData(payload);
@@ -85,7 +91,7 @@ function VacationBookingCalendar() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [rentalId]);
 
   const blockedNights = useMemo(() => {
     const set = new Set<string>();
@@ -137,6 +143,7 @@ function VacationBookingCalendar() {
       return;
     }
     const params = new URLSearchParams({ checkIn, checkOut });
+    if (rentalId) params.set('rentalId', String(rentalId));
     window.location.href = `/vacation-rental-intake?${params.toString()}`;
   }
 
@@ -265,3 +272,5 @@ function VacationBookingCalendar() {
 }
 
 export default VacationBookingCalendar;
+
+
