@@ -36,11 +36,12 @@ type SellerLeadForm = {
   notes: string;
 };
 
-const BUYER_TIMELINE_OPTIONS = ['7 days', '14 days', '30 days', '60 days', '90 days', '6 months', '1 year', '2+ years', 'Custom'];
-const BUYER_FINANCING_OPTIONS = ['Cash', 'Conventional loan', 'FHA loan', 'VA loan', 'USDA loan', 'Other financing', 'Custom'];
-const BUYER_APPROVAL_OPTIONS = ['Pre-approved', 'Looking for approval', 'Needs lender referral', 'Paying cash', 'Custom'];
-const SELLER_TIMELINE_OPTIONS = ['ASAP', '30 days', '60 days', '90 days', '6 months', '1 year', 'Custom'];
-const SELLER_OCCUPANCY_OPTIONS = ['Owner occupied', 'Tenant occupied', 'Vacant', 'Seasonal use', 'Custom'];
+const CUSTOM_OPTION = '__custom__';
+const BUYER_TIMELINE_OPTIONS = ['7 days', '14 days', '30 days', '60 days', '90 days', '6 months', '1 year', '2+ years'];
+const BUYER_FINANCING_OPTIONS = ['Cash', 'Conventional loan', 'FHA loan', 'VA loan', 'USDA loan', 'Other financing'];
+const BUYER_APPROVAL_OPTIONS = ['Pre-approved', 'Looking for approval', 'Needs lender referral', 'Paying cash'];
+const SELLER_TIMELINE_OPTIONS = ['ASAP', '30 days', '60 days', '90 days', '6 months', '1 year'];
+const SELLER_OCCUPANCY_OPTIONS = ['Owner occupied', 'Tenant occupied', 'Vacant', 'Seasonal use'];
 
 function emptyBuyerLeadForm(): BuyerLeadForm {
   return {
@@ -75,16 +76,13 @@ function formatCurrency(amount: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
 }
 
-function getSelectValue(value: string, options: string[]) {
-  if (!value) return '';
-  return options.includes(value) ? value : 'Custom';
-}
-
 function renderSelectWithCustom({
   id,
   label,
   value,
   options,
+  customActive,
+  setCustomActive,
   onSelectChange,
   onCustomChange,
   customPlaceholder,
@@ -93,12 +91,13 @@ function renderSelectWithCustom({
   label: string;
   value: string;
   options: string[];
+  customActive: boolean;
+  setCustomActive: (value: boolean) => void;
   onSelectChange: (value: string) => void;
   onCustomChange: (value: string) => void;
   customPlaceholder: string;
 }) {
-  const selectedValue = getSelectValue(value, options);
-  const showCustom = selectedValue === 'Custom';
+  const selectedValue = customActive ? CUSTOM_OPTION : value;
 
   return (
     <div className="input-group">
@@ -109,10 +108,14 @@ function renderSelectWithCustom({
           value={selectedValue}
           onChange={(event) => {
             const nextValue = event.target.value;
-            if (nextValue === 'Custom') {
-              onSelectChange(value && !options.includes(value) ? value : '');
+            if (nextValue === CUSTOM_OPTION) {
+              setCustomActive(true);
+              if (options.includes(value)) {
+                onCustomChange('');
+              }
               return;
             }
+            setCustomActive(false);
             onSelectChange(nextValue);
           }}
         >
@@ -120,10 +123,11 @@ function renderSelectWithCustom({
           {options.map((option) => (
             <option key={option} value={option}>{option}</option>
           ))}
+          <option value={CUSTOM_OPTION}>Custom</option>
         </select>
         <ChevronsUpDown size={16} aria-hidden="true" />
       </div>
-      {showCustom ? (
+      {customActive ? (
         <input
           value={value}
           onChange={(event) => onCustomChange(event.target.value)}
@@ -140,6 +144,11 @@ function AdminRealtorTools() {
   const [sellerLeads, setSellerLeads] = useState<SellerLeadRecord[]>([]);
   const [buyerForm, setBuyerForm] = useState<BuyerLeadForm>(emptyBuyerLeadForm());
   const [sellerForm, setSellerForm] = useState<SellerLeadForm>(emptySellerLeadForm());
+  const [buyerTimelineCustom, setBuyerTimelineCustom] = useState(false);
+  const [buyerFinancingCustom, setBuyerFinancingCustom] = useState(false);
+  const [buyerApprovalCustom, setBuyerApprovalCustom] = useState(false);
+  const [sellerTimelineCustom, setSellerTimelineCustom] = useState(false);
+  const [sellerOccupancyCustom, setSellerOccupancyCustom] = useState(false);
   const [busy, setBusy] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -190,6 +199,9 @@ function AdminRealtorTools() {
       if (!res.ok) throw new Error(payload.message || 'Could not save buyer lead.');
       await loadData();
       setBuyerForm(emptyBuyerLeadForm());
+      setBuyerTimelineCustom(false);
+      setBuyerFinancingCustom(false);
+      setBuyerApprovalCustom(false);
       setStatusMessage('Buyer intake saved.');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Could not save buyer lead.');
@@ -222,6 +234,8 @@ function AdminRealtorTools() {
       if (!res.ok) throw new Error(payload.message || 'Could not save seller lead.');
       await loadData();
       setSellerForm(emptySellerLeadForm());
+      setSellerTimelineCustom(false);
+      setSellerOccupancyCustom(false);
       setStatusMessage('Seller intake saved.');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Could not save seller lead.');
@@ -244,7 +258,12 @@ function AdminRealtorTools() {
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(payload.message || 'Could not delete buyer record.');
       await loadData();
-      if (buyerForm.id === id) setBuyerForm(emptyBuyerLeadForm());
+      if (buyerForm.id === id) {
+        setBuyerForm(emptyBuyerLeadForm());
+        setBuyerTimelineCustom(false);
+        setBuyerFinancingCustom(false);
+        setBuyerApprovalCustom(false);
+      }
       setStatusMessage('Buyer record deleted.');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Could not delete buyer record.');
@@ -267,7 +286,11 @@ function AdminRealtorTools() {
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(payload.message || 'Could not delete seller record.');
       await loadData();
-      if (sellerForm.id === id) setSellerForm(emptySellerLeadForm());
+      if (sellerForm.id === id) {
+        setSellerForm(emptySellerLeadForm());
+        setSellerTimelineCustom(false);
+        setSellerOccupancyCustom(false);
+      }
       setStatusMessage('Seller record deleted.');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Could not delete seller record.');
@@ -312,6 +335,8 @@ function AdminRealtorTools() {
                   label: 'Timeline',
                   value: buyerForm.timeline,
                   options: BUYER_TIMELINE_OPTIONS,
+                  customActive: buyerTimelineCustom,
+                  setCustomActive: setBuyerTimelineCustom,
                   onSelectChange: (value) => setBuyerForm({ ...buyerForm, timeline: value }),
                   onCustomChange: (value) => setBuyerForm({ ...buyerForm, timeline: value }),
                   customPlaceholder: 'Enter custom timeline',
@@ -321,6 +346,8 @@ function AdminRealtorTools() {
                   label: 'Financing Status',
                   value: buyerForm.financingStatus,
                   options: BUYER_FINANCING_OPTIONS,
+                  customActive: buyerFinancingCustom,
+                  setCustomActive: setBuyerFinancingCustom,
                   onSelectChange: (value) => setBuyerForm({ ...buyerForm, financingStatus: value }),
                   onCustomChange: (value) => setBuyerForm({ ...buyerForm, financingStatus: value }),
                   customPlaceholder: 'Enter custom financing status',
@@ -332,6 +359,8 @@ function AdminRealtorTools() {
                   label: 'Approval Status',
                   value: buyerForm.approvalStatus,
                   options: BUYER_APPROVAL_OPTIONS,
+                  customActive: buyerApprovalCustom,
+                  setCustomActive: setBuyerApprovalCustom,
                   onSelectChange: (value) => setBuyerForm({ ...buyerForm, approvalStatus: value }),
                   onCustomChange: (value) => setBuyerForm({ ...buyerForm, approvalStatus: value }),
                   customPlaceholder: 'Enter custom approval status',
@@ -341,7 +370,12 @@ function AdminRealtorTools() {
               <div className="input-group"><label htmlFor="buyer-notes">Notes</label><textarea id="buyer-notes" value={buyerForm.notes} onChange={(event) => setBuyerForm({ ...buyerForm, notes: event.target.value })} /></div>
               <div className="admin-inline-actions">
                 <button className="button button-primary" type="button" onClick={saveBuyerLead} disabled={busy}>{buyerForm.id ? 'Update buyer intake' : 'Save buyer intake'}</button>
-                {buyerForm.id ? <button className="button-secondary" type="button" onClick={() => setBuyerForm(emptyBuyerLeadForm())} disabled={busy}>Cancel edit</button> : null}
+                {buyerForm.id ? <button className="button-secondary" type="button" onClick={() => {
+                  setBuyerForm(emptyBuyerLeadForm());
+                  setBuyerTimelineCustom(false);
+                  setBuyerFinancingCustom(false);
+                  setBuyerApprovalCustom(false);
+                }} disabled={busy}>Cancel edit</button> : null}
               </div>
             </div>
           </section>
@@ -366,6 +400,8 @@ function AdminRealtorTools() {
                   label: 'Timeline',
                   value: sellerForm.timeline,
                   options: SELLER_TIMELINE_OPTIONS,
+                  customActive: sellerTimelineCustom,
+                  setCustomActive: setSellerTimelineCustom,
                   onSelectChange: (value) => setSellerForm({ ...sellerForm, timeline: value }),
                   onCustomChange: (value) => setSellerForm({ ...sellerForm, timeline: value }),
                   customPlaceholder: 'Enter custom timeline',
@@ -376,6 +412,8 @@ function AdminRealtorTools() {
                 label: 'Occupancy Status',
                 value: sellerForm.occupancyStatus,
                 options: SELLER_OCCUPANCY_OPTIONS,
+                customActive: sellerOccupancyCustom,
+                setCustomActive: setSellerOccupancyCustom,
                 onSelectChange: (value) => setSellerForm({ ...sellerForm, occupancyStatus: value }),
                 onCustomChange: (value) => setSellerForm({ ...sellerForm, occupancyStatus: value }),
                 customPlaceholder: 'Enter custom occupancy status',
@@ -383,7 +421,11 @@ function AdminRealtorTools() {
               <div className="input-group"><label htmlFor="seller-notes">Notes</label><textarea id="seller-notes" value={sellerForm.notes} onChange={(event) => setSellerForm({ ...sellerForm, notes: event.target.value })} /></div>
               <div className="admin-inline-actions">
                 <button className="button button-primary" type="button" onClick={saveSellerLead} disabled={busy}>{sellerForm.id ? 'Update seller intake' : 'Save seller intake'}</button>
-                {sellerForm.id ? <button className="button-secondary" type="button" onClick={() => setSellerForm(emptySellerLeadForm())} disabled={busy}>Cancel edit</button> : null}
+                {sellerForm.id ? <button className="button-secondary" type="button" onClick={() => {
+                  setSellerForm(emptySellerLeadForm());
+                  setSellerTimelineCustom(false);
+                  setSellerOccupancyCustom(false);
+                }} disabled={busy}>Cancel edit</button> : null}
               </div>
             </div>
           </section>
@@ -420,19 +462,24 @@ function AdminRealtorTools() {
                 <div>
                   <p>{lead.notes || 'No notes saved.'}</p>
                   <div className="admin-inline-actions">
-                    <button className="button-secondary" type="button" onClick={() => setBuyerForm({
-                      id: lead.id,
-                      clientName: lead.client_name,
-                      email: lead.email,
-                      phone: lead.phone,
-                      targetAreas: lead.target_areas,
-                      budgetMin: String(lead.budget_min || ''),
-                      budgetMax: String(lead.budget_max || ''),
-                      timeline: lead.timeline,
-                      financingStatus: lead.financing_status,
-                      approvalStatus: lead.approval_status,
-                      notes: lead.notes,
-                    })}>Edit</button>
+                    <button className="button-secondary" type="button" onClick={() => {
+                      setBuyerForm({
+                        id: lead.id,
+                        clientName: lead.client_name,
+                        email: lead.email,
+                        phone: lead.phone,
+                        targetAreas: lead.target_areas,
+                        budgetMin: String(lead.budget_min || ''),
+                        budgetMax: String(lead.budget_max || ''),
+                        timeline: lead.timeline,
+                        financingStatus: lead.financing_status,
+                        approvalStatus: lead.approval_status,
+                        notes: lead.notes,
+                      });
+                      setBuyerTimelineCustom(!BUYER_TIMELINE_OPTIONS.includes(lead.timeline));
+                      setBuyerFinancingCustom(!BUYER_FINANCING_OPTIONS.includes(lead.financing_status));
+                      setBuyerApprovalCustom(!BUYER_APPROVAL_OPTIONS.includes(lead.approval_status));
+                    }}>Edit</button>
                     <button className="button-secondary" type="button" onClick={() => deleteBuyerLead(lead.id)} disabled={busy}>Delete</button>
                   </div>
                 </div>
@@ -472,17 +519,21 @@ function AdminRealtorTools() {
                 <div>
                   <p>{lead.notes || 'No notes saved.'}</p>
                   <div className="admin-inline-actions">
-                    <button className="button-secondary" type="button" onClick={() => setSellerForm({
-                      id: lead.id,
-                      clientName: lead.client_name,
-                      email: lead.email,
-                      phone: lead.phone,
-                      propertyAddress: lead.property_address,
-                      targetPrice: String(lead.target_price || ''),
-                      timeline: lead.timeline,
-                      occupancyStatus: lead.occupancy_status,
-                      notes: lead.notes,
-                    })}>Edit</button>
+                    <button className="button-secondary" type="button" onClick={() => {
+                      setSellerForm({
+                        id: lead.id,
+                        clientName: lead.client_name,
+                        email: lead.email,
+                        phone: lead.phone,
+                        propertyAddress: lead.property_address,
+                        targetPrice: String(lead.target_price || ''),
+                        timeline: lead.timeline,
+                        occupancyStatus: lead.occupancy_status,
+                        notes: lead.notes,
+                      });
+                      setSellerTimelineCustom(!SELLER_TIMELINE_OPTIONS.includes(lead.timeline));
+                      setSellerOccupancyCustom(!SELLER_OCCUPANCY_OPTIONS.includes(lead.occupancy_status));
+                    }}>Edit</button>
                     <button className="button-secondary" type="button" onClick={() => deleteSellerLead(lead.id)} disabled={busy}>Delete</button>
                   </div>
                 </div>

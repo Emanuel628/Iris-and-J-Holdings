@@ -1,7 +1,11 @@
 ﻿import AdminLayout from '../../components/admin/AdminLayout';
 import { useEffect, useState } from 'react';
+import { ChevronsUpDown } from 'lucide-react';
 import { fetchAdminMe, fetchAdminSettings } from '../../lib/adminAuth';
 import { usePageMeta } from '../../lib/usePageMeta';
+
+const CUSTOM_OPTION = '__custom__';
+const PROPERTY_TYPE_OPTIONS = ['Single Family', 'Condo', 'Townhouse', 'Multi-Family', 'Co-op', 'Land', 'Mobile Home'];
 
 function AdminHomeValueLab() {
   usePageMeta('Admin Home Value Lab', 'Plan the home value estimator data and API stack.', { robots: 'noindex,nofollow' });
@@ -15,6 +19,7 @@ function AdminHomeValueLab() {
     squareFootage: '',
     propertyType: 'Single Family',
   });
+  const [propertyTypeCustom, setPropertyTypeCustom] = useState(false);
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [result, setResult] = useState<any>(null);
@@ -58,6 +63,8 @@ function AdminHomeValueLab() {
     }
   }
 
+  const propertyTypeSelectValue = propertyTypeCustom ? CUSTOM_OPTION : form.propertyType;
+
   return (
     <AdminLayout>
       <div className="admin-page">
@@ -87,7 +94,40 @@ function AdminHomeValueLab() {
               </div>
               <div className="form-row">
                 <div className="input-group"><label htmlFor="value-sqft-admin">Square Footage</label><input id="value-sqft-admin" type="number" value={form.squareFootage} onChange={(event) => setForm({ ...form, squareFootage: event.target.value })} /></div>
-                <div className="input-group"><label htmlFor="value-type-admin">Property Type</label><input id="value-type-admin" value={form.propertyType} onChange={(event) => setForm({ ...form, propertyType: event.target.value })} /></div>
+                <div className="input-group">
+                  <label htmlFor="value-type-admin">Property Type</label>
+                  <div className="admin-select-shell">
+                    <select
+                      id="value-type-admin"
+                      value={propertyTypeSelectValue}
+                      onChange={(event) => {
+                        const nextValue = event.target.value;
+                        if (nextValue === CUSTOM_OPTION) {
+                          setPropertyTypeCustom(true);
+                          if (PROPERTY_TYPE_OPTIONS.includes(form.propertyType)) {
+                            setForm({ ...form, propertyType: '' });
+                          }
+                          return;
+                        }
+                        setPropertyTypeCustom(false);
+                        setForm({ ...form, propertyType: nextValue });
+                      }}
+                    >
+                      {PROPERTY_TYPE_OPTIONS.map((option) => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                      <option value={CUSTOM_OPTION}>Custom</option>
+                    </select>
+                    <ChevronsUpDown size={16} aria-hidden="true" />
+                  </div>
+                  {propertyTypeCustom ? (
+                    <input
+                      value={form.propertyType}
+                      onChange={(event) => setForm({ ...form, propertyType: event.target.value })}
+                      placeholder="Enter custom property type"
+                    />
+                  ) : null}
+                </div>
               </div>
               <button className="button button-primary" type="button" onClick={submitEstimate} disabled={busy || !rentcastConfigured}>
                 {busy ? 'Running estimate...' : 'Run estimate'}
@@ -141,4 +181,3 @@ function AdminHomeValueLab() {
 }
 
 export default AdminHomeValueLab;
-
