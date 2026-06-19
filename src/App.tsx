@@ -1,4 +1,5 @@
 import Home from './pages/public/Home';
+import AdminConfirmEmailChange from './pages/admin/AdminConfirmEmailChange';
 import AdminControlCenter from './pages/admin/AdminControlCenter';
 import AdminForgotPassword from './pages/admin/AdminForgotPassword';
 import AdminLogin from './pages/admin/AdminLogin';
@@ -35,6 +36,7 @@ import AccessibilityWidget from './components/ui/AccessibilityWidget';
 
 const routes = {
   '/': Home,
+  '/admin/confirm-email-change': AdminConfirmEmailChange,
   '/admin': AdminControlCenter,
   '/admin/forgot-password': AdminForgotPassword,
   '/admin/login': AdminLogin,

@@ -15,6 +15,11 @@ const ROUTE_META: Record<string, { title?: string; description?: string; robots?
     description: 'Admin control center for Iris & J Holdings.',
     robots: 'noindex,nofollow',
   },
+  '/admin/confirm-email-change': {
+    title: 'Confirm Email Change',
+    description: 'Confirm the admin email change for Iris & J Holdings.',
+    robots: 'noindex,nofollow',
+  },
   '/admin/login': {
     title: 'Admin Login',
     description: 'Secure admin login for Iris & J Holdings.',

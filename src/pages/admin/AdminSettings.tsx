@@ -6,9 +6,11 @@ import { usePageMeta } from '../../lib/usePageMeta';
 function AdminSettings() {
   usePageMeta('Admin Settings', 'Operational settings and provider status.', { robots: 'noindex,nofollow' });
   const [payload, setPayload] = useState<AdminSettingsPayload | null>(null);
-  const [settings, setSettings] = useState<Record<string, string>>({});
+  const [adminEmail, setAdminEmail] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [emailForm, setEmailForm] = useState({ newEmail: '', currentPassword: '' });
 
   async function loadData() {
     const [me, settingsPayload] = await Promise.all([fetchAdminMe(), fetchAdminSettings()]);
@@ -17,7 +19,7 @@ function AdminSettings() {
       return;
     }
     setPayload(settingsPayload);
-    setSettings(settingsPayload.settings);
+    setAdminEmail(me.user.email);
   }
 
   useEffect(() => {
@@ -26,21 +28,50 @@ function AdminSettings() {
     });
   }, []);
 
-  async function saveSettings() {
+  async function changePassword() {
+    setStatusMessage('');
+    setErrorMessage('');
+    if (passwordForm.newPassword.length < 8) {
+      setErrorMessage('New password must be at least 8 characters.');
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setErrorMessage('New password and confirmation must match.');
+      return;
+    }
+    try {
+      const res = await fetch('/api/admin/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword,
+        }),
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(result.message || 'Could not change password.');
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setStatusMessage('Password updated.');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Could not change password.');
+    }
+  }
+
+  async function requestEmailChange() {
     setStatusMessage('');
     setErrorMessage('');
     try {
-      const res = await fetch('/api/admin/settings', {
+      const res = await fetch('/api/admin/change-email-request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ settings }),
+        body: JSON.stringify(emailForm),
       });
       const result = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(result.message || 'Could not save settings.');
-      await loadData();
-      setStatusMessage('Settings saved.');
+      if (!res.ok) throw new Error(result.message || 'Could not start the email change.');
+      setEmailForm({ newEmail: '', currentPassword: '' });
+      setStatusMessage('Verification link sent to the new email address.');
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Could not save settings.');
+      setErrorMessage(error instanceof Error ? error.message : 'Could not start the email change.');
     }
   }
 
@@ -49,36 +80,64 @@ function AdminSettings() {
       <div className="admin-page">
         <div className="page-intro">
           <p className="eyebrow">Settings</p>
-          <h1>Operational settings</h1>
-          <p>Provider status, home-value defaults, and core control-center configuration live here.</p>
+          <h1>Account settings</h1>
+          <p>Admin account security, current system status, and credential changes live here.</p>
         </div>
 
-        <section className="admin-section">
-          <div className="admin-section-head">
-            <h2>System status</h2>
-          </div>
-          <div className="admin-overview-grid admin-overview-cards">
-            <div><span>Database</span><strong>{payload?.status.databaseConfigured ? 'On' : 'Off'}</strong></div>
-            <div><span>Stripe</span><strong>{payload?.status.stripeConfigured ? 'On' : 'Off'}</strong></div>
-            <div><span>Resend</span><strong>{payload?.status.resendConfigured ? 'On' : 'Off'}</strong></div>
-            <div><span>RentCast</span><strong>{payload?.status.rentcastConfigured ? 'On' : 'Off'}</strong></div>
-          </div>
+        <section className="admin-dashboard-grid">
+          <section className="admin-panel">
+            <div className="admin-section-head">
+              <h2>System status</h2>
+            </div>
+            <div className="admin-overview-grid admin-overview-cards">
+              <div><span>Database</span><strong>{payload?.status.databaseConfigured ? 'On' : 'Off'}</strong></div>
+              <div><span>Stripe</span><strong>{payload?.status.stripeConfigured ? 'On' : 'Off'}</strong></div>
+              <div><span>Resend</span><strong>{payload?.status.resendConfigured ? 'On' : 'Off'}</strong></div>
+              <div><span>RentCast</span><strong>{payload?.status.rentcastConfigured ? 'On' : 'Off'}</strong></div>
+            </div>
+          </section>
+
+          <section className="admin-panel">
+            <div className="admin-section-head">
+              <h2>Email</h2>
+              <p>Current sign-in email: {adminEmail || 'Loading...'}</p>
+            </div>
+            <div className="form-shell">
+              <div className="input-group">
+                <label htmlFor="settings-email">New Email</label>
+                <input id="settings-email" type="email" value={emailForm.newEmail} onChange={(event) => setEmailForm({ ...emailForm, newEmail: event.target.value })} />
+              </div>
+              <div className="input-group">
+                <label htmlFor="settings-email-password">Current Password</label>
+                <input id="settings-email-password" type="password" value={emailForm.currentPassword} onChange={(event) => setEmailForm({ ...emailForm, currentPassword: event.target.value })} />
+              </div>
+              <button className="button button-primary" type="button" onClick={requestEmailChange}>Send verification email</button>
+            </div>
+          </section>
         </section>
 
         <section className="admin-section">
           <div className="admin-section-head">
-            <h2>Home value defaults</h2>
+            <h2>Change password</h2>
           </div>
           <div className="form-shell">
             <div className="form-row">
-              <div className="input-group"><label htmlFor="setting-provider">Provider</label><input id="setting-provider" value={settings.home_value_provider || ''} onChange={(event) => setSettings({ ...settings, home_value_provider: event.target.value })} /></div>
-              <div className="input-group"><label htmlFor="setting-radius">Default Radius (miles)</label><input id="setting-radius" value={settings.home_value_default_radius || ''} onChange={(event) => setSettings({ ...settings, home_value_default_radius: event.target.value })} /></div>
+              <div className="input-group">
+                <label htmlFor="settings-current-password">Current Password</label>
+                <input id="settings-current-password" type="password" value={passwordForm.currentPassword} onChange={(event) => setPasswordForm({ ...passwordForm, currentPassword: event.target.value })} />
+              </div>
+              <div className="input-group">
+                <label htmlFor="settings-new-password">New Password</label>
+                <input id="settings-new-password" type="password" value={passwordForm.newPassword} onChange={(event) => setPasswordForm({ ...passwordForm, newPassword: event.target.value })} />
+              </div>
             </div>
             <div className="form-row">
-              <div className="input-group"><label htmlFor="setting-days">Default Days Old</label><input id="setting-days" value={settings.home_value_default_days_old || ''} onChange={(event) => setSettings({ ...settings, home_value_default_days_old: event.target.value })} /></div>
-              <div className="input-group"><label htmlFor="setting-comps">Default Comparable Count</label><input id="setting-comps" value={settings.home_value_default_comp_count || ''} onChange={(event) => setSettings({ ...settings, home_value_default_comp_count: event.target.value })} /></div>
+              <div className="input-group">
+                <label htmlFor="settings-confirm-password">Confirm New Password</label>
+                <input id="settings-confirm-password" type="password" value={passwordForm.confirmPassword} onChange={(event) => setPasswordForm({ ...passwordForm, confirmPassword: event.target.value })} />
+              </div>
             </div>
-            <button className="button button-primary" type="button" onClick={saveSettings}>Save settings</button>
+            <button className="button button-primary" type="button" onClick={changePassword}>Update password</button>
           </div>
         </section>
 
@@ -90,4 +149,3 @@ function AdminSettings() {
 }
 
 export default AdminSettings;
-

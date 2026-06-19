@@ -370,6 +370,17 @@ async function ensureAdminTables() {
     );
   `);
   await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS admin_email_change_tokens (
+      id SERIAL PRIMARY KEY,
+      admin_user_id INTEGER NOT NULL REFERENCES admin_users(id) ON DELETE CASCADE,
+      new_email TEXT NOT NULL,
+      token_hash TEXT NOT NULL UNIQUE,
+      expires_at TIMESTAMPTZ NOT NULL,
+      used_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await pgPool.query(`
     CREATE TABLE IF NOT EXISTS rentals (
       id SERIAL PRIMARY KEY,
       slug TEXT NOT NULL UNIQUE,
@@ -573,10 +584,17 @@ async function getRentcastUsageStatus() {
     usedThisMonth = 0;
     await upsertAppSetting('rentcast_usage_month', month);
     await upsertAppSetting('rentcast_usage_count', '0');
+    await upsertAppSetting('rentcast_usage_seeded_month', '');
     settings = await readAppSettings();
   } else if (!settings.rentcast_usage_count) {
     usedThisMonth = RENTCAST_INITIAL_USED_THIS_MONTH;
     await upsertAppSetting('rentcast_usage_count', String(usedThisMonth));
+    await upsertAppSetting('rentcast_usage_seeded_month', month);
+    settings = await readAppSettings();
+  } else if (Number(settings.rentcast_usage_count || 0) === 0 && settings.rentcast_usage_seeded_month !== month) {
+    usedThisMonth = RENTCAST_INITIAL_USED_THIS_MONTH;
+    await upsertAppSetting('rentcast_usage_count', String(usedThisMonth));
+    await upsertAppSetting('rentcast_usage_seeded_month', month);
     settings = await readAppSettings();
   }
 
@@ -1281,6 +1299,138 @@ app.post('/api/admin/reset-password', async (req, res) => {
   } catch (error) {
     console.error('Admin reset password failed:', error);
     return res.status(500).json({ message: 'Could not reset password.' });
+  }
+});
+
+app.post('/api/admin/change-password', async (req, res) => {
+  try {
+    if (!pgPool) {
+      return res.status(503).json({ message: 'DATABASE_URL is not configured.' });
+    }
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+
+    const currentPassword = String(req.body?.currentPassword || '');
+    const newPassword = String(req.body?.newPassword || '');
+    if (!currentPassword || newPassword.length < 8) {
+      return res.status(400).json({ message: 'Current password and a new 8-character password are required.' });
+    }
+
+    const result = await pgPool.query('SELECT password_hash FROM admin_users WHERE id = $1 LIMIT 1', [admin.id]);
+    const user = result.rows[0];
+    if (!user || !verifyPassword(currentPassword, user.password_hash)) {
+      return res.status(401).json({ message: 'Current password is incorrect.' });
+    }
+
+    await pgPool.query('UPDATE admin_users SET password_hash = $2 WHERE id = $1', [admin.id, hashPassword(newPassword)]);
+    await pgPool.query('DELETE FROM admin_sessions WHERE admin_user_id = $1 AND token_hash <> $2', [
+      admin.id,
+      hashSessionToken(parseCookies(req)[sessionCookieName] || ''),
+    ]);
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin change password failed:', error);
+    return res.status(500).json({ message: 'Could not change password.' });
+  }
+});
+
+app.post('/api/admin/change-email-request', async (req, res) => {
+  try {
+    if (!pgPool) {
+      return res.status(503).json({ message: 'DATABASE_URL is not configured.' });
+    }
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+
+    const newEmail = clean(req.body?.newEmail).toLowerCase();
+    const currentPassword = String(req.body?.currentPassword || '');
+    if (!newEmail || !currentPassword) {
+      return res.status(400).json({ message: 'New email and current password are required.' });
+    }
+
+    const currentUserResult = await pgPool.query('SELECT password_hash, email, full_name FROM admin_users WHERE id = $1 LIMIT 1', [admin.id]);
+    const currentUser = currentUserResult.rows[0];
+    if (!currentUser || !verifyPassword(currentPassword, currentUser.password_hash)) {
+      return res.status(401).json({ message: 'Current password is incorrect.' });
+    }
+    if (newEmail === currentUser.email) {
+      return res.status(400).json({ message: 'Enter a different email address.' });
+    }
+
+    const existingEmail = await pgPool.query('SELECT id FROM admin_users WHERE email = $1 LIMIT 1', [newEmail]);
+    if (existingEmail.rows[0]) {
+      return res.status(409).json({ message: 'That email address is already in use.' });
+    }
+
+    const token = randomBytes(32).toString('hex');
+    const tokenHash = hashSessionToken(token);
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    await pgPool.query('DELETE FROM admin_email_change_tokens WHERE admin_user_id = $1 AND used_at IS NULL', [admin.id]);
+    await pgPool.query(
+      'INSERT INTO admin_email_change_tokens (admin_user_id, new_email, token_hash, expires_at) VALUES ($1, $2, $3, $4)',
+      [admin.id, newEmail, tokenHash, expiresAt],
+    );
+
+    const origin = buildOrigin(req);
+    const verifyLink = `${origin}/admin/confirm-email-change?token=${encodeURIComponent(token)}`;
+    await sendResendEmail({
+      to: newEmail,
+      replyTo: contactTo,
+      subject: 'Confirm your new Iris & J Holdings admin email',
+      text:
+        `Hi ${currentUser.full_name || 'there'},\n\n` +
+        `Confirm your new admin email by opening this link:\n${verifyLink}\n\n` +
+        `This link expires in 1 hour.\n\n` +
+        `- Iris & J Holdings`,
+      html:
+        `<p>Hi ${escapeHtml(currentUser.full_name || 'there')},</p>` +
+        `<p>Confirm your new admin email by opening this link:</p>` +
+        `<p><a href="${escapeHtml(verifyLink)}">${escapeHtml(verifyLink)}</a></p>` +
+        `<p>This link expires in 1 hour.</p>` +
+        `<p>- Iris &amp; J Holdings</p>`,
+    });
+
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin change email request failed:', error);
+    return res.status(500).json({ message: 'Could not start the email change.' });
+  }
+});
+
+app.post('/api/admin/confirm-email-change', async (req, res) => {
+  try {
+    if (!pgPool) {
+      return res.status(503).json({ message: 'DATABASE_URL is not configured.' });
+    }
+    const token = clean(req.body?.token);
+    if (!token) {
+      return res.status(400).json({ message: 'Verification token is required.' });
+    }
+
+    const tokenHash = hashSessionToken(token);
+    const tokenResult = await pgPool.query(
+      `SELECT id, admin_user_id, new_email
+       FROM admin_email_change_tokens
+       WHERE token_hash = $1 AND used_at IS NULL AND expires_at > NOW()
+       LIMIT 1`,
+      [tokenHash],
+    );
+    const tokenRow = tokenResult.rows[0];
+    if (!tokenRow) {
+      return res.status(400).json({ message: 'This email verification link is invalid or expired.' });
+    }
+
+    const existingEmail = await pgPool.query('SELECT id FROM admin_users WHERE email = $1 LIMIT 1', [tokenRow.new_email]);
+    if (existingEmail.rows[0] && Number(existingEmail.rows[0].id) !== Number(tokenRow.admin_user_id)) {
+      return res.status(409).json({ message: 'That email address is already in use.' });
+    }
+
+    await pgPool.query('UPDATE admin_users SET email = $2 WHERE id = $1', [tokenRow.admin_user_id, tokenRow.new_email]);
+    await pgPool.query('UPDATE admin_email_change_tokens SET used_at = NOW() WHERE id = $1', [tokenRow.id]);
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin confirm email change failed:', error);
+    return res.status(500).json({ message: 'Could not confirm the email change.' });
   }
 });
 

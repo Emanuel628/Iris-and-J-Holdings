@@ -93,6 +93,10 @@ function AdminHomeValueLab() {
   const [result, setResult] = useState<EstimateResult | null>(null);
   const [rentcastConfigured, setRentcastConfigured] = useState(false);
   const [usage, setUsage] = useState<AdminSettingsPayload['rentcastUsage'] | null>(null);
+  const [settings, setSettings] = useState<Record<string, string>>({});
+  const [settingsBusy, setSettingsBusy] = useState(false);
+  const [settingsStatusMessage, setSettingsStatusMessage] = useState('');
+  const [settingsErrorMessage, setSettingsErrorMessage] = useState('');
 
   useEffect(() => {
     Promise.all([fetchAdminMe(), fetchAdminSettings()])
@@ -103,6 +107,7 @@ function AdminHomeValueLab() {
         }
         setRentcastConfigured(settingsPayload.status.rentcastConfigured);
         setUsage(settingsPayload.rentcastUsage);
+        setSettings(settingsPayload.settings);
       })
       .catch(() => {
         window.location.href = '/admin/login';
@@ -121,6 +126,9 @@ function AdminHomeValueLab() {
           bedrooms: Number(form.bedrooms || 0),
           bathrooms: Number(form.bathrooms || 0),
           squareFootage: Number(form.squareFootage || 0),
+          radius: Number(settings.home_value_default_radius || 3),
+          daysOld: Number(settings.home_value_default_days_old || 180),
+          compCount: Number(settings.home_value_default_comp_count || 12),
         }),
       });
       const payload = await res.json().catch(() => ({} as EstimateResponse));
@@ -133,6 +141,35 @@ function AdminHomeValueLab() {
       setErrorMessage(error instanceof Error ? error.message : 'Could not retrieve the estimate.');
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function saveDefaults() {
+    setSettingsBusy(true);
+    setSettingsStatusMessage('');
+    setSettingsErrorMessage('');
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          settings: {
+            home_value_default_radius: settings.home_value_default_radius || '3',
+            home_value_default_days_old: settings.home_value_default_days_old || '180',
+            home_value_default_comp_count: settings.home_value_default_comp_count || '12',
+          },
+        }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload.message || 'Could not save the estimator defaults.');
+      const settingsPayload = await fetchAdminSettings();
+      setUsage(settingsPayload.rentcastUsage);
+      setSettings(settingsPayload.settings);
+      setSettingsStatusMessage('Estimator defaults saved.');
+    } catch (error) {
+      setSettingsErrorMessage(error instanceof Error ? error.message : 'Could not save the estimator defaults.');
+    } finally {
+      setSettingsBusy(false);
     }
   }
 
@@ -333,13 +370,59 @@ function AdminHomeValueLab() {
           </section>
         </section>
 
-        <section className="admin-section">
-          <div className="admin-section-head">
-            <h2>Research note</h2>
-          </div>
-          <p className="admin-route-copy">
-            Zillow says its Zestimate uses public records, MLS feeds, user-submitted facts, market trends, and a neural-network-based model, and it presents a range rather than just one price. That means we should not ship a fake single-number tool. The next step is choosing the property-data or AVM source and then wiring the intake around it.
-          </p>
+        <section className="admin-dashboard-grid">
+          <section className="admin-panel">
+            <div className="admin-section-head">
+              <h2>What drives the estimate</h2>
+              <p>Fully wired inputs</p>
+            </div>
+            <div className="admin-route-list admin-home-value-summary">
+              <div>
+                <strong>Property identity</strong>
+                <span>Address, city, state, ZIP, and property type anchor the property and market context.</span>
+              </div>
+              <div>
+                <strong>Core home facts</strong>
+                <span>Bedrooms, bathrooms, and square footage are the main home-characteristic signals sent on each AVM request.</span>
+              </div>
+              <div>
+                <strong>Comparable search controls</strong>
+                <span>Search radius, comparable age, and comparable count control how broad and how recent the sales set will be.</span>
+              </div>
+              <div>
+                <strong>Returned market data</strong>
+                <span>The estimate comes back with a value, value range, subject-property facts, and comparable sales for review.</span>
+              </div>
+            </div>
+          </section>
+
+          <section className="admin-panel">
+            <div className="admin-section-head">
+              <h2>Estimator defaults</h2>
+              <p>Applied to every lookup</p>
+            </div>
+            <div className="form-shell">
+              <div className="form-row">
+                <div className="input-group">
+                  <label htmlFor="setting-radius">Default Radius (miles)</label>
+                  <input id="setting-radius" value={settings.home_value_default_radius || ''} onChange={(event) => setSettings({ ...settings, home_value_default_radius: event.target.value })} />
+                </div>
+                <div className="input-group">
+                  <label htmlFor="setting-days">Default Days Old</label>
+                  <input id="setting-days" value={settings.home_value_default_days_old || ''} onChange={(event) => setSettings({ ...settings, home_value_default_days_old: event.target.value })} />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="input-group">
+                  <label htmlFor="setting-comps">Default Comparable Count</label>
+                  <input id="setting-comps" value={settings.home_value_default_comp_count || ''} onChange={(event) => setSettings({ ...settings, home_value_default_comp_count: event.target.value })} />
+                </div>
+              </div>
+              <button className="button button-primary" type="button" onClick={saveDefaults} disabled={settingsBusy}>Save estimator defaults</button>
+              {settingsStatusMessage ? <p className="form-status form-status-success">{settingsStatusMessage}</p> : null}
+              {settingsErrorMessage ? <p className="form-status form-status-error" role="alert">{settingsErrorMessage}</p> : null}
+            </div>
+          </section>
         </section>
       </div>
     </AdminLayout>

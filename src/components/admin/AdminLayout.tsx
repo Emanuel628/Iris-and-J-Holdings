@@ -114,12 +114,6 @@ function AdminLayout({ children, showNav = true }: AdminLayoutProps) {
                 <strong>Operations</strong>
                 <span>Queues, availability, content, and site controls</span>
               </div>
-              <div className="admin-topbar-actions">
-                <a href="/admin/rentals">New rental</a>
-                <a href="/admin/vacation-bookings">Vacation queue</a>
-                <a href="/admin/notary-requests">Notary queue</a>
-                <a href="/admin/realtor-tools">Buyer and seller intake</a>
-              </div>
             </div>
           ) : null}
           {children}
