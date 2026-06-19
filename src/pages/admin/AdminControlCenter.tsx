@@ -30,6 +30,13 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function formatShortDate(value: string) {
+  if (!value) return '';
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }).format(date);
+}
+
 function AdminControlCenter() {
   usePageMeta('Control Center', 'Admin control center for Iris & J Holdings.', { robots: 'noindex,nofollow' });
   const [user, setUser] = useState<AdminUser | null | undefined>(undefined);
@@ -65,7 +72,7 @@ function AdminControlCenter() {
         kind: 'vacation' as const,
         sortDate: booking.check_in,
         title: booking.guest_name,
-        subtitle: `${booking.check_in} to ${booking.check_out}`,
+        subtitle: `${formatShortDate(booking.check_in)} to ${formatShortDate(booking.check_out)}`,
         email: booking.guest_email,
         detail: `${booking.rental_title || 'Rental'} | ${booking.guest_count} guests`,
         href: `/admin/vacation-bookings?edit=${booking.id}`,
@@ -79,7 +86,7 @@ function AdminControlCenter() {
         kind: 'notary' as const,
         sortDate: request.appointment_date,
         title: request.full_name,
-        subtitle: `${request.appointment_date} at ${request.appointment_time}`,
+        subtitle: `${formatShortDate(request.appointment_date)} at ${request.appointment_time}`,
         email: request.email,
         detail: `${request.document_type || 'No document type'} | ${request.notes || 'No notes'}`,
         href: `/admin/notary-requests?edit=${request.id}`,
@@ -242,7 +249,7 @@ function AdminControlCenter() {
             </a>
             <a href="/admin/media">
               <strong>Media Library</strong>
-              <span>Scaffold route for hero images, rental galleries, page-by-page image swaps, and future uploads.</span>
+              <span>Review the active hero images, rental galleries, and direct media links already in use across the site.</span>
             </a>
             <a href="/admin/settings">
               <strong>Settings</strong>
@@ -258,7 +265,7 @@ function AdminControlCenter() {
             </a>
             <a href="/admin/home-value-lab">
               <strong>Home Value Lab</strong>
-              <span>Plan the estimator stack, data vendors, response storage, and public valuation workflow.</span>
+              <span>Run RentCast-powered estimates, email comparable sales, save valuation records, and manage estimator defaults.</span>
             </a>
           </div>
         </section>

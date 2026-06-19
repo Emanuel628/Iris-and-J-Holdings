@@ -26,6 +26,13 @@ function formatCurrency(amountTotalCents: number, currency: string) {
   }).format(amountTotalCents / 100);
 }
 
+function formatShortDate(value: string) {
+  if (!value) return '';
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }).format(date);
+}
+
 function toNotaryForm(request: NotaryRequestRecord): NotaryForm {
   return {
     id: request.id,
@@ -209,7 +216,7 @@ function AdminNotaryRequests() {
                 <article className="admin-list-row admin-record admin-record-stack" key={request.id}>
                   <div className="admin-record-copy">
                     <strong>{request.full_name}</strong>
-                    <p>{request.appointment_date} at {request.appointment_time} | {request.city || 'No city provided'}</p>
+                    <p>{formatShortDate(request.appointment_date)} at {request.appointment_time} | {request.city || 'No city provided'}</p>
                     <p><a href={`mailto:${request.email}`}>{request.email}</a> | {request.phone || 'No phone'} | {request.document_type || 'No document type'}</p>
                     <p>Status: {request.status} | Total: {formatCurrency(request.amount_total_cents, request.currency)}</p>
                     <p>Notes: {request.notes || 'No notes submitted.'}</p>

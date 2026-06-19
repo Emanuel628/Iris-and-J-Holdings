@@ -25,6 +25,13 @@ function formatCurrency(amountTotalCents: number, currency: string) {
   }).format(amountTotalCents / 100);
 }
 
+function formatShortDate(value: string) {
+  if (!value) return '';
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }).format(date);
+}
+
 function toBookingForm(booking: VacationBookingRecord): BookingForm {
   return {
     id: booking.id,
@@ -206,7 +213,7 @@ function AdminVacationBookings() {
                 <article className="admin-list-row admin-record admin-record-stack" key={booking.id}>
                   <div className="admin-record-copy">
                     <strong>{booking.guest_name}</strong>
-                    <p>{booking.rental_title || 'Rental'} | {booking.check_in} to {booking.check_out}</p>
+                    <p>{booking.rental_title || 'Rental'} | {formatShortDate(booking.check_in)} to {formatShortDate(booking.check_out)}</p>
                     <p><a href={`mailto:${booking.guest_email}`}>{booking.guest_email}</a> | {booking.guest_phone || 'No phone'} | {booking.guest_count} guests</p>
                     <p>Status: {booking.status} | Total: {formatCurrency(booking.amount_total_cents, booking.currency)}</p>
                     <p>Guest list: {booking.guest_list_text}</p>

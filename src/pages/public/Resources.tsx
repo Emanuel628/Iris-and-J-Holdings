@@ -8,7 +8,7 @@ function Resources() {
     'Plain-language New Jersey buyer guides, seller guides, and local market updates for people preparing to buy, sell, or request a home value review.',
   );
   const template = getSiteContentTemplate('resources');
-  const { content } = usePublicSiteContent('resources', template?.defaults || {});
+  const { content, heroImageUrl } = usePublicSiteContent('resources', template?.defaults || {});
 
   return (
     <PublicLayout>
@@ -22,7 +22,9 @@ function Resources() {
               <a className="button button-primary" href="#resources-list">Browse Resources</a>
             </div>
           </div>
-          <div className="page-hero-visual" aria-label="Resources visual placeholder" />
+          <div className={`page-hero-visual ${heroImageUrl ? 'page-hero-image-frame' : ''}`} aria-label="Resources visual">
+            {heroImageUrl ? <img src={heroImageUrl} alt="Real estate resources and planning visual" /> : null}
+          </div>
         </section>
 
         <section className="page-content" id="resources-list">
