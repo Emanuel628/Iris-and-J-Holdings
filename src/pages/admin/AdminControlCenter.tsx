@@ -67,13 +67,21 @@ function AdminControlCenter() {
               <strong>Rentals</strong>
               <span>Create listings, update pricing, swap images, and manage manual availability holds.</span>
             </a>
-            <a href="/admin/vacation-bookings">
-              <strong>Booked Dates</strong>
-              <span>Open the vacation bookings queue with guest names, dates, contact details, totals, and status controls.</span>
+            <a href="/admin/bookings">
+              <strong>Bookings</strong>
+              <span>Route hub for vacation bookings, notary requests, cancellations, date changes, and booking operations.</span>
             </a>
-            <a href="/admin/notary-requests">
-              <strong>Notary Requests</strong>
-              <span>Review appointment requests, signer details, city, notes, and request status.</span>
+            <a href="/admin/media">
+              <strong>Media Library</strong>
+              <span>Scaffold route for hero images, rental galleries, page-by-page image swaps, and future uploads.</span>
+            </a>
+            <a href="/admin/policies">
+              <strong>Policies</strong>
+              <span>Scaffold route for terms, house rules, refund policies, and controlled policy copy.</span>
+            </a>
+            <a href="/admin/settings">
+              <strong>Settings</strong>
+              <span>Scaffold route for auth, site configuration, booking defaults, and future operational settings.</span>
             </a>
             <a href="/admin/site-content">
               <strong>Site Content</strong>

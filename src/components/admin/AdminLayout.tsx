@@ -8,9 +8,10 @@ type AdminLayoutProps = {
 const adminLinks = [
   { href: '/admin', label: 'Control Center' },
   { href: '/admin/rentals', label: 'Rentals' },
-  { href: '/admin/vacation-bookings', label: 'Booked Dates' },
-  { href: '/admin/notary-requests', label: 'Notary' },
-  { href: '/admin/site-content', label: 'Site Content' },
+  { href: '/admin/bookings', label: 'Bookings' },
+  { href: '/admin/media', label: 'Media' },
+  { href: '/admin/policies', label: 'Policies' },
+  { href: '/admin/settings', label: 'Settings' },
 ];
 
 function AdminLayout({ children, showNav = true }: AdminLayoutProps) {

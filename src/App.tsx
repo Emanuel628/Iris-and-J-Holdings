@@ -1,11 +1,15 @@
+import AdminBookingsHub from './pages/admin/AdminBookingsHub';
 import Home from './pages/public/Home';
 import AdminControlCenter from './pages/admin/AdminControlCenter';
 import AdminForgotPassword from './pages/admin/AdminForgotPassword';
 import AdminLogin from './pages/admin/AdminLogin';
+import AdminMediaLibrary from './pages/admin/AdminMediaLibrary';
 import AdminNotaryRequests from './pages/admin/AdminNotaryRequests';
+import AdminPolicies from './pages/admin/AdminPolicies';
 import AdminRegister from './pages/admin/AdminRegister';
 import AdminRentals from './pages/admin/AdminRentals';
 import AdminResetPassword from './pages/admin/AdminResetPassword';
+import AdminSettings from './pages/admin/AdminSettings';
 import AdminSiteContent from './pages/admin/AdminSiteContent';
 import AdminVacationBookings from './pages/admin/AdminVacationBookings';
 import Buy from './pages/public/Buy';
@@ -32,12 +36,16 @@ import AccessibilityWidget from './components/ui/AccessibilityWidget';
 const routes = {
   '/': Home,
   '/admin': AdminControlCenter,
+  '/admin/bookings': AdminBookingsHub,
   '/admin/forgot-password': AdminForgotPassword,
   '/admin/login': AdminLogin,
+  '/admin/media': AdminMediaLibrary,
   '/admin/notary-requests': AdminNotaryRequests,
+  '/admin/policies': AdminPolicies,
   '/admin/register': AdminRegister,
   '/admin/rentals': AdminRentals,
   '/admin/reset-password': AdminResetPassword,
+  '/admin/settings': AdminSettings,
   '/admin/site-content': AdminSiteContent,
   '/admin/vacation-bookings': AdminVacationBookings,
   '/buy': Buy,

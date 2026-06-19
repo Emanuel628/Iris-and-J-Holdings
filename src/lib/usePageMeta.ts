@@ -15,14 +15,29 @@ const ROUTE_META: Record<string, { title?: string; description?: string; robots?
     description: 'Admin control center for Iris & J Holdings.',
     robots: 'noindex,nofollow',
   },
+  '/admin/bookings': {
+    title: 'Admin Bookings',
+    description: 'Admin route hub for booking operations.',
+    robots: 'noindex,nofollow',
+  },
   '/admin/login': {
     title: 'Admin Login',
     description: 'Secure admin login for Iris & J Holdings.',
     robots: 'noindex,nofollow',
   },
+  '/admin/media': {
+    title: 'Admin Media Library',
+    description: 'Manage site and rental media routes for Iris & J Holdings.',
+    robots: 'noindex,nofollow',
+  },
   '/admin/notary-requests': {
     title: 'Admin Notary Requests',
     description: 'Review paid notary booking requests.',
+    robots: 'noindex,nofollow',
+  },
+  '/admin/policies': {
+    title: 'Admin Policies',
+    description: 'Manage policy-related routes and content.',
     robots: 'noindex,nofollow',
   },
   '/admin/forgot-password': {
@@ -43,6 +58,11 @@ const ROUTE_META: Record<string, { title?: string; description?: string; robots?
   '/admin/reset-password': {
     title: 'Reset Password',
     description: 'Set a new Iris & J Holdings admin password.',
+    robots: 'noindex,nofollow',
+  },
+  '/admin/settings': {
+    title: 'Admin Settings',
+    description: 'Manage admin and site settings routes.',
     robots: 'noindex,nofollow',
   },
   '/admin/site-content': {
