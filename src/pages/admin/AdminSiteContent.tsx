@@ -24,6 +24,16 @@ function isSvgImage(value: string) {
   return /\.svg(?:\?|$)/i.test(String(value || ''));
 }
 
+function renderPagePreview(template: SiteContentTemplate, entry?: SiteContentRecord | null) {
+  const preview = previewImageForTemplate(template, entry);
+  return (
+    <div className={`admin-site-preview${preview ? '' : ' is-empty'}`}>
+      {preview ? <img src={preview} alt="" /> : <span className="admin-site-preview-empty">No image</span>}
+      {preview && isSvgImage(preview) ? <span>SVG</span> : null}
+    </div>
+  );
+}
+
 function toContentForm(entry: SiteContentRecord, template: SiteContentTemplate): ContentForm {
   return {
     pageKey: entry.page_key,
@@ -193,12 +203,7 @@ function AdminSiteContent() {
                 {contentPages.map((template) => (
                   <button className="admin-list-row admin-list-button" type="button" key={template.pageKey} onClick={() => chooseContent(template.pageKey)}>
                     <div className="admin-record-copy">
-                      {previewImageForTemplate(template, entries.find((item) => item.page_key === template.pageKey)) ? (
-                        <div className="admin-site-preview">
-                          <img src={previewImageForTemplate(template, entries.find((item) => item.page_key === template.pageKey))} alt="" />
-                          {isSvgImage(previewImageForTemplate(template, entries.find((item) => item.page_key === template.pageKey))) ? <span>SVG</span> : null}
-                        </div>
-                      ) : null}
+                      {renderPagePreview(template, entries.find((item) => item.page_key === template.pageKey))}
                       <strong>{template.pageLabel}</strong>
                       <p>{template.route}</p>
                     </div>
@@ -217,12 +222,7 @@ function AdminSiteContent() {
                 {policyPages.map((template) => (
                   <button className="admin-list-row admin-list-button" type="button" key={template.pageKey} onClick={() => chooseContent(template.pageKey)}>
                     <div className="admin-record-copy">
-                      {previewImageForTemplate(template, entries.find((item) => item.page_key === template.pageKey)) ? (
-                        <div className="admin-site-preview">
-                          <img src={previewImageForTemplate(template, entries.find((item) => item.page_key === template.pageKey))} alt="" />
-                          {isSvgImage(previewImageForTemplate(template, entries.find((item) => item.page_key === template.pageKey))) ? <span>SVG</span> : null}
-                        </div>
-                      ) : null}
+                      {renderPagePreview(template, entries.find((item) => item.page_key === template.pageKey))}
                       <strong>{template.pageLabel}</strong>
                       <p>{template.route}</p>
                     </div>
@@ -241,12 +241,7 @@ function AdminSiteContent() {
                 {chromePages.map((template) => (
                   <button className="admin-list-row admin-list-button" type="button" key={template.pageKey} onClick={() => chooseContent(template.pageKey)}>
                     <div className="admin-record-copy">
-                      {previewImageForTemplate(template, entries.find((item) => item.page_key === template.pageKey)) ? (
-                        <div className="admin-site-preview">
-                          <img src={previewImageForTemplate(template, entries.find((item) => item.page_key === template.pageKey))} alt="" />
-                          {isSvgImage(previewImageForTemplate(template, entries.find((item) => item.page_key === template.pageKey))) ? <span>SVG</span> : null}
-                        </div>
-                      ) : null}
+                      {renderPagePreview(template, entries.find((item) => item.page_key === template.pageKey))}
                       <strong>{template.pageLabel}</strong>
                       <p>{template.route}</p>
                     </div>
@@ -269,7 +264,10 @@ function AdminSiteContent() {
                 </div>
                 {systemPages.map((template) => (
                   <div className="admin-data-row" key={template.pageKey}>
-                    <div><strong>{template.pageLabel}</strong></div>
+                    <div>
+                      {renderPagePreview(template, entries.find((item) => item.page_key === template.pageKey))}
+                      <strong>{template.pageLabel}</strong>
+                    </div>
                     <div><p>{template.route}</p></div>
                     <div><p>Managed by app logic</p></div>
                   </div>

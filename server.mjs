@@ -401,6 +401,7 @@ async function ensureAdminTables() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+  await pgPool.query(`ALTER TABLE rentals ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;`);
   await pgPool.query(`
     CREATE TABLE IF NOT EXISTS blocked_dates (
       id SERIAL PRIMARY KEY,
@@ -440,6 +441,7 @@ async function ensureAdminTables() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+  await pgPool.query(`ALTER TABLE vacation_bookings ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;`);
   await pgPool.query(`
     CREATE TABLE IF NOT EXISTS notary_requests (
       id SERIAL PRIMARY KEY,
@@ -459,6 +461,7 @@ async function ensureAdminTables() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+  await pgPool.query(`ALTER TABLE notary_requests ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;`);
   await pgPool.query(`
     CREATE TABLE IF NOT EXISTS admin_invoices (
       id SERIAL PRIMARY KEY,
