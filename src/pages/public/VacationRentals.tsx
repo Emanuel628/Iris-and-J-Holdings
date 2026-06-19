@@ -4,6 +4,7 @@ import Faq from '../../components/sections/Faq';
 import FormStatus from '../../components/ui/FormStatus';
 import { vacationHouseRules } from '../../content/vacationHouseRules';
 import { useContactForm } from '../../lib/useContactForm';
+import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
 import { usePageMeta } from '../../lib/usePageMeta';
 
 const photoSlots = [
@@ -15,7 +16,6 @@ const photoSlots = [
   'Area photo',
 ];
 
-// TODO: confirm the rental's actual amenities and update this list.
 const amenities = [
   'Fully equipped kitchen',
   'Fast Wi-Fi',
@@ -27,7 +27,6 @@ const amenities = [
   'Linens & towels provided',
 ];
 
-// TODO: refine answers with the rental's real details.
 const orlandoFaqs = [
   {
     question: 'Where is the rental located?',
@@ -40,7 +39,7 @@ const orlandoFaqs = [
       'Pick your dates on the availability calendar above, continue to the guest intake page, review the house rules, and check out securely. A stay is confirmed after payment is completed and a booking confirmation is issued by email.',
   },
   {
-    question: 'Whatâ€™s included in the price?',
+    question: 'What’s included in the price?',
     answer:
       'The nightly rate plus a one-time cleaning fee is shown on the calendar before checkout. Any additional property-specific terms, fees, or house rules are confirmed before booking.',
   },
@@ -57,32 +56,29 @@ function VacationRentals() {
     'Check availability and book an Orlando vacation rental in Central Florida near major theme parks with secure checkout, amenities, FAQs, and booking questions.',
   );
   const { status, submit } = useContactForm('Orlando Vacation Rental Question');
+  const template = getSiteContentTemplate('vacation-rentals');
+  const { content, heroImageUrl } = usePublicSiteContent('vacation-rentals', template?.defaults || {});
+
   return (
     <PublicLayout>
       <main className="page-main">
         <section className="page-hero page-hero-vacation">
           <div className="page-hero-content">
-            <p className="eyebrow">Vacation Rentals</p>
-            <h1>Book your Orlando vacation stay.</h1>
-            <p>
-              Check the calendar for open dates in Orlando and Central Florida, then reserve with secure checkout.
-              Prefer to ask first? Send Daiana a question and sheâ€™ll follow up by email.
-            </p>
+            <p className="eyebrow">{content.heroEyebrow}</p>
+            <h1>{content.heroTitle}</h1>
+            <p>{content.heroDescription}</p>
           </div>
           <div className="page-hero-visual page-hero-image-frame vacation-hero-visual" aria-label="Orlando vacation rental visual">
-            <img src="/images/site/vacation-hero.jpg" alt="Sunlit Orlando vacation rental interior and patio" />
+            <img src={heroImageUrl || '/images/site/vacation-hero.jpg'} alt="Sunlit Orlando vacation rental interior and patio" />
           </div>
         </section>
 
         <section className="page-content" id="availability">
           <div className="split-section vacation-booking">
             <div className="page-intro">
-              <p className="eyebrow">Availability</p>
-              <h2>Available dates for the rental.</h2>
-              <p>
-                Open dates are available to book; grayed-out dates are already taken. Pick your check-in and
-                check-out here, then continue to a separate intake page for guest details, house rules, and checkout.
-              </p>
+              <p className="eyebrow">{content.availabilityEyebrow}</p>
+              <h2>{content.availabilityTitle}</h2>
+              <p>{content.availabilityDescription}</p>
               <div className="notice-box">
                 Availability and pricing may change until payment is completed and a booking confirmation is issued.
                 Vacation rental accommodations are offered independently through Iris &amp; J Holdings and are not
@@ -114,7 +110,7 @@ function VacationRentals() {
             <p className="eyebrow">Amenities</p>
             <h2>Comfortable, practical, and close to the parks.</h2>
             <p>
-              This section can be updated with the propertyâ€™s exact photos, amenities, house rules, and guest
+              This section can be updated with the property’s exact photos, amenities, house rules, and guest
               instructions once those details are finalized.
             </p>
           </div>
@@ -130,7 +126,7 @@ function VacationRentals() {
             <p className="eyebrow">Photos</p>
             <h2>Property photos coming soon.</h2>
             <p>
-              Replace these placeholders with the rentalâ€™s actual photos before promoting the listing.
+              Replace these placeholders with the rental’s actual photos before promoting the listing.
             </p>
           </div>
           <div className="vacation-photo-grid">
@@ -158,7 +154,7 @@ function VacationRentals() {
               </div>
               <div className="input-group"><label htmlFor="vacation-question">Your Question</label><textarea id="vacation-question" name="question" required /></div>
               <button className="button button-primary" type="submit" disabled={status === 'sending'}>
-                {status === 'sending' ? 'Sendingâ€¦' : 'Send Question'}
+                {status === 'sending' ? 'Sending…' : 'Send Question'}
               </button>
               <FormStatus status={status} />
             </form>

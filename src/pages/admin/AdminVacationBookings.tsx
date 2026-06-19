@@ -30,9 +30,24 @@ function AdminVacationBookings() {
   }
 
   useEffect(() => {
-    loadData().catch(() => {
+    let alive = true;
+
+    async function refresh() {
+      await loadData();
+    }
+
+    refresh().catch(() => {
       window.location.href = '/admin/login';
     });
+    const interval = window.setInterval(() => {
+      if (!alive) return;
+      refresh().catch(() => undefined);
+    }, 15000);
+
+    return () => {
+      alive = false;
+      window.clearInterval(interval);
+    };
   }, []);
 
   async function updateBookingStatus(id: number, nextStatus: string) {

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import PublicLayout from '../../components/layout/PublicLayout';
 import FormStatus from '../../components/ui/FormStatus';
 import { useContactForm } from '../../lib/useContactForm';
+import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
 import { usePageMeta } from '../../lib/usePageMeta';
 
 const appointmentTypes = [
@@ -44,6 +45,8 @@ function BookContact() {
   const { status, submit } = useContactForm('Iris & J Holdings Contact Request');
   const [selectedService, setSelectedService] = useState(() => getQueryValue('service'));
   const [messageValue, setMessageValue] = useState(() => getQueryValue('message'));
+  const template = getSiteContentTemplate('book');
+  const { content, heroImageUrl } = usePublicSiteContent('book', template?.defaults || {});
 
   useEffect(() => {
     if (selectedService || messageValue || window.location.hash === '#contact-form') {
@@ -58,15 +61,12 @@ function BookContact() {
       <main className="page-main">
         <section className="page-hero page-hero-contact">
           <div className="page-hero-content">
-            <p className="eyebrow">Book or Contact</p>
-            <h1>Tell Daiana what you need.</h1>
-            <p>
-              Tell Daiana what you need and she’ll point you to the right next step — a buyer consultation,
-              seller strategy call, mobile notary appointment, or a general question. She’ll follow up by email.
-            </p>
+            <p className="eyebrow">{content.heroEyebrow}</p>
+            <h1>{content.heroTitle}</h1>
+            <p>{content.heroDescription}</p>
           </div>
           <div className="page-hero-visual page-hero-image-frame contact-hero-visual" aria-label="Contact and appointment request visual">
-            <img src="/images/site/contact-hero.jpg" alt="Elegant consultation table for appointment planning" />
+            <img src={heroImageUrl || '/images/site/contact-hero.jpg'} alt="Elegant consultation table for appointment planning" />
           </div>
         </section>
 
@@ -81,23 +81,22 @@ function BookContact() {
 
           <div className="content-grid">
             {appointmentTypes.map((type) => (
-            <a className="content-card contact-select-card"
-              href="#contact-form"
-              key={type.title}
-              onClick={(event) => {
-              event.preventDefault();
-              setSelectedService(type.title);
-              window.requestAnimationFrame(() => {
-              formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            });
-          }}
-           >
-    
-         <h3>{type.title}</h3>
-         <p>{type.text}</p>
-         <span className="card-link">Select this request →</span>
-         </a>
-         ))}
+              <a className="content-card contact-select-card"
+                href="#contact-form"
+                key={type.title}
+                onClick={(event) => {
+                  event.preventDefault();
+                  setSelectedService(type.title);
+                  window.requestAnimationFrame(() => {
+                    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  });
+                }}
+              >
+                <h3>{type.title}</h3>
+                <p>{type.text}</p>
+                <span className="card-link">Select this request</span>
+              </a>
+            ))}
           </div>
 
           <section className="split-section">
@@ -105,7 +104,7 @@ function BookContact() {
               <p className="eyebrow">Not sure?</p>
               <h2>Ask a question first.</h2>
               <p>
-                Not ready to schedule? Send a question — about buying, selling, a home value, or a notary visit —
+                Not ready to schedule? Send a question � about buying, selling, a home value, or a notary visit �
                 and Daiana will help you figure out the right next step.
               </p>
               <div className="notice-box">
@@ -154,7 +153,7 @@ function BookContact() {
                 />
               </div>
               <button className="button button-primary" type="submit" disabled={status === 'sending'}>
-                {status === 'sending' ? 'Sending…' : 'Send Message'}
+                {status === 'sending' ? 'Sending�' : 'Send Message'}
               </button>
               <FormStatus status={status} />
             </form>

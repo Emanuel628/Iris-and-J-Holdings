@@ -36,7 +36,7 @@ function AdminRegister() {
     <AdminLayout showNav={false}>
       <div className="admin-auth-page">
         <section className="admin-auth-shell info-panel">
-          <h1>Create the first admin</h1>
+          <h1>Create admin account</h1>
           <p>Use this once to create Daiana&apos;s admin access. After the first account exists, registration closes.</p>
           <form className="form-shell" onSubmit={submit}>
             <div className="input-group">

@@ -20,6 +20,7 @@ const sessionCookieName = 'ijh_admin_session';
 const databaseUrl = process.env.DATABASE_URL || '';
 const adminSessionDays = Number(process.env.ADMIN_SESSION_DAYS || 14);
 const secureCookies = process.env.NODE_ENV === 'production';
+const rentcastApiKey = process.env.RENTCAST_API_KEY || '';
 
 const pgPool = databaseUrl ? new pg.Pool({ connectionString: databaseUrl, ssl: databaseUrl.includes('localhost') ? false : { rejectUnauthorized: false } }) : null;
 
@@ -461,6 +462,13 @@ async function ensureAdminTables() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL DEFAULT '',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
   await seedControlCenterData();
 }
 
@@ -473,7 +481,16 @@ async function seedControlCenterData() {
     [booking.nightlyRateCents, booking.cleaningFeeCents],
   );
   const defaultPages = [
+    ['home', 'Home'],
+    ['buy', 'Buy'],
+    ['sell', 'Sell'],
+    ['home-value', 'Home Value'],
+    ['book', 'Book / Contact'],
+    ['about', 'About'],
+    ['resources', 'Resources'],
     ['terms', 'Terms & Conditions'],
+    ['privacy', 'Privacy Policy'],
+    ['accessibility', 'Accessibility & Fair Housing'],
     ['house-rules', 'House Rules'],
     ['refund-cancellation-policy', 'Refund & Cancellation Policy'],
     ['mobile-notary', 'Mobile Notary Page'],
@@ -487,6 +504,26 @@ async function seedControlCenterData() {
       [pageKey, title],
     );
   }
+  const defaultSettings = [
+    ['home_value_provider', 'rentcast'],
+    ['home_value_default_radius', '3'],
+    ['home_value_default_days_old', '180'],
+    ['home_value_default_comp_count', '12'],
+  ];
+  for (const [key, value] of defaultSettings) {
+    await pgPool.query(
+      `INSERT INTO app_settings (key, value)
+       VALUES ($1, $2)
+       ON CONFLICT (key) DO NOTHING`,
+      [key, value],
+    );
+  }
+}
+
+async function readAppSettings() {
+  if (!pgPool) return {};
+  const result = await pgPool.query('SELECT key, value FROM app_settings');
+  return Object.fromEntries(result.rows.map((row) => [row.key, row.value]));
 }
 
 async function adminUserCount() {
@@ -1301,6 +1338,29 @@ app.get('/api/admin/site-content', async (req, res) => {
   }
 });
 
+app.get('/api/site-content-public', async (req, res) => {
+  try {
+    if (!pgPool) {
+      return res.json({ entry: null });
+    }
+    const pageKey = clean(req.query?.pageKey);
+    if (!pageKey) {
+      return res.status(400).json({ message: 'Page key is required.' });
+    }
+    const result = await pgPool.query(
+      `SELECT id, page_key, title, body, hero_image_url, updated_at
+       FROM site_content
+       WHERE page_key = $1
+       LIMIT 1`,
+      [pageKey],
+    );
+    return res.json({ entry: result.rows[0] || null });
+  } catch (error) {
+    console.error('Public site content load failed:', error);
+    return res.status(500).json({ message: 'Could not load page content.' });
+  }
+});
+
 app.post('/api/admin/site-content', async (req, res) => {
   try {
     const admin = await requireAdmin(req, res);
@@ -1323,6 +1383,44 @@ app.post('/api/admin/site-content', async (req, res) => {
   } catch (error) {
     console.error('Admin site content save failed:', error);
     return res.status(500).json({ message: 'Could not save site content.' });
+  }
+});
+
+app.get('/api/admin/notifications', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const [vacation, notary] = await Promise.all([
+      pgPool.query(
+        `SELECT COUNT(*)::int AS new_count, COALESCE(MAX(created_at)::text, '') AS latest_created_at
+         FROM vacation_bookings
+         WHERE status = 'paid'`,
+      ),
+      pgPool.query(
+        `SELECT COUNT(*)::int AS new_count, COALESCE(MAX(created_at)::text, '') AS latest_created_at
+         FROM notary_requests
+         WHERE status = 'paid'`,
+      ),
+    ]);
+    const vacationLatest = vacation.rows[0]?.latest_created_at || '';
+    const notaryLatest = notary.rows[0]?.latest_created_at || '';
+    const bookingsLatest = [vacationLatest, notaryLatest].filter(Boolean).sort().at(-1) || '';
+    const bookingsCount = (vacation.rows[0]?.new_count || 0) + (notary.rows[0]?.new_count || 0);
+    return res.json({
+      bookings: { newCount: bookingsCount, latestCreatedAt: bookingsLatest },
+      vacation: {
+        newCount: vacation.rows[0]?.new_count || 0,
+        latestCreatedAt: vacationLatest,
+      },
+      notary: {
+        newCount: notary.rows[0]?.new_count || 0,
+        latestCreatedAt: notaryLatest,
+      },
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Admin notifications load failed:', error);
+    return res.status(500).json({ message: 'Could not load notifications.' });
   }
 });
 
@@ -1504,6 +1602,103 @@ app.post('/api/admin/seller-leads', async (req, res) => {
   } catch (error) {
     console.error('Admin seller lead save failed:', error);
     return res.status(500).json({ message: 'Could not save seller lead.' });
+  }
+});
+
+app.get('/api/admin/settings', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const settings = await readAppSettings();
+    return res.json({
+      settings,
+      status: {
+        databaseConfigured: Boolean(pgPool),
+        stripeConfigured: Boolean(stripe),
+        resendConfigured: Boolean(resendApiKey),
+        rentcastConfigured: Boolean(rentcastApiKey),
+      },
+    });
+  } catch (error) {
+    console.error('Admin settings load failed:', error);
+    return res.status(500).json({ message: 'Could not load settings.' });
+  }
+});
+
+app.post('/api/admin/settings', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const entries = req.body?.settings && typeof req.body.settings === 'object' ? Object.entries(req.body.settings) : [];
+    for (const [key, value] of entries) {
+      await pgPool.query(
+        `INSERT INTO app_settings (key, value, updated_at)
+         VALUES ($1, $2, NOW())
+         ON CONFLICT (key) DO UPDATE
+         SET value = EXCLUDED.value, updated_at = NOW()`,
+        [clean(key), clean(value)],
+      );
+    }
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin settings save failed:', error);
+    return res.status(500).json({ message: 'Could not save settings.' });
+  }
+});
+
+app.post('/api/home-value-estimate', async (req, res) => {
+  try {
+    const address = clean(req.body?.address);
+    const city = clean(req.body?.city);
+    const state = clean(req.body?.state || 'NJ');
+    const zipCode = clean(req.body?.zipCode);
+    const bedrooms = Number(req.body?.bedrooms || 0);
+    const bathrooms = Number(req.body?.bathrooms || 0);
+    const squareFootage = Number(req.body?.squareFootage || 0);
+    const propertyType = clean(req.body?.propertyType || 'Single Family');
+    const settings = await readAppSettings();
+    const radius = Number(req.body?.radius || settings.home_value_default_radius || 3);
+    const daysOld = Number(req.body?.daysOld || settings.home_value_default_days_old || 180);
+    const compCount = Number(req.body?.compCount || settings.home_value_default_comp_count || 12);
+
+    if (!address || !city) {
+      return res.status(400).json({ message: 'Address and city are required.' });
+    }
+
+    if (!rentcastApiKey) {
+      return res.status(503).json({ message: 'RENTCAST_API_KEY is not configured yet.' });
+    }
+
+    const params = new URLSearchParams({
+      address: `${address}, ${city}, ${state}${zipCode ? ` ${zipCode}` : ''}`,
+      propertyType,
+      maxRadius: String(radius),
+      daysOld: String(daysOld),
+      compCount: String(compCount),
+    });
+    if (bedrooms > 0) params.set('bedrooms', String(bedrooms));
+    if (bathrooms > 0) params.set('bathrooms', String(bathrooms));
+    if (squareFootage > 0) params.set('squareFootage', String(squareFootage));
+
+    const rentcastResponse = await fetch(`https://api.rentcast.io/v1/avm/value?${params.toString()}`, {
+      headers: {
+        Accept: 'application/json',
+        'X-Api-Key': rentcastApiKey,
+      },
+    });
+
+    const payload = await rentcastResponse.json().catch(() => ({}));
+    if (!rentcastResponse.ok) {
+      return res.status(rentcastResponse.status || 502).json({
+        message: payload?.message || 'Could not retrieve a home value estimate.',
+        provider: 'rentcast',
+      });
+    }
+
+    return res.json({ provider: 'rentcast', estimate: payload });
+  } catch (error) {
+    console.error('Home value estimate failed:', error);
+    return res.status(500).json({ message: 'Could not retrieve a home value estimate.' });
   }
 });
 

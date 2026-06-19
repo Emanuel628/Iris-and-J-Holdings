@@ -47,11 +47,9 @@ function AdminResetPassword() {
   }
 
   return (
-    <AdminLayout>
+    <AdminLayout showNav={false}>
       <div className="admin-auth-shell info-panel">
-        <p className="eyebrow">Admin</p>
         <h1>Reset password</h1>
-        <p>Set a new password for the admin account.</p>
         <form className="form-shell" onSubmit={submit}>
           <div className="input-group">
             <label htmlFor="admin-reset-password">New Password</label>

@@ -106,6 +106,28 @@ export type SellerLeadRecord = {
   created_at: string;
 };
 
+export type AdminNotificationRecord = {
+  newCount: number;
+  latestCreatedAt: string;
+};
+
+export type AdminNotificationsPayload = {
+  bookings: AdminNotificationRecord;
+  vacation: AdminNotificationRecord;
+  notary: AdminNotificationRecord;
+  updatedAt: string;
+};
+
+export type AdminSettingsPayload = {
+  settings: Record<string, string>;
+  status: {
+    databaseConfigured: boolean;
+    stripeConfigured: boolean;
+    resendConfigured: boolean;
+    rentcastConfigured: boolean;
+  };
+};
+
 export async function fetchAdminMe() {
   const res = await fetch('/api/admin/me', {
     headers: { Accept: 'application/json' },
@@ -160,4 +182,12 @@ export function fetchAdminBuyerLeads() {
 
 export function fetchAdminSellerLeads() {
   return fetchJson<{ leads: SellerLeadRecord[] }>('/api/admin/seller-leads');
+}
+
+export function fetchAdminNotifications() {
+  return fetchJson<AdminNotificationsPayload>('/api/admin/notifications');
+}
+
+export function fetchAdminSettings() {
+  return fetchJson<AdminSettingsPayload>('/api/admin/settings');
 }

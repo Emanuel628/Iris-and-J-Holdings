@@ -29,11 +29,9 @@ function AdminForgotPassword() {
   }
 
   return (
-    <AdminLayout>
+    <AdminLayout showNav={false}>
       <div className="admin-auth-shell info-panel">
-        <p className="eyebrow">Admin</p>
         <h1>Forgot password</h1>
-        <p>Enter the admin email and we&apos;ll send a reset link.</p>
         <form className="form-shell" onSubmit={submit}>
           <div className="input-group">
             <label htmlFor="admin-forgot-email">Email</label>
