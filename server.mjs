@@ -396,6 +396,7 @@ async function ensureAdminTables() {
       gallery_image_urls JSONB NOT NULL DEFAULT '[]'::jsonb,
       amenities JSONB NOT NULL DEFAULT '[]'::jsonb,
       is_active BOOLEAN NOT NULL DEFAULT TRUE,
+      deleted_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
@@ -435,6 +436,7 @@ async function ensureAdminTables() {
       amount_total_cents INTEGER NOT NULL DEFAULT 0,
       currency TEXT NOT NULL DEFAULT 'usd',
       status TEXT NOT NULL DEFAULT 'paid',
+      deleted_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
@@ -453,6 +455,7 @@ async function ensureAdminTables() {
       amount_total_cents INTEGER NOT NULL DEFAULT 0,
       currency TEXT NOT NULL DEFAULT 'usd',
       status TEXT NOT NULL DEFAULT 'paid',
+      deleted_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
@@ -553,12 +556,16 @@ async function ensureAdminTables() {
 
 async function seedControlCenterData() {
   if (!pgPool) return;
-  await pgPool.query(
-    `INSERT INTO rentals (slug, title, location_label, description, nightly_rate_cents, cleaning_fee_cents, max_guests)
-     VALUES ('orlando-vacation-rental', 'Orlando Vacation Rental', 'Orlando / Central Florida', 'Primary Orlando vacation rental listing.', $1, $2, 10)
-     ON CONFLICT (slug) DO NOTHING`,
-    [booking.nightlyRateCents, booking.cleaningFeeCents],
-  );
+  const settings = await readAppSettings();
+  if (settings.initial_rental_seeded !== 'true') {
+    await pgPool.query(
+      `INSERT INTO rentals (slug, title, location_label, description, nightly_rate_cents, cleaning_fee_cents, max_guests)
+       VALUES ('orlando-vacation-rental', 'Orlando Vacation Rental', 'Orlando / Central Florida', 'Primary Orlando vacation rental listing.', $1, $2, 10)
+       ON CONFLICT (slug) DO NOTHING`,
+      [booking.nightlyRateCents, booking.cleaningFeeCents],
+    );
+    await upsertAppSetting('initial_rental_seeded', 'true');
+  }
   const defaultPages = [
     ['home', 'Home'],
     ['buy', 'Buy'],
@@ -754,6 +761,16 @@ let bookedCache = { at: 0, ranges: [] };
 const BOOKED_CACHE_TTL_MS = 5 * 60 * 1000;
 
 async function getWebsiteBookedRanges() {
+  if (pgPool) {
+    const result = await pgPool.query(
+      `SELECT check_in::text AS start, check_out::text AS end
+       FROM vacation_bookings
+       WHERE deleted_at IS NULL AND status <> 'cancelled'
+       ORDER BY check_in ASC`,
+    );
+    return result.rows;
+  }
+
   if (!stripe) return [];
 
   const now = Date.now();
@@ -801,7 +818,7 @@ async function getRentalBlockedRanges(rentalId) {
     pgPool.query(
       `SELECT check_in::text AS start, check_out::text AS end
        FROM vacation_bookings
-       WHERE rental_id = $1 AND status <> 'cancelled'
+       WHERE rental_id = $1 AND deleted_at IS NULL AND status <> 'cancelled'
        ORDER BY check_in ASC`,
       [rentalId],
     ),
@@ -1680,10 +1697,10 @@ app.get('/api/admin/dashboard', async (req, res) => {
     await syncRecentPaidCheckoutSessions();
 
     const [rentals, blockedDates, vacationBookings, notaryRequests, siteContent] = await Promise.all([
-      pgPool.query('SELECT COUNT(*)::int AS count FROM rentals'),
+      pgPool.query('SELECT COUNT(*)::int AS count FROM rentals WHERE deleted_at IS NULL'),
       pgPool.query('SELECT COUNT(*)::int AS count FROM blocked_dates'),
-      pgPool.query('SELECT COUNT(*)::int AS count FROM vacation_bookings'),
-      pgPool.query('SELECT COUNT(*)::int AS count FROM notary_requests'),
+      pgPool.query('SELECT COUNT(*)::int AS count FROM vacation_bookings WHERE deleted_at IS NULL'),
+      pgPool.query('SELECT COUNT(*)::int AS count FROM notary_requests WHERE deleted_at IS NULL'),
       pgPool.query(`SELECT page_key, title, hero_image_url, updated_at FROM site_content ORDER BY page_key ASC LIMIT 12`),
     ]);
 
@@ -1712,6 +1729,7 @@ app.get('/api/admin/rentals', async (req, res) => {
       `SELECT id, slug, title, location_label, description, nightly_rate_cents, cleaning_fee_cents,
               max_guests, hero_image_url, gallery_image_urls, amenities, is_active, created_at, updated_at
        FROM rentals
+       WHERE deleted_at IS NULL
        ORDER BY created_at ASC`,
     );
     return res.json({ rentals: result.rows });
@@ -1730,7 +1748,7 @@ app.get('/api/public-rentals', async (_req, res) => {
       `SELECT id, slug, title, location_label, description, nightly_rate_cents, cleaning_fee_cents,
               max_guests, hero_image_url, gallery_image_urls, amenities, is_active, updated_at
        FROM rentals
-       WHERE is_active = TRUE
+       WHERE is_active = TRUE AND deleted_at IS NULL
        ORDER BY created_at ASC`,
     );
     return res.json({ rentals: result.rows });
@@ -1778,7 +1796,20 @@ app.post('/api/admin/rentals', async (req, res) => {
           slug, title, location_label, description, nightly_rate_cents, cleaning_fee_cents,
           max_guests, hero_image_url, gallery_image_urls, amenities, is_active
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10::jsonb, $11)`,
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10::jsonb, $11)
+        ON CONFLICT (slug) DO UPDATE SET
+          title = EXCLUDED.title,
+          location_label = EXCLUDED.location_label,
+          description = EXCLUDED.description,
+          nightly_rate_cents = EXCLUDED.nightly_rate_cents,
+          cleaning_fee_cents = EXCLUDED.cleaning_fee_cents,
+          max_guests = EXCLUDED.max_guests,
+          hero_image_url = EXCLUDED.hero_image_url,
+          gallery_image_urls = EXCLUDED.gallery_image_urls,
+          amenities = EXCLUDED.amenities,
+          is_active = EXCLUDED.is_active,
+          deleted_at = NULL,
+          updated_at = NOW()`,
         [slug, title, locationLabel, description, nightlyRateCents, cleaningFeeCents, maxGuests, heroImageUrl, JSON.stringify(galleryImageUrls), JSON.stringify(amenities), isActive],
       );
     }
@@ -1799,7 +1830,12 @@ app.post('/api/admin/rentals/delete', async (req, res) => {
     if (!id || confirmation !== 'DELETE') {
       return res.status(400).json({ message: 'Rental id and DELETE confirmation are required.' });
     }
-    await pgPool.query('DELETE FROM rentals WHERE id = $1', [id]);
+    await pgPool.query(
+      `UPDATE rentals
+       SET deleted_at = NOW(), is_active = FALSE, updated_at = NOW()
+       WHERE id = $1 AND deleted_at IS NULL`,
+      [id],
+    );
     bookedCache = { at: 0, ranges: [] };
     return res.json({ ok: true });
   } catch (error) {
@@ -1940,14 +1976,14 @@ app.get('/api/admin/notifications', async (req, res) => {
     await syncRecentPaidCheckoutSessions();
     const [vacation, notary] = await Promise.all([
       pgPool.query(
-        `SELECT COUNT(*)::int AS new_count, COALESCE(MAX(created_at)::text, '') AS latest_created_at
+      `SELECT COUNT(*)::int AS new_count, COALESCE(MAX(created_at)::text, '') AS latest_created_at
          FROM vacation_bookings
-         WHERE status = 'paid'`,
+         WHERE status = 'paid' AND deleted_at IS NULL`,
       ),
       pgPool.query(
         `SELECT COUNT(*)::int AS new_count, COALESCE(MAX(created_at)::text, '') AS latest_created_at
          FROM notary_requests
-         WHERE status = 'paid'`,
+         WHERE status = 'paid' AND deleted_at IS NULL`,
       ),
     ]);
     const vacationLatest = vacation.rows[0]?.latest_created_at || '';
@@ -1981,6 +2017,7 @@ app.get('/api/admin/vacation-bookings', async (req, res) => {
       `SELECT b.*, r.title AS rental_title
        FROM vacation_bookings b
        LEFT JOIN rentals r ON r.id = b.rental_id
+       WHERE b.deleted_at IS NULL
        ORDER BY b.created_at DESC
        LIMIT 100`,
     );
@@ -2000,7 +2037,7 @@ app.post('/api/admin/vacation-bookings/status', async (req, res) => {
     if (!id || !['paid', 'reviewed', 'cancel-requested', 'approved', 'cancelled'].includes(status)) {
       return res.status(400).json({ message: 'Valid booking id and status are required.' });
     }
-    await pgPool.query('UPDATE vacation_bookings SET status = $2 WHERE id = $1', [id, status]);
+    await pgPool.query('UPDATE vacation_bookings SET status = $2 WHERE id = $1 AND deleted_at IS NULL', [id, status]);
     return res.json({ ok: true });
   } catch (error) {
     console.error('Admin vacation booking status update failed:', error);
@@ -2037,7 +2074,7 @@ app.post('/api/admin/vacation-bookings/save', async (req, res) => {
            check_in = $7::date,
            check_out = $8::date,
            status = $9
-       WHERE id = $1`,
+       WHERE id = $1 AND deleted_at IS NULL`,
       [id, guestName, guestEmail, guestPhone, guestCount, guestListText, checkIn, checkOut, status],
     );
     return res.json({ ok: true });
@@ -2056,7 +2093,7 @@ app.post('/api/admin/vacation-bookings/delete', async (req, res) => {
     if (!id || confirmation !== 'DELETE') {
       return res.status(400).json({ message: 'Booking id and DELETE confirmation are required.' });
     }
-    await pgPool.query('DELETE FROM vacation_bookings WHERE id = $1', [id]);
+    await pgPool.query('UPDATE vacation_bookings SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL', [id]);
     return res.json({ ok: true });
   } catch (error) {
     console.error('Admin vacation booking delete failed:', error);
@@ -2072,6 +2109,7 @@ app.get('/api/admin/notary-requests', async (req, res) => {
     const result = await pgPool.query(
       `SELECT *
        FROM notary_requests
+       WHERE deleted_at IS NULL
        ORDER BY created_at DESC
        LIMIT 100`,
     );
@@ -2091,7 +2129,7 @@ app.post('/api/admin/notary-requests/status', async (req, res) => {
     if (!id || !['paid', 'reviewed', 'confirmed', 'approved', 'cancelled'].includes(status)) {
       return res.status(400).json({ message: 'Valid request id and status are required.' });
     }
-    await pgPool.query('UPDATE notary_requests SET status = $2 WHERE id = $1', [id, status]);
+    await pgPool.query('UPDATE notary_requests SET status = $2 WHERE id = $1 AND deleted_at IS NULL', [id, status]);
     return res.json({ ok: true });
   } catch (error) {
     console.error('Admin notary request status update failed:', error);
@@ -2130,7 +2168,7 @@ app.post('/api/admin/notary-requests/save', async (req, res) => {
            document_type = $8,
            notes = $9,
            status = $10
-       WHERE id = $1`,
+       WHERE id = $1 AND deleted_at IS NULL`,
       [id, fullName, email, phone, city, appointmentDate, appointmentTime, documentType, notes, status],
     );
     return res.json({ ok: true });
@@ -2149,7 +2187,7 @@ app.post('/api/admin/notary-requests/delete', async (req, res) => {
     if (!id || confirmation !== 'DELETE') {
       return res.status(400).json({ message: 'Request id and DELETE confirmation are required.' });
     }
-    await pgPool.query('DELETE FROM notary_requests WHERE id = $1', [id]);
+    await pgPool.query('UPDATE notary_requests SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL', [id]);
     return res.json({ ok: true });
   } catch (error) {
     console.error('Admin notary request delete failed:', error);
@@ -2783,7 +2821,7 @@ app.get('/api/availability', async (req, res) => {
     const rentalResult = await pgPool.query(
       `SELECT id, nightly_rate_cents, cleaning_fee_cents
        FROM rentals
-       WHERE id = $1 AND is_active = TRUE
+       WHERE id = $1 AND is_active = TRUE AND deleted_at IS NULL
        LIMIT 1`,
       [rentalId],
     );
@@ -2858,7 +2896,7 @@ app.post('/api/checkout', async (req, res) => {
       const rentalResult = await pgPool.query(
         `SELECT id, title, nightly_rate_cents, cleaning_fee_cents
          FROM rentals
-         WHERE id = $1 AND is_active = TRUE
+         WHERE id = $1 AND is_active = TRUE AND deleted_at IS NULL
          LIMIT 1`,
         [rentalId],
       );
