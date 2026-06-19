@@ -9,12 +9,17 @@ const adminLinks = [
   { href: '/admin', label: 'Control Center' },
   { href: '/admin/rentals', label: 'Rentals' },
   { href: '/admin/bookings', label: 'Bookings' },
+  { href: '/admin/vacation-bookings', label: 'Vacation Queue' },
+  { href: '/admin/notary-requests', label: 'Notary Queue' },
+  { href: '/admin/site-content', label: 'Site Content' },
   { href: '/admin/media', label: 'Media' },
   { href: '/admin/policies', label: 'Policies' },
   { href: '/admin/settings', label: 'Settings' },
 ];
 
 function AdminLayout({ children, showNav = true }: AdminLayoutProps) {
+  const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
+
   async function signOut() {
     await fetch('/api/admin/logout', { method: 'POST', headers: { Accept: 'application/json' } }).catch(() => undefined);
     window.location.href = '/admin/login';
@@ -22,16 +27,47 @@ function AdminLayout({ children, showNav = true }: AdminLayoutProps) {
 
   return (
     <main className="page-main admin-shell">
-      <section className="page-content admin-content">
+      <section className="admin-workspace">
         {showNav ? (
-          <nav className="admin-nav" aria-label="Admin">
-            {adminLinks.map((link) => (
-              <a key={link.href} href={link.href}>{link.label}</a>
-            ))}
-            <button type="button" onClick={signOut}>Sign out</button>
-          </nav>
+          <aside className="admin-sidebar">
+            <div className="admin-sidebar-head">
+              <p>Iris &amp; J Holdings</p>
+              <strong>Control Center</strong>
+            </div>
+            <nav className="admin-nav" aria-label="Admin">
+              {adminLinks.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className={currentPath === link.href ? 'is-active' : undefined}
+                  aria-current={currentPath === link.href ? 'page' : undefined}
+                >
+                  {link.label}
+                </a>
+              ))}
+            </nav>
+            <div className="admin-sidebar-foot">
+              <button type="button" onClick={signOut}>Sign out</button>
+            </div>
+          </aside>
         ) : null}
-        {children}
+
+        <section className="page-content admin-content">
+          {showNav ? (
+            <div className="admin-topbar">
+              <div>
+                <strong>Operations</strong>
+                <span>Bookings, availability, content, and site controls</span>
+              </div>
+              <div className="admin-topbar-actions">
+                <a href="/admin/rentals">New rental</a>
+                <a href="/admin/vacation-bookings">Booked dates</a>
+                <a href="/admin/notary-requests">Notary queue</a>
+              </div>
+            </div>
+          ) : null}
+          {children}
+        </section>
       </section>
     </main>
   );
