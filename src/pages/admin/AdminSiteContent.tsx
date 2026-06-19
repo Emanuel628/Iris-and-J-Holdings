@@ -12,6 +12,18 @@ type ContentForm = {
   heroImages: string[];
 };
 
+function previewImageForTemplate(template: SiteContentTemplate, entry?: SiteContentRecord | null) {
+  if (entry?.hero_image_url) return entry.hero_image_url;
+  const entryValues = entry ? parseSiteContentBody(entry.body, template.defaults) : template.defaults;
+  const imageField = template.fields.find((field) => field.type === 'image');
+  if (imageField && entryValues[imageField.key]) return entryValues[imageField.key];
+  return template.heroImageUrl || '';
+}
+
+function isSvgImage(value: string) {
+  return /\.svg(?:\?|$)/i.test(String(value || ''));
+}
+
 function toContentForm(entry: SiteContentRecord, template: SiteContentTemplate): ContentForm {
   return {
     pageKey: entry.page_key,
@@ -134,7 +146,16 @@ function AdminSiteContent() {
                   helperText="The first image is used as the active hero image for this page."
                 />
               ) : null}
-              {activeTemplate?.fields.map((field) => (
+              {activeTemplate?.fields.filter((field) => field.type === 'image').map((field) => (
+                <div key={field.key}>
+                  <AdminImagePicker
+                    label={field.label}
+                    images={contentForm.values[field.key] ? [contentForm.values[field.key]] : []}
+                    onChange={(images) => setContentForm({ ...contentForm, values: { ...contentForm.values, [field.key]: images[0] || '' } })}
+                  />
+                </div>
+              ))}
+              {activeTemplate?.fields.filter((field) => field.type !== 'image').map((field) => (
                 <div className="input-group" key={field.key}>
                   <label htmlFor={`admin-content-${field.key}`}>{field.label}</label>
                   {field.type === 'textarea' ? (
@@ -172,6 +193,12 @@ function AdminSiteContent() {
                 {contentPages.map((template) => (
                   <button className="admin-list-row admin-list-button" type="button" key={template.pageKey} onClick={() => chooseContent(template.pageKey)}>
                     <div className="admin-record-copy">
+                      {previewImageForTemplate(template, entries.find((item) => item.page_key === template.pageKey)) ? (
+                        <div className="admin-site-preview">
+                          <img src={previewImageForTemplate(template, entries.find((item) => item.page_key === template.pageKey))} alt="" />
+                          {isSvgImage(previewImageForTemplate(template, entries.find((item) => item.page_key === template.pageKey))) ? <span>SVG</span> : null}
+                        </div>
+                      ) : null}
                       <strong>{template.pageLabel}</strong>
                       <p>{template.route}</p>
                     </div>
@@ -190,6 +217,12 @@ function AdminSiteContent() {
                 {policyPages.map((template) => (
                   <button className="admin-list-row admin-list-button" type="button" key={template.pageKey} onClick={() => chooseContent(template.pageKey)}>
                     <div className="admin-record-copy">
+                      {previewImageForTemplate(template, entries.find((item) => item.page_key === template.pageKey)) ? (
+                        <div className="admin-site-preview">
+                          <img src={previewImageForTemplate(template, entries.find((item) => item.page_key === template.pageKey))} alt="" />
+                          {isSvgImage(previewImageForTemplate(template, entries.find((item) => item.page_key === template.pageKey))) ? <span>SVG</span> : null}
+                        </div>
+                      ) : null}
                       <strong>{template.pageLabel}</strong>
                       <p>{template.route}</p>
                     </div>
@@ -208,6 +241,12 @@ function AdminSiteContent() {
                 {chromePages.map((template) => (
                   <button className="admin-list-row admin-list-button" type="button" key={template.pageKey} onClick={() => chooseContent(template.pageKey)}>
                     <div className="admin-record-copy">
+                      {previewImageForTemplate(template, entries.find((item) => item.page_key === template.pageKey)) ? (
+                        <div className="admin-site-preview">
+                          <img src={previewImageForTemplate(template, entries.find((item) => item.page_key === template.pageKey))} alt="" />
+                          {isSvgImage(previewImageForTemplate(template, entries.find((item) => item.page_key === template.pageKey))) ? <span>SVG</span> : null}
+                        </div>
+                      ) : null}
                       <strong>{template.pageLabel}</strong>
                       <p>{template.route}</p>
                     </div>

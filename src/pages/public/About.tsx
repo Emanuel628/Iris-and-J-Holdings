@@ -8,7 +8,8 @@ function About() {
     'Meet Daiana Castro, REALTOR® and mobile notary serving New Jersey buyers, sellers, and notary clients through Iris & J Holdings and All Star Real Estate Agency.',
   );
   const template = getSiteContentTemplate('about');
-  const { content } = usePublicSiteContent('about', template?.defaults || {});
+  const { content, heroImageUrl } = usePublicSiteContent('about', template?.defaults || {});
+  const portraitImageUrl = content.portraitImageUrl || heroImageUrl || '/images/site/daiana-portrait.jpg';
 
   return (
     <PublicLayout>
@@ -23,7 +24,9 @@ function About() {
             </div>
           </div>
           <figure className="about-portrait">
-            <div className="page-hero-visual about-hero-visual" role="img" aria-label="Portrait of Daiana Castro" />
+            <div className="page-hero-visual about-hero-visual" aria-label="Portrait of Daiana Castro">
+              <img src={portraitImageUrl} alt="Portrait of Daiana Castro" />
+            </div>
             <figcaption>Daiana Castro, REALTOR®</figcaption>
           </figure>
         </section>

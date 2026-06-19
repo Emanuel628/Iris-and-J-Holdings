@@ -5,6 +5,7 @@ import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteCont
 function Footer() {
   const template = getSiteContentTemplate('footer');
   const { content } = usePublicSiteContent('footer', template?.defaults || {});
+  const fairHousingImageUrl = content.fairHousingImageUrl || '/equal-housing-opportunity.svg';
 
   return (
     <footer className="site-footer compact-footer">
@@ -13,7 +14,7 @@ function Footer() {
           <h3>{content.brokerageTitle || 'Brokerage'}</h3>
           <p>{content.brokerageBody || 'Real estate services are provided by Daiana Castro, REALTOR®, Licensed NJ Real Estate Salesperson, through All Star Real Estate Agency, a licensed New Jersey real estate brokerage. 1416B Morris Ave, Union, NJ 07083.'}</p>
           <p>{content.brokerageOffice || 'Brokerage office: (908) 964-5005'}</p>
-          <img className="eho-logo" src="/equal-housing-opportunity.svg" alt="Equal Housing Opportunity" width="190" />
+          <img className="eho-logo" src={fairHousingImageUrl} alt="Equal Housing Opportunity" width="190" />
         </div>
 
         <div className="footer-column footer-contact">

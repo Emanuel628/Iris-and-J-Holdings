@@ -3,7 +3,7 @@
 export type SiteContentField = {
   key: string;
   label: string;
-  type?: 'text' | 'textarea';
+  type?: 'text' | 'textarea' | 'image';
 };
 
 export type SiteContentTemplate = {
@@ -30,13 +30,20 @@ export const siteContentTemplates: SiteContentTemplate[] = [
       { key: 'heroDescription', label: 'Hero Description', type: 'textarea' },
       { key: 'primaryCtaLabel', label: 'Primary CTA Label' },
       { key: 'secondaryCtaLabel', label: 'Secondary CTA Label' },
+      { key: 'trustTitle', label: 'Trust Section Title', type: 'textarea' },
+      { key: 'trustDescription', label: 'Trust Section Description', type: 'textarea' },
+      { key: 'trustPortraitImageUrl', label: 'Trust Portrait Image', type: 'image' },
     ],
     defaults: {
       heroTitle: 'Your Next Move, Made Clear.',
       heroDescription:
-        'Buying, selling, or signing important documents can feel like a lot. Iâ€™ll help you understand the next step, make a plan, and move forward with confidence â€” real estate throughout New Jersey, mobile notary service, and Orlando vacation rentals.',
+        "Buying, selling, or signing important documents can feel like a lot. I'll help you understand the next step, make a plan, and move forward with confidence - real estate throughout New Jersey, mobile notary service, and Orlando vacation rentals.",
       primaryCtaLabel: 'Find the Right Service',
       secondaryCtaLabel: 'Book a Call',
+      trustTitle: "I'll keep you in the loop, start to finish.",
+      trustDescription:
+        "From the first conversation, you'll know what happens next and why. I explain each step in plain language, respond quickly, and help you weigh your options without pressure - for buyers, sellers, and notary clients throughout New Jersey, with a focus on Union, Middlesex, and Essex Counties.",
+      trustPortraitImageUrl: '/images/site/daiana-portrait.jpg',
     },
   },
   {
@@ -62,7 +69,7 @@ export const siteContentTemplates: SiteContentTemplate[] = [
       introEyebrow: 'What to expect',
       introTitle: 'Get your bearings before you start touring.',
       introDescription:
-        'Start with a no-pressure conversation about your budget and pre-approval, the neighborhoods and home types that fit, and how New Jerseyâ€™s process works â€” from making an offer and attorney review to inspections and the closing timeline.',
+        "Start with a no-pressure conversation about your budget and pre-approval, the neighborhoods and home types that fit, and how New Jersey's process works - from making an offer and attorney review to inspections and the closing timeline.",
     },
   },
   {
@@ -113,7 +120,7 @@ export const siteContentTemplates: SiteContentTemplate[] = [
       introEyebrow: 'Property details',
       introTitle: 'A few details to get started.',
       introDescription:
-        'Daiana reviews recent comparable sales, current nearby listings, and your homeâ€™s condition and updates, then follows up by email with a price range and the reasoning behind it. Thereâ€™s no cost and no obligation.',
+        "Daiana reviews recent comparable sales, current nearby listings, and your home's condition and updates, then follows up by email with a price range and the reasoning behind it. There's no cost and no obligation.",
     },
   },
   {
@@ -161,7 +168,7 @@ export const siteContentTemplates: SiteContentTemplate[] = [
       heroEyebrow: 'Vacation Rentals',
       heroTitle: 'Book your Orlando vacation stay.',
       heroDescription:
-        'Check the calendar for open dates in Orlando and Central Florida, then reserve with secure checkout. Prefer to ask first? Send Daiana a question and sheâ€™ll follow up by email.',
+        "Check the calendar for open dates in Orlando and Central Florida, then reserve with secure checkout. Prefer to ask first? Send Daiana a question and she'll follow up by email.",
       availabilityEyebrow: 'Availability',
       availabilityTitle: 'Available dates for the rental.',
       availabilityDescription:
@@ -174,16 +181,19 @@ export const siteContentTemplates: SiteContentTemplate[] = [
     route: '/about',
     category: 'content',
     title: 'About',
+    heroImageUrl: '/images/site/daiana-portrait.jpg',
     fields: [
       { key: 'heroEyebrow', label: 'Hero Eyebrow' },
       { key: 'heroTitle', label: 'Hero Title', type: 'textarea' },
       { key: 'heroDescription', label: 'Hero Description', type: 'textarea' },
+      { key: 'portraitImageUrl', label: 'Portrait Image', type: 'image' },
     ],
     defaults: {
       heroEyebrow: 'About Daiana',
       heroTitle: 'Real estate and notary help that keeps things simple.',
       heroDescription:
-        'Daiana Castro, REALTORÂ®, provides real estate services throughout New Jersey through All Star Real Estate Agency. She also offers mobile notary services and independently manages Orlando vacation rental accommodations through Iris & J Holdings.',
+        'Daiana Castro, REALTOR\u00ae, provides real estate services throughout New Jersey through All Star Real Estate Agency. She also offers mobile notary services and independently manages Orlando vacation rental accommodations through Iris & J Holdings.',
+      portraitImageUrl: '/images/site/daiana-portrait.jpg',
     },
   },
   {
@@ -199,7 +209,7 @@ export const siteContentTemplates: SiteContentTemplate[] = [
     ],
     defaults: {
       heroEyebrow: 'Resources',
-      heroTitle: 'Helpful info before youâ€™re ready to reach out.',
+      heroTitle: "Helpful info before you're ready to reach out.",
       heroDescription:
         'Not everyone is ready for a call right away. Start with a buyer guide, seller guide, or local market update and come back when the timing feels right.',
     },
@@ -220,7 +230,7 @@ export const siteContentTemplates: SiteContentTemplate[] = [
       heroEyebrow: 'Book or Contact',
       heroTitle: 'Tell Daiana what you need.',
       heroDescription:
-        'Tell Daiana what you need and sheâ€™ll point you to the right next step â€” a buyer consultation, seller strategy call, mobile notary appointment, or a general question. Sheâ€™ll follow up by email.',
+        "Tell Daiana what you need and she'll point you to the right next step - a buyer consultation, seller strategy call, mobile notary appointment, or a general question. She'll follow up by email.",
     },
   },
   {
@@ -268,15 +278,16 @@ export const siteContentTemplates: SiteContentTemplate[] = [
       { key: 'aboutTitle', label: 'About Title' },
       { key: 'aboutBody', label: 'About Body', type: 'textarea' },
       { key: 'aboutLinkLabel', label: 'About Link Label' },
+      { key: 'fairHousingImageUrl', label: 'Fair Housing Logo', type: 'image' },
       { key: 'copyright', label: 'Copyright' },
     ],
     defaults: {
       brokerageTitle: 'Brokerage',
       brokerageBody:
-        'Real estate services are provided by Daiana Castro, REALTORÂ®, Licensed NJ Real Estate Salesperson, through All Star Real Estate Agency, a licensed New Jersey real estate brokerage. 1416B Morris Ave, Union, NJ 07083.',
+        'Real estate services are provided by Daiana Castro, REALTOR\u00ae, Licensed NJ Real Estate Salesperson, through All Star Real Estate Agency, a licensed New Jersey real estate brokerage. 1416B Morris Ave, Union, NJ 07083.',
       brokerageOffice: 'Brokerage office: (908) 964-5005',
       contactTitle: 'Contact',
-      contactName: 'Daiana Castro, REALTORÂ®',
+      contactName: 'Daiana Castro, REALTOR\u00ae',
       contactRole: 'Licensed NJ Real Estate Salesperson',
       contactLicense: 'NJ Real Estate License #2190570',
       contactPhone: 'Mobile: (908) 499-6320',
@@ -285,6 +296,7 @@ export const siteContentTemplates: SiteContentTemplate[] = [
       aboutTitle: 'About',
       aboutBody: 'Real estate through All Star Real Estate Agency. Mobile notary and vacation rental services through Iris & J Holdings.',
       aboutLinkLabel: 'About Daiana',
+      fairHousingImageUrl: '/equal-housing-opportunity.svg',
       copyright: '© 2026 Iris & J Holdings. All rights reserved.',
     },
   },

@@ -165,6 +165,24 @@ export type AdminSettingsPayload = {
   };
 };
 
+export type HomeValueEstimateRecord = {
+  id: number;
+  client_name: string;
+  subject_address: string;
+  city: string;
+  state: string;
+  zip_code: string;
+  property_type: string;
+  bedrooms: number;
+  bathrooms: number;
+  square_footage: number;
+  estimated_value: number;
+  low_range: number;
+  high_range: number;
+  result_json: string;
+  created_at: string;
+};
+
 export async function fetchAdminMe() {
   const res = await fetch('/api/admin/me', {
     headers: { Accept: 'application/json' },
@@ -231,5 +249,9 @@ export function fetchAdminNotifications() {
 
 export function fetchAdminSettings() {
   return fetchJson<AdminSettingsPayload>('/api/admin/settings');
+}
+
+export function fetchAdminHomeValueEstimates() {
+  return fetchJson<{ estimates: HomeValueEstimateRecord[] }>('/api/admin/home-value-estimates');
 }
 

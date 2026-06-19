@@ -1,7 +1,13 @@
 ﻿import AdminLayout from '../../components/admin/AdminLayout';
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronsUpDown, ExternalLink } from 'lucide-react';
-import { fetchAdminMe, fetchAdminSettings, type AdminSettingsPayload } from '../../lib/adminAuth';
+import {
+  fetchAdminHomeValueEstimates,
+  fetchAdminMe,
+  fetchAdminSettings,
+  type AdminSettingsPayload,
+  type HomeValueEstimateRecord,
+} from '../../lib/adminAuth';
 import { usePageMeta } from '../../lib/usePageMeta';
 
 const CUSTOM_OPTION = '__custom__';
@@ -84,6 +90,7 @@ function searchUrl(address?: string) {
 function AdminHomeValueLab() {
   usePageMeta('Admin Home Value Lab', 'Plan the home value estimator data and API stack.', { robots: 'noindex,nofollow' });
   const [form, setForm] = useState({
+    clientName: '',
     address: '',
     city: '',
     state: 'NJ',
@@ -105,10 +112,12 @@ function AdminHomeValueLab() {
   const [settingsStatusMessage, setSettingsStatusMessage] = useState('');
   const [settingsErrorMessage, setSettingsErrorMessage] = useState('');
   const [emailingResults, setEmailingResults] = useState(false);
+  const [savingResult, setSavingResult] = useState(false);
+  const [savedEstimates, setSavedEstimates] = useState<HomeValueEstimateRecord[]>([]);
 
   useEffect(() => {
-    Promise.all([fetchAdminMe(), fetchAdminSettings()])
-      .then(([me, settingsPayload]) => {
+    Promise.all([fetchAdminMe(), fetchAdminSettings(), fetchAdminHomeValueEstimates()])
+      .then(([me, settingsPayload, savedPayload]) => {
         if (!me?.user) {
           window.location.href = '/admin/login';
           return;
@@ -116,6 +125,7 @@ function AdminHomeValueLab() {
         setRentcastConfigured(settingsPayload.status.rentcastConfigured);
         setUsage(settingsPayload.rentcastUsage);
         setSettings(settingsPayload.settings);
+        setSavedEstimates(savedPayload.estimates);
       })
       .catch(() => {
         window.location.href = '/admin/login';
@@ -208,6 +218,41 @@ function AdminHomeValueLab() {
     }
   }
 
+  async function saveResult() {
+    if (!result) return;
+    setSavingResult(true);
+    setStatusMessage('');
+    setErrorMessage('');
+    try {
+      const subjectAddress = subject?.formattedAddress || `${form.address}, ${form.city}, ${form.state} ${form.zipCode}`.trim();
+      const res = await fetch('/api/admin/home-value-estimates/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          clientName: form.clientName,
+          subjectAddress,
+          city: form.city,
+          state: form.state,
+          zipCode: form.zipCode,
+          propertyType: form.propertyType,
+          bedrooms: Number(form.bedrooms || 0),
+          bathrooms: Number(form.bathrooms || 0),
+          squareFootage: Number(form.squareFootage || 0),
+          estimate: result,
+        }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload.message || 'Could not save the estimate.');
+      const savedPayload = await fetchAdminHomeValueEstimates();
+      setSavedEstimates(savedPayload.estimates);
+      setStatusMessage(`Estimate saved for ${form.clientName}.`);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Could not save the estimate.');
+    } finally {
+      setSavingResult(false);
+    }
+  }
+
   const propertyTypeSelectValue = propertyTypeCustom ? CUSTOM_OPTION : form.propertyType;
   const comparables = useMemo(() => result?.comparables || [], [result]);
   const subject = result?.subjectProperty;
@@ -235,10 +280,11 @@ function AdminHomeValueLab() {
             </div>
             <div className="form-shell">
               <div className="form-row">
+                <div className="input-group"><label htmlFor="value-client-admin">Client Name</label><input id="value-client-admin" value={form.clientName} onChange={(event) => setForm({ ...form, clientName: event.target.value })} /></div>
                 <div className="input-group"><label htmlFor="value-address-admin">Address</label><input id="value-address-admin" value={form.address} onChange={(event) => setForm({ ...form, address: event.target.value })} /></div>
-                <div className="input-group"><label htmlFor="value-city-admin">City</label><input id="value-city-admin" value={form.city} onChange={(event) => setForm({ ...form, city: event.target.value })} /></div>
               </div>
               <div className="form-row">
+                <div className="input-group"><label htmlFor="value-city-admin">City</label><input id="value-city-admin" value={form.city} onChange={(event) => setForm({ ...form, city: event.target.value })} /></div>
                 <div className="input-group"><label htmlFor="value-state-admin">State</label><input id="value-state-admin" value={form.state} onChange={(event) => setForm({ ...form, state: event.target.value })} /></div>
                 <div className="input-group"><label htmlFor="value-zip-admin">ZIP</label><input id="value-zip-admin" value={form.zipCode} onChange={(event) => setForm({ ...form, zipCode: event.target.value })} /></div>
               </div>
@@ -317,9 +363,14 @@ function AdminHomeValueLab() {
                   <div>
                     <strong>Comparable sales returned</strong>
                     <span>{comparables.length}</span>
-                    <button className="button-secondary admin-inline-button" type="button" onClick={emailResults} disabled={emailingResults}>
-                      {emailingResults ? 'Emailing...' : 'Email results'}
-                    </button>
+                    <div className="admin-inline-actions">
+                      <button className="button admin-action-save admin-inline-button" type="button" onClick={saveResult} disabled={savingResult || !result || !form.clientName.trim()}>
+                        {savingResult ? 'Saving...' : 'Save result'}
+                      </button>
+                      <button className="button admin-action-email admin-inline-button" type="button" onClick={emailResults} disabled={emailingResults}>
+                        {emailingResults ? 'Emailing...' : 'Email results'}
+                      </button>
+                    </div>
                   </div>
                   <div>
                     <strong>Subject address</strong>
@@ -462,6 +513,27 @@ function AdminHomeValueLab() {
               {settingsErrorMessage ? <p className="form-status form-status-error" role="alert">{settingsErrorMessage}</p> : null}
             </div>
           </section>
+        </section>
+
+        <section className="admin-section">
+          <div className="admin-section-head">
+            <h2>Saved estimates</h2>
+            <p>{savedEstimates.length} saved</p>
+          </div>
+          <div className="admin-list">
+            {savedEstimates.map((estimate) => (
+              <article className="admin-list-row admin-record admin-record-stack" key={estimate.id}>
+                <div className="admin-record-copy">
+                  <strong>{estimate.client_name}</strong>
+                  <p>{estimate.subject_address}</p>
+                  <p>{estimate.property_type || 'Property type not saved'} | {estimate.bedrooms || 0} bd | {estimate.bathrooms || 0} ba | {formatNumber(estimate.square_footage)} sq ft</p>
+                  <p>Estimate: {formatCurrency(estimate.estimated_value)} | Range: {formatCurrency(estimate.low_range)} - {formatCurrency(estimate.high_range)}</p>
+                  <p>Saved {formatDate(estimate.created_at)}</p>
+                </div>
+              </article>
+            ))}
+            {!savedEstimates.length ? <p className="admin-empty-note">No saved estimates yet.</p> : null}
+          </div>
         </section>
       </div>
     </AdminLayout>

@@ -83,7 +83,7 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
       } else if (session.metadata?.type === 'invoice') {
         await markInvoicePaidFromSession(session);
       } else {
-        bookedCache = { at: 0, ranges: [] }; // vacation booking â€” refresh website/Airbnb availability merge
+        bookedCache = { at: 0, ranges: [] }; // vacation booking - refresh website/Airbnb availability merge
         await persistVacationBooking(session);
         await notifyBookingV2(session);
       }
@@ -529,6 +529,25 @@ async function ensureAdminTables() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS home_value_estimates (
+      id SERIAL PRIMARY KEY,
+      client_name TEXT NOT NULL DEFAULT '',
+      subject_address TEXT NOT NULL DEFAULT '',
+      city TEXT NOT NULL DEFAULT '',
+      state TEXT NOT NULL DEFAULT '',
+      zip_code TEXT NOT NULL DEFAULT '',
+      property_type TEXT NOT NULL DEFAULT '',
+      bedrooms NUMERIC NOT NULL DEFAULT 0,
+      bathrooms NUMERIC NOT NULL DEFAULT 0,
+      square_footage INTEGER NOT NULL DEFAULT 0,
+      estimated_value NUMERIC NOT NULL DEFAULT 0,
+      low_range NUMERIC NOT NULL DEFAULT 0,
+      high_range NUMERIC NOT NULL DEFAULT 0,
+      result_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
   await seedControlCenterData();
 }
 
@@ -806,7 +825,7 @@ async function notifyBooking(session) {
 
   await sendResendEmail({
     to: contactTo,
-    subject: `New vacation rental booking â€” ${checkIn} to ${checkOut}`,
+    subject: `New vacation rental booking - ${checkIn} to ${checkOut}`,
     text: `A vacation rental booking was paid through Stripe.\n\nDates: ${checkIn} to ${checkOut}\nGuest: ${guestEmail || 'unknown'}\nAmount: ${amount}\nStripe session: ${session.id}`,
     html: `<h2>New vacation rental booking</h2><p><strong>Dates:</strong> ${escapeHtml(checkIn)} to ${escapeHtml(checkOut)}<br><strong>Guest:</strong> ${escapeHtml(guestEmail || 'unknown')}<br><strong>Amount:</strong> ${escapeHtml(amount)}<br><strong>Stripe session:</strong> ${escapeHtml(session.id)}</p>`,
   });
@@ -822,14 +841,14 @@ async function notifyBooking(session) {
         `Dates: ${checkIn} to ${checkOut}\n` +
         `Amount paid: ${amount}\n\n` +
         `A Stripe receipt should arrive separately by email. Daiana will follow up with the booking details, house rules, and check-in information.\n\n` +
-        `â€” Iris & J Holdings`,
+        `- Iris & J Holdings`,
       html:
         `<p>Hi,</p>` +
         `<p>Your Orlando vacation rental booking has been paid and received.</p>` +
         `<p><strong>Dates:</strong> ${escapeHtml(checkIn)} to ${escapeHtml(checkOut)}<br>` +
         `<strong>Amount paid:</strong> ${escapeHtml(amount)}</p>` +
         `<p>A Stripe receipt should arrive separately by email. Daiana will follow up with the booking details, house rules, and check-in information.</p>` +
-        `<p>â€” Iris &amp; J Holdings</p>`,
+        `<p>- Iris &amp; J Holdings</p>`,
     });
   }
 }
@@ -850,7 +869,7 @@ async function notifyNotaryBooking(session) {
   await sendResendEmail({
     to: contactTo,
     replyTo: email || undefined,
-    subject: `Paid notary booking fee â€” ${appointmentDate} at ${appointmentTime}`,
+    subject: `Paid notary booking fee - ${appointmentDate} at ${appointmentTime}`,
     text:
       `A notary booking fee was paid through Stripe.\n\n` +
       `Name: ${name}\n` +
@@ -890,7 +909,7 @@ async function notifyNotaryBooking(session) {
         `Amount paid: ${amount}\n\n` +
         `A Stripe receipt should arrive separately by email. Daiana will follow up to confirm the appointment time, service area, signer requirements, and any separate notary fees.\n\n` +
         `Payment does not guarantee that a notarial act can be completed if legal, signer, document, or identification requirements cannot be satisfied.\n\n` +
-        `â€” Iris & J Holdings`,
+        `- Iris & J Holdings`,
       html:
         `<p>Hi ${escapeHtml(name || 'there')},</p>` +
         `<p>Your mobile notary travel / booking fee has been paid and received.</p>` +
@@ -899,7 +918,7 @@ async function notifyNotaryBooking(session) {
         `<strong>Amount paid:</strong> ${escapeHtml(amount)}</p>` +
         `<p>A Stripe receipt should arrive separately by email. Daiana will follow up to confirm the appointment time, service area, signer requirements, and any separate notary fees.</p>` +
         `<p>Payment does not guarantee that a notarial act can be completed if legal, signer, document, or identification requirements cannot be satisfied.</p>` +
-        `<p>â€” Iris &amp; J Holdings</p>`,
+        `<p>- Iris &amp; J Holdings</p>`,
     });
   }
 }
@@ -2582,6 +2601,81 @@ app.post('/api/admin/home-value-email', async (req, res) => {
   }
 });
 
+app.get('/api/admin/home-value-estimates', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const result = await pgPool.query(
+      `SELECT id, client_name, subject_address, city, state, zip_code, property_type,
+              bedrooms::double precision AS bedrooms,
+              bathrooms::double precision AS bathrooms,
+              square_footage,
+              estimated_value::double precision AS estimated_value,
+              low_range::double precision AS low_range,
+              high_range::double precision AS high_range,
+              result_json::text AS result_json, created_at
+       FROM home_value_estimates
+       ORDER BY created_at DESC
+       LIMIT 50`,
+    );
+    return res.json({ estimates: result.rows });
+  } catch (error) {
+    console.error('Admin home value estimates load failed:', error);
+    return res.status(500).json({ message: 'Could not load saved estimates.' });
+  }
+});
+
+app.post('/api/admin/home-value-estimates/save', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const clientName = clean(req.body?.clientName);
+    const subjectAddress = clean(req.body?.subjectAddress);
+    const city = clean(req.body?.city);
+    const state = clean(req.body?.state);
+    const zipCode = clean(req.body?.zipCode);
+    const propertyType = clean(req.body?.propertyType);
+    const bedrooms = Number(req.body?.bedrooms || 0);
+    const bathrooms = Number(req.body?.bathrooms || 0);
+    const squareFootage = Number(req.body?.squareFootage || 0);
+    const estimate = req.body?.estimate || {};
+
+    if (!clientName) {
+      return res.status(400).json({ message: 'Client name is required.' });
+    }
+    if (!subjectAddress) {
+      return res.status(400).json({ message: 'Property address is required.' });
+    }
+
+    await pgPool.query(
+      `INSERT INTO home_value_estimates (
+         client_name, subject_address, city, state, zip_code, property_type, bedrooms, bathrooms,
+         square_footage, estimated_value, low_range, high_range, result_json
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb)`,
+      [
+        clientName,
+        subjectAddress,
+        city,
+        state,
+        zipCode,
+        propertyType,
+        Number.isFinite(bedrooms) ? bedrooms : 0,
+        Number.isFinite(bathrooms) ? bathrooms : 0,
+        Number.isFinite(squareFootage) ? squareFootage : 0,
+        Number(estimate.price || 0),
+        Number(estimate.priceRangeLow || 0),
+        Number(estimate.priceRangeHigh || 0),
+        JSON.stringify(estimate),
+      ],
+    );
+
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin home value estimate save failed:', error);
+    return res.status(500).json({ message: 'Could not save the estimate.' });
+  }
+});
+
 app.get('/api/admin/settings', async (req, res) => {
   try {
     const admin = await requireAdmin(req, res);
@@ -2722,7 +2816,7 @@ app.get('/api/availability', async (req, res) => {
 app.post('/api/checkout', async (req, res) => {
   try {
     if (!stripe) {
-      return res.status(503).json({ message: 'Online booking isnâ€™t available yet. Please join the interest list.' });
+      return res.status(503).json({ message: "Online booking isn't available yet. Please join the interest list." });
     }
     
     const checkIn = clean(req.body?.checkIn);
@@ -2778,7 +2872,7 @@ app.post('/api/checkout', async (req, res) => {
     }
 
     if (!(rentalRate > 0)) {
-      return res.status(503).json({ message: 'Pricing isnâ€™t set up yet. Please join the interest list.' });
+      return res.status(503).json({ message: "Pricing isn't set up yet. Please join the interest list." });
     }
 
     const blocked = rentalId > 0 ? await getRentalBlockedRanges(rentalId) : await getAllBlockedRanges();
@@ -2794,7 +2888,7 @@ app.post('/api/checkout', async (req, res) => {
           currency: booking.currency,
           unit_amount: rentalRate * stay.nights,
           product_data: {
-            name: `${rentalTitle} â€” ${stay.nights} night${stay.nights > 1 ? 's' : ''}`,
+            name: `${rentalTitle} - ${stay.nights} night${stay.nights > 1 ? 's' : ''}`,
             description: `${checkIn} to ${checkOut}`,
           },
         },
@@ -3123,9 +3217,9 @@ app.post('/api/contact', async (req, res) => {
       await sendResendEmail({
         to: email,
         replyTo: contactTo,
-        subject: 'We received your message â€” Iris & J Holdings',
-        text: `Hi ${name},\n\nThanks for reaching out to Iris & J Holdings. Daiana received your message and will follow up by email soon.\n\nIf your request is time-sensitive, you can call (908) 499-6320.\n\nâ€” Iris & J Holdings`,
-        html: `<p>Hi ${escapeHtml(name)},</p><p>Thanks for reaching out to Iris &amp; J Holdings. Daiana received your message and will follow up by email soon.</p><p>If your request is time-sensitive, you can call <a href="tel:19084996320">(908) 499-6320</a>.</p><p>â€” Iris &amp; J Holdings</p>`,
+        subject: 'We received your message - Iris & J Holdings',
+        text: `Hi ${name},\n\nThanks for reaching out to Iris & J Holdings. Daiana received your message and will follow up by email soon.\n\nIf your request is time-sensitive, you can call (908) 499-6320.\n\n- Iris & J Holdings`,
+        html: `<p>Hi ${escapeHtml(name)},</p><p>Thanks for reaching out to Iris &amp; J Holdings. Daiana received your message and will follow up by email soon.</p><p>If your request is time-sensitive, you can call <a href="tel:19084996320">(908) 499-6320</a>.</p><p>- Iris &amp; J Holdings</p>`,
       });
     } catch (confirmError) {
       console.error('Confirmation email failed:', confirmError);

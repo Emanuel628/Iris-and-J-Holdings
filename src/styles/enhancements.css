@@ -1268,6 +1268,38 @@ summary:focus-visible,
   cursor: pointer;
 }
 
+.admin-site-preview {
+  position: relative;
+  width: 100%;
+  max-width: 180px;
+  aspect-ratio: 16 / 9;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid rgba(24, 34, 49, 0.12);
+  background: #f6f1ea;
+}
+
+.admin-site-preview img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.admin-site-preview span {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.82);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
 .admin-record {
   align-items: start;
 }
@@ -1280,6 +1312,23 @@ summary:focus-visible,
   display: inline-flex;
   gap: 0.65rem;
   flex-wrap: wrap;
+}
+
+.admin-action-save {
+  background: #1f6f43;
+  color: #fff;
+  border: 1px solid #1f6f43;
+}
+
+.admin-action-email {
+  background: #b9852f;
+  color: #fff;
+  border: 1px solid #b9852f;
+}
+
+.admin-action-save:hover,
+.admin-action-email:hover {
+  filter: brightness(0.96);
 }
 
 .service-grid-scroll {
@@ -1396,7 +1445,7 @@ html.desktop-view .notary-hero {
 }
 
 /* A quiet-band used as a split-section column shouldn't carry its standalone
-   top margin â€” keep it top-aligned with the panel beside it. */
+   top margin - keep it top-aligned with the panel beside it. */
 .split-section .quiet-band {
   margin-top: 0;
 }
