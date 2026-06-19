@@ -22,6 +22,9 @@ function AdminLogin() {
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error('Incorrect Email or password');
+        }
         throw new Error(payload.message || 'Could not sign in.');
       }
       window.location.href = '/admin';

@@ -928,15 +928,23 @@ summary:focus-visible,
 }
 
 .notary-hero {
-  grid-template-columns: minmax(0, 1fr) minmax(340px, 0.92fr);
+  grid-template-columns: minmax(0, 0.86fr) minmax(360px, 1.14fr);
+  gap: clamp(2.8rem, 7vw, 6rem);
 }
 
 .notary-hero .page-hero-content {
-  max-width: 580px;
+  position: relative;
+  z-index: 1;
+  max-width: 500px;
 }
 
 .notary-hero .page-hero-content h1 {
-  max-width: 9ch;
+  max-width: 7.2ch;
+}
+
+html.desktop-view .notary-hero {
+  grid-template-columns: minmax(0, 0.86fr) minmax(360px, 1.14fr);
+  gap: clamp(2.8rem, 7vw, 6rem);
 }
 
 .cal-note {

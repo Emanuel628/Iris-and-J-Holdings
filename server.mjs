@@ -95,6 +95,9 @@ app.use(express.json({ limit: '100kb' }));
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX = 6;
 const rateHits = new Map();
+const ADMIN_LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const ADMIN_LOGIN_MAX_ATTEMPTS = 5;
+const adminLoginHits = new Map();
 
 function isRateLimited(ip) {
   const now = Date.now();
@@ -112,6 +115,50 @@ function isRateLimited(ip) {
 
   entry.count += 1;
   return entry.count > RATE_LIMIT_MAX;
+}
+
+function adminLoginKey(ip, email) {
+  return `${clean(ip || 'unknown')}::${clean(email || '').toLowerCase() || 'unknown'}`;
+}
+
+function pruneAttemptMap(store, windowMs) {
+  const now = Date.now();
+  if (store.size <= 5000) return;
+  for (const [key, value] of store) {
+    if (now - value.start > windowMs) {
+      store.delete(key);
+    }
+  }
+}
+
+function isAdminLoginRateLimited(ip, email) {
+  const key = adminLoginKey(ip, email);
+  const now = Date.now();
+  const entry = adminLoginHits.get(key);
+
+  if (!entry || now - entry.start > ADMIN_LOGIN_WINDOW_MS) {
+    return false;
+  }
+
+  return entry.count >= ADMIN_LOGIN_MAX_ATTEMPTS;
+}
+
+function recordAdminLoginFailure(ip, email) {
+  const key = adminLoginKey(ip, email);
+  const now = Date.now();
+  const entry = adminLoginHits.get(key);
+
+  if (!entry || now - entry.start > ADMIN_LOGIN_WINDOW_MS) {
+    adminLoginHits.set(key, { start: now, count: 1 });
+    pruneAttemptMap(adminLoginHits, ADMIN_LOGIN_WINDOW_MS);
+    return;
+  }
+
+  entry.count += 1;
+}
+
+function clearAdminLoginFailures(ip, email) {
+  adminLoginHits.delete(adminLoginKey(ip, email));
 }
 
 function clean(value) {
@@ -430,6 +477,7 @@ async function createAdminSession(res, adminUserId) {
   );
   setCookie(res, sessionCookieName, token, {
     maxAge: adminSessionDays * 24 * 60 * 60,
+    sameSite: 'Strict',
     secure: secureCookies,
   });
 }
@@ -924,6 +972,7 @@ app.post('/api/admin/login', async (req, res) => {
       return res.status(503).json({ message: 'DATABASE_URL is not configured.' });
     }
     await ensureAdminTables();
+    const ip = req.ip || req.socket?.remoteAddress || 'unknown';
     const email = clean(req.body?.email).toLowerCase();
     const password = String(req.body?.password || '');
 
@@ -931,12 +980,18 @@ app.post('/api/admin/login', async (req, res) => {
       return res.status(400).json({ message: 'Email and password are required.' });
     }
 
+    if (isAdminLoginRateLimited(ip, email)) {
+      return res.status(429).json({ message: 'Too many sign-in attempts. Please wait 15 minutes and try again.' });
+    }
+
     const result = await pgPool.query('SELECT id, password_hash FROM admin_users WHERE email = $1 LIMIT 1', [email]);
     const user = result.rows[0];
     if (!user || !verifyPassword(password, user.password_hash)) {
-      return res.status(401).json({ message: 'Invalid email or password.' });
+      recordAdminLoginFailure(ip, email);
+      return res.status(401).json({ message: 'Incorrect email or password.' });
     }
 
+    clearAdminLoginFailures(ip, email);
     await createAdminSession(res, user.id);
     return res.json({ ok: true });
   } catch (error) {
