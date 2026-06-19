@@ -172,6 +172,10 @@ function hashSessionToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
+function passwordResetUrl(origin, token) {
+  return `${origin}/admin/reset-password?token=${encodeURIComponent(token)}`;
+}
+
 async function sendResendEmail({ to, replyTo, subject, text, html }) {
   if (!resendApiKey) {
     throw new Error('RESEND_API_KEY is not configured.');
@@ -294,6 +298,16 @@ async function ensureAdminTables() {
       admin_user_id INTEGER NOT NULL REFERENCES admin_users(id) ON DELETE CASCADE,
       token_hash TEXT NOT NULL UNIQUE,
       expires_at TIMESTAMPTZ NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS admin_password_reset_tokens (
+      id SERIAL PRIMARY KEY,
+      admin_user_id INTEGER NOT NULL REFERENCES admin_users(id) ON DELETE CASCADE,
+      token_hash TEXT NOT NULL UNIQUE,
+      expires_at TIMESTAMPTZ NOT NULL,
+      used_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
@@ -938,6 +952,94 @@ app.post('/api/admin/logout', async (req, res) => {
   } catch (error) {
     console.error('Admin logout failed:', error);
     return res.status(500).json({ message: 'Could not sign out.' });
+  }
+});
+
+app.post('/api/admin/forgot-password', async (req, res) => {
+  try {
+    if (!pgPool) {
+      return res.status(503).json({ message: 'DATABASE_URL is not configured.' });
+    }
+    await ensureAdminTables();
+
+    const email = clean(req.body?.email).toLowerCase();
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required.' });
+    }
+
+    const userResult = await pgPool.query('SELECT id, full_name, email FROM admin_users WHERE email = $1 LIMIT 1', [email]);
+    const user = userResult.rows[0];
+    if (user) {
+      const token = randomBytes(32).toString('hex');
+      const tokenHash = hashSessionToken(token);
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+      await pgPool.query(
+        'INSERT INTO admin_password_reset_tokens (admin_user_id, token_hash, expires_at) VALUES ($1, $2, $3)',
+        [user.id, tokenHash, expiresAt],
+      );
+
+      const origin = buildOrigin(req);
+      const resetLink = passwordResetUrl(origin, token);
+      await sendResendEmail({
+        to: user.email,
+        replyTo: contactTo,
+        subject: 'Reset your Iris & J Holdings admin password',
+        text:
+          `Hi ${user.full_name || 'there'},\n\n` +
+          `Use this link to reset your admin password:\n${resetLink}\n\n` +
+          `This link expires in 1 hour.\n\n` +
+          `- Iris & J Holdings`,
+        html:
+          `<p>Hi ${escapeHtml(user.full_name || 'there')},</p>` +
+          `<p>Use this link to reset your admin password:</p>` +
+          `<p><a href="${escapeHtml(resetLink)}">${escapeHtml(resetLink)}</a></p>` +
+          `<p>This link expires in 1 hour.</p>` +
+          `<p>- Iris &amp; J Holdings</p>`,
+      });
+    }
+
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin forgot password failed:', error);
+    return res.status(500).json({ message: 'Could not start password reset.' });
+  }
+});
+
+app.post('/api/admin/reset-password', async (req, res) => {
+  try {
+    if (!pgPool) {
+      return res.status(503).json({ message: 'DATABASE_URL is not configured.' });
+    }
+    await ensureAdminTables();
+
+    const token = clean(req.body?.token);
+    const password = String(req.body?.password || '');
+    if (!token || password.length < 8) {
+      return res.status(400).json({ message: 'Valid reset token and an 8-character password are required.' });
+    }
+
+    const tokenHash = hashSessionToken(token);
+    const tokenResult = await pgPool.query(
+      `SELECT id, admin_user_id
+       FROM admin_password_reset_tokens
+       WHERE token_hash = $1 AND used_at IS NULL AND expires_at > NOW()
+       LIMIT 1`,
+      [tokenHash],
+    );
+    const tokenRow = tokenResult.rows[0];
+    if (!tokenRow) {
+      return res.status(400).json({ message: 'This reset link is invalid or expired.' });
+    }
+
+    await pgPool.query('UPDATE admin_users SET password_hash = $2 WHERE id = $1', [tokenRow.admin_user_id, hashPassword(password)]);
+    await pgPool.query('UPDATE admin_password_reset_tokens SET used_at = NOW() WHERE id = $1', [tokenRow.id]);
+    await pgPool.query('DELETE FROM admin_sessions WHERE admin_user_id = $1', [tokenRow.admin_user_id]);
+    await createAdminSession(res, tokenRow.admin_user_id);
+
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin reset password failed:', error);
+    return res.status(500).json({ message: 'Could not reset password.' });
   }
 });
 

@@ -20,9 +20,19 @@ const ROUTE_META: Record<string, { title?: string; description?: string; robots?
     description: 'Secure admin login for Iris & J Holdings.',
     robots: 'noindex,nofollow',
   },
+  '/admin/forgot-password': {
+    title: 'Forgot Password',
+    description: 'Reset the Iris & J Holdings admin password.',
+    robots: 'noindex,nofollow',
+  },
   '/admin/register': {
     title: 'Admin Register',
     description: 'Create the first admin user for Iris & J Holdings.',
+    robots: 'noindex,nofollow',
+  },
+  '/admin/reset-password': {
+    title: 'Reset Password',
+    description: 'Set a new Iris & J Holdings admin password.',
     robots: 'noindex,nofollow',
   },
   '/buy': {

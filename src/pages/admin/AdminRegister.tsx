@@ -56,6 +56,9 @@ function AdminRegister() {
           </button>
           {status === 'error' ? <p className="form-status form-status-error" role="alert">{errorMessage}</p> : null}
         </form>
+        <div className="page-actions">
+          <a className="text-link" href="/admin/login">Back to sign in</a>
+        </div>
       </div>
     </AdminLayout>
   );

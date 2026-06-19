@@ -1,7 +1,9 @@
 import Home from './pages/public/Home';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminForgotPassword from './pages/admin/AdminForgotPassword';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminRegister from './pages/admin/AdminRegister';
+import AdminResetPassword from './pages/admin/AdminResetPassword';
 import Buy from './pages/public/Buy';
 import Sell from './pages/public/Sell';
 import HomeValue from './pages/public/HomeValue';
@@ -26,8 +28,10 @@ import AccessibilityWidget from './components/ui/AccessibilityWidget';
 const routes = {
   '/': Home,
   '/admin': AdminDashboard,
+  '/admin/forgot-password': AdminForgotPassword,
   '/admin/login': AdminLogin,
   '/admin/register': AdminRegister,
+  '/admin/reset-password': AdminResetPassword,
   '/buy': Buy,
   '/sell': Sell,
   '/home-value': HomeValue,

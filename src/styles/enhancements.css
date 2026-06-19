@@ -773,9 +773,11 @@ summary:focus-visible,
   justify-content: flex-start;
   overflow-x: auto;
   overflow-y: visible;
+  padding-inline: 0.15rem clamp(3rem, 7vw, 5rem);
   padding-bottom: 0.35rem;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  scroll-behavior: smooth;
 }
 
 .service-grid-scroll::-webkit-scrollbar {

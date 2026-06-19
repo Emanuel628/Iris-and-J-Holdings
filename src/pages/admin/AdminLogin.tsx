@@ -51,6 +51,10 @@ function AdminLogin() {
           </button>
           {status === 'error' ? <p className="form-status form-status-error" role="alert">{errorMessage}</p> : null}
         </form>
+        <div className="page-actions">
+          <a className="text-link" href="/admin/register">Create admin account</a>
+          <a className="text-link" href="/admin/forgot-password">Forgot password</a>
+        </div>
       </div>
     </AdminLayout>
   );
