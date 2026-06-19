@@ -1817,3 +1817,30 @@ html.a11y-underline a {
     width: 100%;
   }
 }
+.admin-overview-cards-static > div {
+  padding: 1rem 1rem 1.1rem;
+  background: #fffdf9;
+  border: 1px solid #ddd3c7;
+  border-radius: 10px;
+}
+
+.admin-home-value-summary {
+  margin-top: 1rem;
+}
+
+.admin-home-value-section {
+  margin-top: 1.5rem;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.admin-home-comps-head,
+.admin-home-comps-row {
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+}
+
+@media (max-width: 840px) {
+  .admin-home-comps-row {
+    grid-template-columns: 1fr;
+  }
+}

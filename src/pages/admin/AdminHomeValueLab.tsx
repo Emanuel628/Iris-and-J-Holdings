@@ -1,11 +1,69 @@
 ﻿import AdminLayout from '../../components/admin/AdminLayout';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ChevronsUpDown } from 'lucide-react';
 import { fetchAdminMe, fetchAdminSettings } from '../../lib/adminAuth';
 import { usePageMeta } from '../../lib/usePageMeta';
 
 const CUSTOM_OPTION = '__custom__';
 const PROPERTY_TYPE_OPTIONS = ['Single Family', 'Condo', 'Townhouse', 'Multi-Family', 'Co-op', 'Land', 'Mobile Home'];
+
+type Comparable = {
+  id?: string;
+  formattedAddress?: string;
+  propertyType?: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  squareFootage?: number;
+  price?: number;
+  status?: string;
+  listedDate?: string;
+  removedDate?: string | null;
+  daysOnMarket?: number;
+  distance?: number;
+  daysOld?: number;
+  correlation?: number;
+};
+
+type EstimateResult = {
+  price?: number;
+  priceRangeLow?: number;
+  priceRangeHigh?: number;
+  comparables?: Comparable[];
+  subjectProperty?: {
+    formattedAddress?: string;
+    propertyType?: string;
+    bedrooms?: number;
+    bathrooms?: number;
+    squareFootage?: number;
+    lotSize?: number;
+    yearBuilt?: number;
+    lastSaleDate?: string;
+    lastSalePrice?: number;
+    county?: string;
+  };
+};
+
+function formatCurrency(value?: number) {
+  if (!value) return 'Not returned';
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
+}
+
+function formatNumber(value?: number) {
+  if (!value) return 'Not returned';
+  return new Intl.NumberFormat('en-US').format(value);
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return 'Not returned';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }).format(date);
+}
+
+function formatDecimal(value?: number, digits = 2) {
+  if (value === undefined || value === null) return 'Not returned';
+  return value.toFixed(digits);
+}
 
 function AdminHomeValueLab() {
   usePageMeta('Admin Home Value Lab', 'Plan the home value estimator data and API stack.', { robots: 'noindex,nofollow' });
@@ -22,7 +80,7 @@ function AdminHomeValueLab() {
   const [propertyTypeCustom, setPropertyTypeCustom] = useState(false);
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<EstimateResult | null>(null);
   const [rentcastConfigured, setRentcastConfigured] = useState(false);
 
   useEffect(() => {
@@ -64,6 +122,8 @@ function AdminHomeValueLab() {
   }
 
   const propertyTypeSelectValue = propertyTypeCustom ? CUSTOM_OPTION : form.propertyType;
+  const comparables = useMemo(() => result?.comparables || [], [result]);
+  const subject = result?.subjectProperty;
 
   return (
     <AdminLayout>
@@ -71,7 +131,7 @@ function AdminHomeValueLab() {
         <div className="page-intro">
           <p className="eyebrow">Home Value Lab</p>
           <h1>Home value estimator</h1>
-          <p>Run a live estimate from the admin side using external property data. This route uses RentCast when `RENTCAST_API_KEY` is configured.</p>
+          <p>Powered by RentCast.</p>
         </div>
 
         <section className="admin-dashboard-grid">
@@ -143,25 +203,108 @@ function AdminHomeValueLab() {
             </div>
             {!result ? <p className="admin-route-copy">Run an estimate to see the provider response, value range, and comparable sale data.</p> : (
               <>
-                <div className="admin-route-list">
+                <div className="admin-overview-grid admin-overview-cards admin-overview-cards-static">
                   <div>
-                    <strong>Estimated value</strong>
-                    <span>{result.price ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(result.price) : 'Not returned'}</span>
+                    <span>Estimated value</span>
+                    <strong>{formatCurrency(result.price)}</strong>
                   </div>
                   <div>
-                    <strong>Confidence range</strong>
-                    <span>
-                      {result.priceRangeLow || result.priceRangeHigh
-                        ? `${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(result.priceRangeLow || 0)} to ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(result.priceRangeHigh || 0)}`
-                        : 'Not returned'}
-                    </span>
+                    <span>Low range</span>
+                    <strong>{formatCurrency(result.priceRangeLow)}</strong>
                   </div>
                   <div>
-                    <strong>Comparable sales returned</strong>
-                    <span>{Array.isArray(result.comparables) ? result.comparables.length : 0}</span>
+                    <span>High range</span>
+                    <strong>{formatCurrency(result.priceRangeHigh)}</strong>
                   </div>
                 </div>
-                <pre className="admin-json-block">{JSON.stringify(result, null, 2)}</pre>
+
+                <div className="admin-route-list admin-home-value-summary">
+                  <div>
+                    <strong>Comparable sales returned</strong>
+                    <span>{comparables.length}</span>
+                  </div>
+                  <div>
+                    <strong>Subject address</strong>
+                    <span>{subject?.formattedAddress || 'Not returned'}</span>
+                  </div>
+                  <div>
+                    <strong>Property profile</strong>
+                    <span>{subject ? `${subject.propertyType || 'Unknown'} | ${subject.bedrooms || 0} bd | ${subject.bathrooms || 0} ba | ${formatNumber(subject.squareFootage)} sq ft` : 'Not returned'}</span>
+                  </div>
+                </div>
+
+                <section className="admin-section admin-section-compact admin-home-value-section">
+                  <div className="admin-section-head">
+                    <h2>Subject property</h2>
+                  </div>
+                  <div className="admin-data-table">
+                    <div className="admin-data-head">
+                      <span>Address</span>
+                      <span>Property</span>
+                      <span>History</span>
+                      <span>Location</span>
+                    </div>
+                    <div className="admin-data-row">
+                      <div>
+                        <strong>{subject?.formattedAddress || 'Not returned'}</strong>
+                        <p>{subject?.county || 'County not returned'}</p>
+                      </div>
+                      <div>
+                        <p>{subject?.propertyType || 'Not returned'}</p>
+                        <p>{subject?.bedrooms || 0} bd | {subject?.bathrooms || 0} ba</p>
+                        <p>{formatNumber(subject?.squareFootage)} sq ft | Lot {formatNumber(subject?.lotSize)} sq ft</p>
+                      </div>
+                      <div>
+                        <p>Built {subject?.yearBuilt || 'Not returned'}</p>
+                        <p>Last sale {formatDate(subject?.lastSaleDate)}</p>
+                        <p>{formatCurrency(subject?.lastSalePrice)}</p>
+                      </div>
+                      <div>
+                        <p>Range low {formatCurrency(result.priceRangeLow)}</p>
+                        <p>Range high {formatCurrency(result.priceRangeHigh)}</p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="admin-section admin-section-compact admin-home-value-section">
+                  <div className="admin-section-head">
+                    <h2>Comparable sales</h2>
+                    <p>{comparables.length} records</p>
+                  </div>
+                  <div className="admin-data-table">
+                    <div className="admin-data-head admin-home-comps-head">
+                      <span>Address</span>
+                      <span>Property</span>
+                      <span>Market</span>
+                      <span>Match</span>
+                    </div>
+                    {comparables.map((comp, index) => (
+                      <div className="admin-data-row admin-home-comps-row" key={comp.id || `${comp.formattedAddress}-${index}`}>
+                        <div>
+                          <strong>{comp.formattedAddress || 'Not returned'}</strong>
+                          <p>{comp.propertyType || 'Property type not returned'}</p>
+                        </div>
+                        <div>
+                          <p>{comp.bedrooms || 0} bd | {comp.bathrooms || 0} ba</p>
+                          <p>{formatNumber(comp.squareFootage)} sq ft</p>
+                          <p>{formatCurrency(comp.price)}</p>
+                        </div>
+                        <div>
+                          <p>{comp.status || 'Status not returned'}</p>
+                          <p>Listed {formatDate(comp.listedDate)}</p>
+                          <p>{comp.daysOnMarket ?? 'Not returned'} DOM | {comp.daysOld ?? 'Not returned'} days old</p>
+                        </div>
+                        <div>
+                          <p>{formatDecimal(comp.distance)} mi away</p>
+                          <p>Correlation {formatDecimal(comp.correlation, 3)}</p>
+                          <p>Removed {formatDate(comp.removedDate)}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {!comparables.length ? <p className="admin-empty-note">No comparable sales were returned.</p> : null}
+                  </div>
+                </section>
               </>
             )}
           </section>
