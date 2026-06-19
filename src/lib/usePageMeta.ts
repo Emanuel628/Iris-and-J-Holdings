@@ -30,11 +30,6 @@ const ROUTE_META: Record<string, { title?: string; description?: string; robots?
     description: 'Review paid notary booking requests.',
     robots: 'noindex,nofollow',
   },
-  '/admin/policies': {
-    title: 'Admin Policies',
-    description: 'Manage policy-related routes and content.',
-    robots: 'noindex,nofollow',
-  },
   '/admin/realtor-tools': {
     title: 'Admin Realtor Tools',
     description: 'Manage buyer and seller intake records.',

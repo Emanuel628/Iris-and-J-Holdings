@@ -17,7 +17,16 @@ function toContentForm(entry: SiteContentRecord, template: SiteContentTemplate):
     pageKey: entry.page_key,
     title: entry.title,
     values: parseSiteContentBody(entry.body, template.defaults),
-    heroImages: entry.hero_image_url ? [entry.hero_image_url] : [],
+    heroImages: entry.hero_image_url ? [entry.hero_image_url] : template.heroImageUrl ? [template.heroImageUrl] : [],
+  };
+}
+
+function emptyContentForm(template: SiteContentTemplate): ContentForm {
+  return {
+    pageKey: template.pageKey,
+    title: template.title,
+    values: template.defaults,
+    heroImages: template.heroImageUrl ? [template.heroImageUrl] : [],
   };
 }
 
@@ -29,27 +38,31 @@ function AdminSiteContent() {
   const [statusMessage, setStatusMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
+  const contentPages = useMemo(() => siteContentTemplates.filter((template) => template.category === 'content'), []);
+  const policyPages = useMemo(() => siteContentTemplates.filter((template) => template.category === 'policy'), []);
+  const chromePages = useMemo(() => siteContentTemplates.filter((template) => template.category === 'chrome'), []);
+  const systemPages = useMemo(() => siteContentTemplates.filter((template) => template.category === 'system'), []);
+  const activeTemplate = useMemo(() => siteContentTemplates.find((item) => item.pageKey === contentForm.pageKey) || null, [contentForm.pageKey]);
+
   async function loadData() {
-    const [me, contentPayload] = await Promise.all([
-      fetchAdminMe(),
-      fetchAdminSiteContent(),
-    ]);
+    const [me, contentPayload] = await Promise.all([fetchAdminMe(), fetchAdminSiteContent()]);
     if (!me?.user) {
       window.location.href = '/admin/login';
       return;
     }
     setEntries(contentPayload.entries);
-    if (!contentForm.pageKey) {
-      const firstTemplate = siteContentTemplates.find((template) => template.category === 'content');
-      if (firstTemplate) {
-        const entry = contentPayload.entries.find((item) => item.page_key === firstTemplate.pageKey);
-        setContentForm(
-          entry
-            ? toContentForm(entry, firstTemplate)
-            : { pageKey: firstTemplate.pageKey, title: firstTemplate.title, values: firstTemplate.defaults, heroImages: firstTemplate.heroImageUrl ? [firstTemplate.heroImageUrl] : [] },
-        );
+    setContentForm((current) => {
+      if (current.pageKey) {
+        const currentTemplate = siteContentTemplates.find((template) => template.pageKey === current.pageKey);
+        if (!currentTemplate) return current;
+        const currentEntry = contentPayload.entries.find((item) => item.page_key === current.pageKey);
+        return currentEntry ? toContentForm(currentEntry, currentTemplate) : emptyContentForm(currentTemplate);
       }
-    }
+      const firstTemplate = siteContentTemplates.find((template) => template.category === 'content');
+      if (!firstTemplate) return current;
+      const firstEntry = contentPayload.entries.find((item) => item.page_key === firstTemplate.pageKey);
+      return firstEntry ? toContentForm(firstEntry, firstTemplate) : emptyContentForm(firstTemplate);
+    });
   }
 
   useEffect(() => {
@@ -58,18 +71,13 @@ function AdminSiteContent() {
     });
   }, []);
 
-  const contentPages = useMemo(() => siteContentTemplates.filter((template) => template.category === 'content'), []);
-  const systemPages = useMemo(() => siteContentTemplates.filter((template) => template.category === 'system'), []);
-
   function chooseContent(pageKey: string) {
     const template = siteContentTemplates.find((item) => item.pageKey === pageKey);
     if (!template) return;
     const entry = entries.find((item) => item.page_key === pageKey);
-    setContentForm(
-      entry
-        ? toContentForm(entry, template)
-        : { pageKey: template.pageKey, title: template.title, values: template.defaults, heroImages: template.heroImageUrl ? [template.heroImageUrl] : [] },
-    );
+    setStatusMessage('');
+    setErrorMessage('');
+    setContentForm(entry ? toContentForm(entry, template) : emptyContentForm(template));
   }
 
   async function saveContent() {
@@ -104,87 +112,132 @@ function AdminSiteContent() {
         <div className="page-intro">
           <p className="eyebrow">Site Content</p>
           <h1>Site content</h1>
-          <p>Edit the live copy fields used by the main public-facing pages. Policy pages are managed in the Policies route.</p>
+          <p>Edit the live copy, hero images, legal pages, header, and footer from one place.</p>
         </div>
 
-        <section className="admin-section">
-          <div className="admin-section-head">
-            <h2>Editor</h2>
-            <p>{contentForm.pageKey || 'Select a page'}</p>
-          </div>
-          <div className="form-shell">
-            <div className="input-group"><label htmlFor="admin-content-title">Title</label><input id="admin-content-title" value={contentForm.title} onChange={(event) => setContentForm({ ...contentForm, title: event.target.value })} /></div>
-            <AdminImagePicker
-              label="Hero Images"
-              images={contentForm.heroImages}
-              onChange={(heroImages) => setContentForm({ ...contentForm, heroImages })}
-              helperText="The first image is used as the active hero image for this page."
-            />
-            {siteContentTemplates.find((item) => item.pageKey === contentForm.pageKey)?.fields.map((field) => (
-              <div className="input-group" key={field.key}>
-                <label htmlFor={`admin-content-${field.key}`}>{field.label}</label>
-                {field.type === 'textarea' ? (
-                  <textarea
-                    id={`admin-content-${field.key}`}
-                    value={contentForm.values[field.key] || ''}
-                    onChange={(event) => setContentForm({ ...contentForm, values: { ...contentForm.values, [field.key]: event.target.value } })}
-                  />
-                ) : (
-                  <input
-                    id={`admin-content-${field.key}`}
-                    value={contentForm.values[field.key] || ''}
-                    onChange={(event) => setContentForm({ ...contentForm, values: { ...contentForm.values, [field.key]: event.target.value } })}
-                  />
-                )}
-              </div>
-            ))}
-            <button className="button button-primary" type="button" onClick={saveContent} disabled={busy}>Save page content</button>
-          </div>
-        </section>
-
-        <section className="admin-section">
-          <div className="admin-section-head">
-            <h2>Content pages</h2>
-            <p>{contentPages.length} editable</p>
-          </div>
-          <div className="admin-list">
-            {contentPages.map((template) => (
-              <button className="admin-list-row admin-list-button" type="button" key={template.pageKey} onClick={() => chooseContent(template.pageKey)}>
-                <div className="admin-record-copy">
-                  <strong>{template.pageLabel}</strong>
-                  <p>{template.route}</p>
-                </div>
-                <span>Edit</span>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="admin-section">
-          <div className="admin-section-head">
-            <h2>All routes on the site</h2>
-            <p>Policies and system pages included</p>
-          </div>
-          <div className="admin-data-table">
-            <div className="admin-data-head">
-              <span>Page</span>
-              <span>Route</span>
-              <span>Type</span>
-              <span>Control</span>
+        <section className="admin-dashboard-grid">
+          <section className="admin-panel">
+            <div className="admin-section-head">
+              <h2>Editor</h2>
+              <p>{activeTemplate ? activeTemplate.pageLabel : 'Select a page'}</p>
             </div>
-            {[...contentPages, ...siteContentTemplates.filter((template) => template.category === 'policy'), ...systemPages].map((template) => (
-              <div className="admin-data-row" key={template.pageKey}>
-                <div><strong>{template.pageLabel}</strong></div>
-                <div><p>{template.route}</p></div>
-                <div><p>{template.category}</p></div>
-                <div>
-                  {template.category === 'content' ? <button className="button-secondary" type="button" onClick={() => chooseContent(template.pageKey)}>Edit here</button> : null}
-                  {template.category === 'policy' ? <a href="/admin/policies">Open Policies</a> : null}
-                  {template.category === 'system' ? <p>Dynamic system page</p> : null}
-                </div>
+            <div className="form-shell">
+              <div className="input-group">
+                <label htmlFor="admin-content-title">Title</label>
+                <input id="admin-content-title" value={contentForm.title} onChange={(event) => setContentForm({ ...contentForm, title: event.target.value })} />
               </div>
-            ))}
-          </div>
+              {activeTemplate && activeTemplate.category !== 'chrome' && activeTemplate.category !== 'system' ? (
+                <AdminImagePicker
+                  label="Hero Images"
+                  images={contentForm.heroImages}
+                  onChange={(heroImages) => setContentForm({ ...contentForm, heroImages })}
+                  helperText="The first image is used as the active hero image for this page."
+                />
+              ) : null}
+              {activeTemplate?.fields.map((field) => (
+                <div className="input-group" key={field.key}>
+                  <label htmlFor={`admin-content-${field.key}`}>{field.label}</label>
+                  {field.type === 'textarea' ? (
+                    <textarea
+                      id={`admin-content-${field.key}`}
+                      value={contentForm.values[field.key] || ''}
+                      onChange={(event) => setContentForm({ ...contentForm, values: { ...contentForm.values, [field.key]: event.target.value } })}
+                      rows={field.key === 'bodyHtml' ? 18 : 6}
+                    />
+                  ) : (
+                    <input
+                      id={`admin-content-${field.key}`}
+                      value={contentForm.values[field.key] || ''}
+                      onChange={(event) => setContentForm({ ...contentForm, values: { ...contentForm.values, [field.key]: event.target.value } })}
+                    />
+                  )}
+                </div>
+              ))}
+              <button className="button button-primary" type="button" onClick={saveContent} disabled={busy || !contentForm.pageKey}>Save page content</button>
+            </div>
+          </section>
+
+          <section className="admin-panel">
+            <div className="admin-section-head">
+              <h2>Page groups</h2>
+              <p>Choose a page to edit</p>
+            </div>
+
+            <div className="admin-section">
+              <div className="admin-section-head">
+                <h2>Main pages</h2>
+                <p>{contentPages.length}</p>
+              </div>
+              <div className="admin-route-list">
+                {contentPages.map((template) => (
+                  <button className="admin-list-row admin-list-button" type="button" key={template.pageKey} onClick={() => chooseContent(template.pageKey)}>
+                    <div className="admin-record-copy">
+                      <strong>{template.pageLabel}</strong>
+                      <p>{template.route}</p>
+                    </div>
+                    <span>Edit</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="admin-section">
+              <div className="admin-section-head">
+                <h2>Policy pages</h2>
+                <p>{policyPages.length}</p>
+              </div>
+              <div className="admin-route-list">
+                {policyPages.map((template) => (
+                  <button className="admin-list-row admin-list-button" type="button" key={template.pageKey} onClick={() => chooseContent(template.pageKey)}>
+                    <div className="admin-record-copy">
+                      <strong>{template.pageLabel}</strong>
+                      <p>{template.route}</p>
+                    </div>
+                    <span>Edit</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="admin-section">
+              <div className="admin-section-head">
+                <h2>Header and footer</h2>
+                <p>{chromePages.length}</p>
+              </div>
+              <div className="admin-route-list">
+                {chromePages.map((template) => (
+                  <button className="admin-list-row admin-list-button" type="button" key={template.pageKey} onClick={() => chooseContent(template.pageKey)}>
+                    <div className="admin-record-copy">
+                      <strong>{template.pageLabel}</strong>
+                      <p>{template.route}</p>
+                    </div>
+                    <span>Edit</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="admin-section">
+              <div className="admin-section-head">
+                <h2>System pages</h2>
+                <p>{systemPages.length}</p>
+              </div>
+              <div className="admin-data-table">
+                <div className="admin-data-head">
+                  <span>Page</span>
+                  <span>Route</span>
+                  <span>Status</span>
+                </div>
+                {systemPages.map((template) => (
+                  <div className="admin-data-row" key={template.pageKey}>
+                    <div><strong>{template.pageLabel}</strong></div>
+                    <div><p>{template.route}</p></div>
+                    <div><p>Managed by app logic</p></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
         </section>
 
         {statusMessage ? <p className="form-status form-status-success">{statusMessage}</p> : null}

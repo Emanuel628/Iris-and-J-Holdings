@@ -1,4 +1,5 @@
 import PublicLayout from '../../components/layout/PublicLayout';
+import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
 import { usePageMeta } from '../../lib/usePageMeta';
 
 function PrivacyPolicy() {
@@ -6,23 +7,26 @@ function PrivacyPolicy() {
     'Privacy Policy',
     'Privacy Policy for Iris & J Holdings, including website forms, contact requests, mobile notary appointment requests, home value requests, and vacation rental inquiries.'
   );
+  const template = getSiteContentTemplate('privacy');
+  const { content, heroImageUrl } = usePublicSiteContent('privacy', template?.defaults || {});
   return (
     <PublicLayout>
       <main className="page-main">
         <section className="page-hero">
           <div className="page-hero-content">
-            <p className="eyebrow">Privacy Policy</p>
-            <h1>How submitted information is handled.</h1>
-            <p>
-              This page explains how information you choose to submit through contact forms, appointment
-              requests, resource requests, home value requests, and vacation rental interest requests is
-              delivered and used. This website does not store form submissions in a website database.
-            </p>
+            <p className="eyebrow">{content.heroEyebrow}</p>
+            <h1>{content.heroTitle}</h1>
+            <p>{content.heroDescription}</p>
           </div>
-          <div className="page-hero-visual" aria-label="Privacy policy visual placeholder" />
+          <div className="page-hero-visual page-hero-image-frame" aria-label="Privacy policy visual">
+            {heroImageUrl ? <img src={heroImageUrl} alt="Privacy policy page visual" /> : null}
+          </div>
         </section>
 
-        <section className="page-content legal-copy">
+        {content.bodyHtml ? (
+          <section className="page-content legal-copy" dangerouslySetInnerHTML={{ __html: content.bodyHtml }} />
+        ) : (
+          <section className="page-content legal-copy">
           <article>
             <h2>Effective date</h2>
             <p>Effective Date: June 18, 2026.</p>
@@ -91,7 +95,8 @@ function PrivacyPolicy() {
               <a href="mailto:listingsbyd@gmail.com">listingsbyd@gmail.com</a>.
             </p>
           </article>
-        </section>
+          </section>
+        )}
       </main>
     </PublicLayout>
   );

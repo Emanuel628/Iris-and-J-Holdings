@@ -15,7 +15,6 @@ const adminLinks = [
   { href: '/admin/home-value-lab', label: 'Home Value Lab' },
   { href: '/admin/site-content', label: 'Site Content' },
   { href: '/admin/media', label: 'Media' },
-  { href: '/admin/policies', label: 'Policies' },
   { href: '/admin/settings', label: 'Settings' },
 ];
 

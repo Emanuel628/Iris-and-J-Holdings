@@ -1,4 +1,5 @@
 import PublicLayout from '../../components/layout/PublicLayout';
+import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
 import { usePageMeta } from '../../lib/usePageMeta';
 
 function RefundCancellationPolicy() {
@@ -6,23 +7,27 @@ function RefundCancellationPolicy() {
     'Refund & Cancellation Policy',
     'Refund, cancellation, rescheduling, and no-show policy for Iris & J Holdings mobile notary booking fees and Orlando vacation rental bookings.',
   );
+  const template = getSiteContentTemplate('refund-cancellation-policy');
+  const { content, heroImageUrl } = usePublicSiteContent('refund-cancellation-policy', template?.defaults || {});
 
   return (
     <PublicLayout>
       <main className="page-main">
         <section className="page-hero">
           <div className="page-hero-content">
-            <p className="eyebrow">Refund &amp; Cancellation Policy</p>
-            <h1>Clear terms before you pay.</h1>
-            <p>
-              This policy explains how refunds, cancellations, rescheduling, and no-shows are handled for mobile
-              notary booking / travel fees and Orlando vacation rental bookings through Iris &amp; J Holdings.
-            </p>
+            <p className="eyebrow">{content.heroEyebrow}</p>
+            <h1>{content.heroTitle}</h1>
+            <p>{content.heroDescription}</p>
           </div>
-          <div className="page-hero-visual" aria-hidden="true" />
+          <div className="page-hero-visual page-hero-image-frame" aria-hidden="true">
+            {heroImageUrl ? <img src={heroImageUrl} alt="" /> : null}
+          </div>
         </section>
 
-        <section className="page-content legal-copy">
+        {content.bodyHtml ? (
+          <section className="page-content legal-copy" dangerouslySetInnerHTML={{ __html: content.bodyHtml }} />
+        ) : (
+          <section className="page-content legal-copy">
           <article>
             <h2>Effective date</h2>
             <p>Effective Date: June 18, 2026.</p>
@@ -80,7 +85,8 @@ function RefundCancellationPolicy() {
               <a href="tel:19084996320">(908) 499-6320</a>.
             </p>
           </article>
-        </section>
+          </section>
+        )}
       </main>
     </PublicLayout>
   );

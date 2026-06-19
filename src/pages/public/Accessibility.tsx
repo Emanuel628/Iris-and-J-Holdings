@@ -1,4 +1,5 @@
 import PublicLayout from '../../components/layout/PublicLayout';
+import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
 import { usePageMeta } from '../../lib/usePageMeta';
 
 function Accessibility() {
@@ -6,21 +7,26 @@ function Accessibility() {
     'Accessibility & Fair Housing',
     'Website accessibility statement and fair housing commitment for Iris & J Holdings and real estate services through All Star Real Estate Agency.',
   );
+  const template = getSiteContentTemplate('accessibility');
+  const { content, heroImageUrl } = usePublicSiteContent('accessibility', template?.defaults || {});
   return (
     <PublicLayout>
       <main className="page-main">
         <section className="page-hero">
           <div className="page-hero-content">
-            <p className="eyebrow">Accessibility &amp; Fair Housing</p>
-            <h1>Open, accessible, and equal opportunity.</h1>
-            <p>
-              We want this website and the services presented here to be clear, usable, and available on an
-              equal opportunity basis. This page explains our accessibility efforts and fair housing commitment.
-            </p>
+            <p className="eyebrow">{content.heroEyebrow}</p>
+            <h1>{content.heroTitle}</h1>
+            <p>{content.heroDescription}</p>
           </div>
-          <div className="page-hero-visual" aria-hidden="true" />
+          <div className="page-hero-visual page-hero-image-frame" aria-hidden="true">
+            {heroImageUrl ? <img src={heroImageUrl} alt="" /> : null}
+          </div>
         </section>
 
+        {content.bodyHtml ? (
+          <section className="page-content legal-copy" dangerouslySetInnerHTML={{ __html: content.bodyHtml }} />
+        ) : (
+          <>
         <section className="page-content legal-copy" id="accessibility">
           <article>
             <h2>Accessibility statement</h2>
@@ -106,6 +112,8 @@ function Accessibility() {
             </p>
           </article>
         </section>
+          </>
+        )}
       </main>
     </PublicLayout>
   );

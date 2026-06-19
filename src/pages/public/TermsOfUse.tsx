@@ -1,4 +1,5 @@
 import PublicLayout from '../../components/layout/PublicLayout';
+import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
 import { usePageMeta } from '../../lib/usePageMeta';
 
 function TermsOfUse() {
@@ -6,22 +7,26 @@ function TermsOfUse() {
     'Terms of Use',
     'Website terms, service disclosures, and legal notices for Iris & J Holdings.'
   );
+  const template = getSiteContentTemplate('terms');
+  const { content, heroImageUrl } = usePublicSiteContent('terms', template?.defaults || {});
   return (
     <PublicLayout>
       <main className="page-main">
         <section className="page-hero">
           <div className="page-hero-content">
-            <p className="eyebrow">Terms of Use</p>
-            <h1>Website terms and important service disclosures.</h1>
-            <p>
-              These terms explain how this website may be used and how real estate, mobile notary,
-              and vacation rental services are presented through Iris &amp; J Holdings.
-            </p>
+            <p className="eyebrow">{content.heroEyebrow}</p>
+            <h1>{content.heroTitle}</h1>
+            <p>{content.heroDescription}</p>
           </div>
-          <div className="page-hero-visual" aria-label="Terms of use visual placeholder" />
+          <div className="page-hero-visual page-hero-image-frame" aria-label="Terms of use visual">
+            {heroImageUrl ? <img src={heroImageUrl} alt="Terms of use page visual" /> : null}
+          </div>
         </section>
 
-        <section className="page-content legal-copy">
+        {content.bodyHtml ? (
+          <section className="page-content legal-copy" dangerouslySetInnerHTML={{ __html: content.bodyHtml }} />
+        ) : (
+          <section className="page-content legal-copy">
           <article>
             <h2>Effective date</h2>
             <p>Effective Date: June 18, 2026.</p>
@@ -184,7 +189,8 @@ function TermsOfUse() {
               Agency, 1416B Morris Ave, Union, NJ 07083, <a href="tel:19089645005">(908) 964-5005</a>.
             </p>
           </article>
-        </section>
+          </section>
+        )}
       </main>
     </PublicLayout>
   );
