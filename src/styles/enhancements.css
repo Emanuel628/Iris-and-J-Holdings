@@ -760,6 +760,12 @@ summary:focus-visible,
   cursor: pointer;
 }
 
+.admin-inline-actions {
+  display: inline-flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
 .service-grid-scroll {
   display: flex;
   flex-wrap: nowrap;

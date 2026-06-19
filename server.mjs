@@ -1140,6 +1140,75 @@ app.post('/api/admin/site-content', async (req, res) => {
   }
 });
 
+app.get('/api/admin/vacation-bookings', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const result = await pgPool.query(
+      `SELECT b.*, r.title AS rental_title
+       FROM vacation_bookings b
+       LEFT JOIN rentals r ON r.id = b.rental_id
+       ORDER BY b.created_at DESC
+       LIMIT 100`,
+    );
+    return res.json({ bookings: result.rows });
+  } catch (error) {
+    console.error('Admin vacation bookings load failed:', error);
+    return res.status(500).json({ message: 'Could not load vacation bookings.' });
+  }
+});
+
+app.post('/api/admin/vacation-bookings/status', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const id = Number(req.body?.id || 0);
+    const status = clean(req.body?.status).toLowerCase();
+    if (!id || !['paid', 'reviewed', 'cancel-requested', 'cancelled'].includes(status)) {
+      return res.status(400).json({ message: 'Valid booking id and status are required.' });
+    }
+    await pgPool.query('UPDATE vacation_bookings SET status = $2 WHERE id = $1', [id, status]);
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin vacation booking status update failed:', error);
+    return res.status(500).json({ message: 'Could not update vacation booking status.' });
+  }
+});
+
+app.get('/api/admin/notary-requests', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const result = await pgPool.query(
+      `SELECT *
+       FROM notary_requests
+       ORDER BY created_at DESC
+       LIMIT 100`,
+    );
+    return res.json({ requests: result.rows });
+  } catch (error) {
+    console.error('Admin notary requests load failed:', error);
+    return res.status(500).json({ message: 'Could not load notary requests.' });
+  }
+});
+
+app.post('/api/admin/notary-requests/status', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const id = Number(req.body?.id || 0);
+    const status = clean(req.body?.status).toLowerCase();
+    if (!id || !['paid', 'reviewed', 'confirmed', 'cancelled'].includes(status)) {
+      return res.status(400).json({ message: 'Valid request id and status are required.' });
+    }
+    await pgPool.query('UPDATE notary_requests SET status = $2 WHERE id = $1', [id, status]);
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin notary request status update failed:', error);
+    return res.status(500).json({ message: 'Could not update notary request status.' });
+  }
+});
+
 app.get('/api/availability', async (_req, res) => {
   const blocked = await getAllBlockedRanges();
   res.json({

@@ -4,13 +4,17 @@ import {
   fetchAdminBlockedDates,
   fetchAdminDashboard,
   fetchAdminMe,
+  fetchAdminNotaryRequests,
   fetchAdminRentals,
   fetchAdminSiteContent,
+  fetchAdminVacationBookings,
   type AdminUser,
   type BlockedDateRecord,
   type DashboardSummary,
+  type NotaryRequestRecord,
   type RentalRecord,
   type SiteContentRecord,
+  type VacationBookingRecord,
 } from '../../lib/adminAuth';
 import { usePageMeta } from '../../lib/usePageMeta';
 
@@ -92,6 +96,8 @@ function AdminDashboard() {
   const [rentals, setRentals] = useState<RentalRecord[]>([]);
   const [blockedDates, setBlockedDates] = useState<BlockedDateRecord[]>([]);
   const [siteContent, setSiteContent] = useState<SiteContentRecord[]>([]);
+  const [vacationBookings, setVacationBookings] = useState<VacationBookingRecord[]>([]);
+  const [notaryRequests, setNotaryRequests] = useState<NotaryRequestRecord[]>([]);
   const [rentalForm, setRentalForm] = useState<RentalForm>(emptyRentalForm());
   const [blockForm, setBlockForm] = useState<BlockForm>({ rentalId: '', startDate: '', endDate: '', reason: '' });
   const [contentForm, setContentForm] = useState<ContentForm>({ pageKey: '', title: '', body: '', heroImageUrl: '' });
@@ -100,12 +106,14 @@ function AdminDashboard() {
   const [busy, setBusy] = useState(false);
 
   async function loadAll() {
-    const [me, dashboard, rentalsPayload, blockedPayload, contentPayload] = await Promise.all([
+    const [me, dashboard, rentalsPayload, blockedPayload, contentPayload, vacationPayload, notaryPayload] = await Promise.all([
       fetchAdminMe(),
       fetchAdminDashboard(),
       fetchAdminRentals(),
       fetchAdminBlockedDates(),
       fetchAdminSiteContent(),
+      fetchAdminVacationBookings(),
+      fetchAdminNotaryRequests(),
     ]);
 
     if (!me?.user) {
@@ -118,6 +126,8 @@ function AdminDashboard() {
     setRentals(rentalsPayload.rentals);
     setBlockedDates(blockedPayload.blockedDates);
     setSiteContent(contentPayload.entries);
+    setVacationBookings(vacationPayload.bookings);
+    setNotaryRequests(notaryPayload.requests);
 
     if (!contentForm.pageKey && contentPayload.entries[0]) {
       setContentForm(toContentForm(contentPayload.entries[0]));
@@ -239,6 +249,48 @@ function AdminDashboard() {
       setStatusMessage('Site content saved.');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Could not save content.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function updateVacationBookingStatus(id: number, nextStatus: string) {
+    setBusy(true);
+    setErrorMessage('');
+    setStatusMessage('');
+    try {
+      const res = await fetch('/api/admin/vacation-bookings/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ id, status: nextStatus }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload.message || 'Could not update vacation booking status.');
+      await loadAll();
+      setStatusMessage('Vacation booking status updated.');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Could not update vacation booking status.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function updateNotaryRequestStatus(id: number, nextStatus: string) {
+    setBusy(true);
+    setErrorMessage('');
+    setStatusMessage('');
+    try {
+      const res = await fetch('/api/admin/notary-requests/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ id, status: nextStatus }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload.message || 'Could not update notary request status.');
+      await loadAll();
+      setStatusMessage('Notary request status updated.');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Could not update notary request status.');
     } finally {
       setBusy(false);
     }
@@ -367,6 +419,42 @@ function AdminDashboard() {
                   </div>
                   <span>Edit</span>
                 </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="content-card">
+            <h3>Vacation bookings</h3>
+            <div className="admin-list">
+              {vacationBookings.map((booking) => (
+                <div className="admin-list-row" key={booking.id}>
+                  <div>
+                    <strong>{booking.guest_name} • {booking.check_in} to {booking.check_out}</strong>
+                    <p>{booking.rental_title || 'Rental'} • {booking.guest_email} • status: {booking.status}</p>
+                  </div>
+                  <div className="admin-inline-actions">
+                    <button className="button-secondary" type="button" onClick={() => updateVacationBookingStatus(booking.id, 'reviewed')} disabled={busy}>Reviewed</button>
+                    <button className="button-secondary" type="button" onClick={() => updateVacationBookingStatus(booking.id, 'cancelled')} disabled={busy}>Cancelled</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="content-card">
+            <h3>Notary requests</h3>
+            <div className="admin-list">
+              {notaryRequests.map((request) => (
+                <div className="admin-list-row" key={request.id}>
+                  <div>
+                    <strong>{request.full_name} • {request.appointment_date} at {request.appointment_time}</strong>
+                    <p>{request.email} • {request.city || 'No city'} • status: {request.status}</p>
+                  </div>
+                  <div className="admin-inline-actions">
+                    <button className="button-secondary" type="button" onClick={() => updateNotaryRequestStatus(request.id, 'reviewed')} disabled={busy}>Reviewed</button>
+                    <button className="button-secondary" type="button" onClick={() => updateNotaryRequestStatus(request.id, 'confirmed')} disabled={busy}>Confirmed</button>
+                  </div>
+                </div>
               ))}
             </div>
           </section>
