@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 type AdminLayoutProps = {
   children: ReactNode;
+  showNav?: boolean;
 };
 
 const adminLinks = [
@@ -12,7 +13,7 @@ const adminLinks = [
   { href: '/admin/site-content', label: 'Site Content' },
 ];
 
-function AdminLayout({ children }: AdminLayoutProps) {
+function AdminLayout({ children, showNav = true }: AdminLayoutProps) {
   async function signOut() {
     await fetch('/api/admin/logout', { method: 'POST', headers: { Accept: 'application/json' } }).catch(() => undefined);
     window.location.href = '/admin/login';
@@ -21,12 +22,14 @@ function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <main className="page-main admin-shell">
       <section className="page-content admin-content">
-        <nav className="admin-nav" aria-label="Admin">
-          {adminLinks.map((link) => (
-            <a key={link.href} href={link.href}>{link.label}</a>
-          ))}
-          <button type="button" onClick={signOut}>Sign out</button>
-        </nav>
+        {showNav ? (
+          <nav className="admin-nav" aria-label="Admin">
+            {adminLinks.map((link) => (
+              <a key={link.href} href={link.href}>{link.label}</a>
+            ))}
+            <button type="button" onClick={signOut}>Sign out</button>
+          </nav>
+        ) : null}
         {children}
       </section>
     </main>

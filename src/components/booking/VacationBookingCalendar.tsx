@@ -53,6 +53,17 @@ function formatMoney(cents: number, currency: string) {
   }
 }
 
+function formatShortDate(value: string) {
+  if (!value) return value;
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('en-US', {
+    month: '2-digit',
+    day: '2-digit',
+    year: '2-digit',
+  }).format(date);
+}
+
 function VacationBookingCalendar() {
   const [data, setData] = useState<Availability | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -205,9 +216,9 @@ function VacationBookingCalendar() {
             {checkIn && checkOut ? (
               <>
                 <div className="cal-summary-dates">
-                  <div><span>Check-in</span><strong>{checkIn}</strong></div>
+                  <div><span>Check-in</span><strong>{formatShortDate(checkIn)}</strong></div>
                   <ArrowRight size={16} aria-hidden="true" />
-                  <div><span>Check-out</span><strong>{checkOut}</strong></div>
+                  <div><span>Check-out</span><strong>{formatShortDate(checkOut)}</strong></div>
                 </div>
                 <dl className="cal-price">
                   <div>

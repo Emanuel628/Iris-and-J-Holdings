@@ -34,7 +34,7 @@ function MobileNotary() {
   return (
     <PublicLayout>
       <main className="page-main">
-        <section className="page-hero">
+        <section className="page-hero notary-hero">
           <div className="page-hero-content">
             <p className="eyebrow">Mobile Notary</p>
             <h1>Mobile notary service, by appointment.</h1>

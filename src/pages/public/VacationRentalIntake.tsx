@@ -33,6 +33,17 @@ function formatMoney(cents: number, currency: string) {
   }
 }
 
+function formatShortDate(value: string) {
+  if (!value) return value;
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('en-US', {
+    month: '2-digit',
+    day: '2-digit',
+    year: '2-digit',
+  }).format(date);
+}
+
 function createGuest(): Guest {
   const guest = { id: nextGuestId, fullName: '', email: '', phone: '' };
   nextGuestId += 1;
@@ -175,7 +186,7 @@ function VacationRentalIntake() {
               Review your selected dates, enter the guest details, and accept the house rules and terms before secure checkout.
             </p>
             <div className="notice-box">
-              <strong>Selected stay:</strong> {checkIn || 'Missing check-in'} to {checkOut || 'Missing check-out'}
+              <strong>Selected stay:</strong> {checkIn ? formatShortDate(checkIn) : 'Missing check-in'} to {checkOut ? formatShortDate(checkOut) : 'Missing check-out'}
             </div>
           </div>
           <div className="page-hero-visual vacation-hero-visual" aria-hidden="true" />
@@ -194,11 +205,11 @@ function VacationRentalIntake() {
                   <dl className="cal-price">
                     <div>
                       <dt>Check-in</dt>
-                      <dd>{checkIn}</dd>
+                      <dd>{formatShortDate(checkIn)}</dd>
                     </div>
                     <div>
                       <dt>Check-out</dt>
-                      <dd>{checkOut}</dd>
+                      <dd>{formatShortDate(checkOut)}</dd>
                     </div>
                     <div>
                       <dt>Stay total</dt>

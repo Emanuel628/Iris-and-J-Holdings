@@ -21,16 +21,16 @@ const services = [
     icon: BarChart3,
   },
   {
-    title: 'Mobile Notary',
-    text: 'Book a convenient mobile notary appointment.',
-    href: '/mobile-notary',
-    icon: PenLine,
-  },
-  {
     title: 'Vacation Rentals',
     text: 'Check availability and book an Orlando vacation stay through Iris & J Holdings.',
     href: '/vacation-rentals',
     icon: MapPin,
+  },
+  {
+    title: 'Mobile Notary',
+    text: 'Book a convenient mobile notary appointment.',
+    href: '/mobile-notary',
+    icon: PenLine,
   },
 ];
 

@@ -24,6 +24,17 @@ function formatMoney(cents: number, currency: string) {
   }
 }
 
+function formatShortDate(value: string) {
+  if (!value) return value;
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('en-US', {
+    month: '2-digit',
+    day: '2-digit',
+    year: '2-digit',
+  }).format(date);
+}
+
 function ManageBooking() {
   usePageMeta('Manage Booking', 'Request a cancellation or scheduling change for an Iris & J Holdings booking.', {
     robots: 'noindex,nofollow',
@@ -127,9 +138,9 @@ function ManageBooking() {
                 <div className="notice-box">
                   <strong>Current booking:</strong>{' '}
                   {info.type === 'notary'
-                    ? `${info.appointmentDate} at ${info.appointmentTime || 'time pending'}`
-                    : `${info.checkIn} to ${info.checkOut}`}
-                  {info.amountTotal ? ` • ${formatMoney(info.amountTotal, info.currency)}` : ''}
+                    ? `${formatShortDate(info.appointmentDate)} at ${info.appointmentTime || 'time pending'}`
+                    : `${formatShortDate(info.checkIn)} to ${formatShortDate(info.checkOut)}`}
+                  {info.amountTotal ? ` - ${formatMoney(info.amountTotal, info.currency)}` : ''}
                 </div>
               </>
             ) : null}

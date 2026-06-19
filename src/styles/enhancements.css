@@ -755,6 +755,37 @@ summary:focus-visible,
   margin: 4rem auto;
 }
 
+.admin-auth-page {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) minmax(320px, 1fr);
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: stretch;
+  min-height: min(760px, calc(100vh - 4rem));
+}
+
+.admin-auth-page .admin-auth-shell {
+  max-width: none;
+  margin: 0;
+  align-self: center;
+}
+
+.admin-auth-page .admin-auth-shell h1 {
+  margin-bottom: 1.5rem;
+}
+
+.admin-auth-visual {
+  min-height: 540px;
+  overflow: hidden;
+  border-radius: 0 0 0 56px;
+  box-shadow: var(--shadow-soft);
+}
+
+.admin-auth-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .admin-dashboard,
 .admin-page {
   display: grid;
@@ -896,6 +927,18 @@ summary:focus-visible,
   min-height: 310px;
 }
 
+.notary-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 0.92fr);
+}
+
+.notary-hero .page-hero-content {
+  max-width: 580px;
+}
+
+.notary-hero .page-hero-content h1 {
+  max-width: 9ch;
+}
+
 .cal-note {
   font-size: 0.88rem;
   color: var(--color-ink-soft);
@@ -914,6 +957,16 @@ summary:focus-visible,
 
   .admin-overview-grid {
     grid-template-columns: 1fr;
+  }
+
+  .admin-auth-page {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .admin-auth-visual {
+    order: -1;
+    min-height: 280px;
   }
 
   .admin-nav {
