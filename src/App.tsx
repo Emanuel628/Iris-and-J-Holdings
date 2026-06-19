@@ -85,11 +85,12 @@ function normalizePath(pathname: string) {
 function App() {
   const path = normalizePath(window.location.pathname) as keyof typeof routes;
   const Page = routes[path] ?? NotFound;
+  const showAccessibilityWidget = path === '/accessibility';
 
   return (
     <>
       <Page />
-      <AccessibilityWidget />
+      {showAccessibilityWidget ? <AccessibilityWidget /> : null}
       <ViewportModeToggle />
     </>
   );

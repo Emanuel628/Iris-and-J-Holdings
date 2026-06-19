@@ -523,6 +523,15 @@ html.desktop-view .service-grid {
   gap: 0.9rem;
 }
 
+.compact-footer .footer-bottom-inner {
+  width: 100%;
+}
+
+.compact-footer .footer-bottom-inner > div,
+.compact-footer .footer-bottom-inner {
+  align-items: center;
+}
+
 /* ===== roadmap-polish ===== */
 html {
   scroll-behavior: smooth;
