@@ -1,4 +1,5 @@
 ﻿import { useEffect, useState } from 'react';
+import AdminImagePicker from '../../components/admin/AdminImagePicker';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { fetchAdminBlockedDates, fetchAdminMe, fetchAdminRentals, type BlockedDateRecord, type RentalRecord } from '../../lib/adminAuth';
 import { usePageMeta } from '../../lib/usePageMeta';
@@ -12,8 +13,8 @@ type RentalForm = {
   nightlyRateCents: string;
   cleaningFeeCents: string;
   maxGuests: string;
-  heroImageUrl: string;
-  galleryImageUrls: string;
+  heroImages: string[];
+  galleryImages: string[];
   amenities: string;
   isActive: boolean;
 };
@@ -34,8 +35,8 @@ function emptyRentalForm(): RentalForm {
     nightlyRateCents: '',
     cleaningFeeCents: '',
     maxGuests: '10',
-    heroImageUrl: '',
-    galleryImageUrls: '',
+    heroImages: [],
+    galleryImages: [],
     amenities: '',
     isActive: true,
   };
@@ -51,8 +52,8 @@ function toRentalForm(rental: RentalRecord): RentalForm {
     nightlyRateCents: String(rental.nightly_rate_cents),
     cleaningFeeCents: String(rental.cleaning_fee_cents),
     maxGuests: String(rental.max_guests),
-    heroImageUrl: rental.hero_image_url,
-    galleryImageUrls: (rental.gallery_image_urls || []).join('\n'),
+    heroImages: rental.hero_image_url ? [rental.hero_image_url] : [],
+    galleryImages: rental.gallery_image_urls || [],
     amenities: (rental.amenities || []).join('\n'),
     isActive: rental.is_active,
   };
@@ -108,8 +109,8 @@ function AdminRentals() {
           nightlyRateCents: Number(rentalForm.nightlyRateCents || 0),
           cleaningFeeCents: Number(rentalForm.cleaningFeeCents || 0),
           maxGuests: Number(rentalForm.maxGuests || 10),
-          heroImageUrl: rentalForm.heroImageUrl,
-          galleryImageUrls: rentalForm.galleryImageUrls,
+          heroImageUrl: rentalForm.heroImages[0] || '',
+          galleryImageUrls: rentalForm.galleryImages.join('\n'),
           amenities: rentalForm.amenities,
           isActive: rentalForm.isActive,
         }),
@@ -237,8 +238,17 @@ function AdminRentals() {
               <div className="input-group"><label htmlFor="admin-rental-max-guests">Max Guests</label><input id="admin-rental-max-guests" type="number" value={rentalForm.maxGuests} onChange={(event) => setRentalForm({ ...rentalForm, maxGuests: event.target.value })} /></div>
               <label className="form-note" htmlFor="admin-rental-active"><input id="admin-rental-active" type="checkbox" checked={rentalForm.isActive} onChange={(event) => setRentalForm({ ...rentalForm, isActive: event.target.checked })} /> Active rental</label>
             </div>
-            <div className="input-group"><label htmlFor="admin-rental-hero">Hero Image URL</label><input id="admin-rental-hero" value={rentalForm.heroImageUrl} onChange={(event) => setRentalForm({ ...rentalForm, heroImageUrl: event.target.value })} /></div>
-            <div className="input-group"><label htmlFor="admin-rental-gallery">Gallery Image URLs</label><textarea id="admin-rental-gallery" value={rentalForm.galleryImageUrls} onChange={(event) => setRentalForm({ ...rentalForm, galleryImageUrls: event.target.value })} placeholder="One URL per line" /></div>
+            <AdminImagePicker
+              label="Hero Images"
+              images={rentalForm.heroImages}
+              onChange={(heroImages) => setRentalForm({ ...rentalForm, heroImages })}
+              helperText="The first image is used as the active hero image for the rental."
+            />
+            <AdminImagePicker
+              label="Gallery Images"
+              images={rentalForm.galleryImages}
+              onChange={(galleryImages) => setRentalForm({ ...rentalForm, galleryImages })}
+            />
             <div className="input-group"><label htmlFor="admin-rental-amenities">Amenities</label><textarea id="admin-rental-amenities" value={rentalForm.amenities} onChange={(event) => setRentalForm({ ...rentalForm, amenities: event.target.value })} placeholder="One amenity per line" /></div>
             <div className="admin-inline-actions">
               <button className="button button-primary" type="button" onClick={saveRental} disabled={busy}>Save rental</button>
@@ -274,7 +284,7 @@ function AdminRentals() {
               <div className="admin-list-row" key={entry.id}>
                 <div>
                   <strong>{entry.rental_title}</strong>
-                  <p>{entry.start_date} to {entry.end_date}{entry.reason ? ` â€¢ ${entry.reason}` : ''}</p>
+                  <p>{entry.start_date} to {entry.end_date}{entry.reason ? ` • ${entry.reason}` : ''}</p>
                 </div>
                 <button className="button-secondary" type="button" onClick={() => deleteBlockedDate(entry.id)} disabled={busy}>Remove</button>
               </div>
@@ -290,4 +300,3 @@ function AdminRentals() {
 }
 
 export default AdminRentals;
-

@@ -1,4 +1,5 @@
 ﻿import { useEffect, useState } from 'react';
+import AdminImagePicker from '../../components/admin/AdminImagePicker';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { fetchAdminMe, fetchAdminSiteContent, type SiteContentRecord } from '../../lib/adminAuth';
 import { siteContentTemplates } from '../../lib/siteContent';
@@ -10,7 +11,7 @@ function AdminPolicies() {
   const [selectedKey, setSelectedKey] = useState('terms');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
-  const [heroImageUrl, setHeroImageUrl] = useState('');
+  const [heroImages, setHeroImages] = useState<string[]>([]);
   const [statusMessage, setStatusMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -25,7 +26,7 @@ function AdminPolicies() {
     const template = siteContentTemplates.find((item) => item.pageKey === nextKey);
     setTitle(entry?.title || template?.title || '');
     setBody(entry?.body || '');
-    setHeroImageUrl(entry?.hero_image_url || '');
+    setHeroImages(entry?.hero_image_url ? [entry.hero_image_url] : []);
   }
 
   useEffect(() => {
@@ -41,7 +42,7 @@ function AdminPolicies() {
       const res = await fetch('/api/admin/site-content', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ pageKey: selectedKey, title, body, heroImageUrl }),
+        body: JSON.stringify({ pageKey: selectedKey, title, body, heroImageUrl: heroImages[0] || '' }),
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(payload.message || 'Could not save policy.');
@@ -75,7 +76,7 @@ function AdminPolicies() {
                   const entry = entries.find((item) => item.page_key === template.pageKey);
                   setTitle(entry?.title || template.title);
                   setBody(entry?.body || '');
-                  setHeroImageUrl(entry?.hero_image_url || '');
+                  setHeroImages(entry?.hero_image_url ? [entry.hero_image_url] : []);
                 }}>
                   <div className="admin-record-copy">
                     <strong>{template.pageLabel}</strong>
@@ -93,7 +94,12 @@ function AdminPolicies() {
             </div>
             <div className="form-shell">
               <div className="input-group"><label htmlFor="policy-title">Title</label><input id="policy-title" value={title} onChange={(event) => setTitle(event.target.value)} /></div>
-              <div className="input-group"><label htmlFor="policy-hero">Hero Image URL</label><input id="policy-hero" value={heroImageUrl} onChange={(event) => setHeroImageUrl(event.target.value)} /></div>
+              <AdminImagePicker
+                label="Hero Images"
+                images={heroImages}
+                onChange={setHeroImages}
+                helperText="The first image is used as the active hero image for this policy page."
+              />
               <div className="input-group"><label htmlFor="policy-body">Body</label><textarea id="policy-body" value={body} onChange={(event) => setBody(event.target.value)} rows={18} /></div>
               <button className="button button-primary" type="button" onClick={savePolicy}>Save policy</button>
               <p className="form-note">Use this for live legal copy. One page per record.</p>
@@ -109,4 +115,3 @@ function AdminPolicies() {
 }
 
 export default AdminPolicies;
-

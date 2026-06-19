@@ -847,6 +847,75 @@ summary:focus-visible,
   box-shadow: 0 0 0 2px rgba(197, 138, 31, 0.18);
 }
 
+.admin-file-input {
+  display: none;
+}
+
+.admin-image-picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.admin-image-picker-head label {
+  margin: 0;
+}
+
+.admin-image-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.admin-image-tile {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.admin-image-frame {
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  overflow: hidden;
+  color: var(--color-muted);
+  background: #f8f4ed;
+  border: 1px solid #ddd3c7;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.admin-image-frame.has-image {
+  padding: 0;
+}
+
+.admin-image-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-image-frame span {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.admin-image-remove {
+  padding: 0;
+  color: var(--color-champagne-dark);
+  background: none;
+  border: 0;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
 .admin-auth-shell {
   max-width: 520px;
   margin: 4rem auto;
@@ -1300,6 +1369,10 @@ html.desktop-view .notary-hero {
   .admin-data-row {
     grid-template-columns: 1fr;
     gap: 0.6rem;
+  }
+
+  .admin-image-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .admin-auth-visual {

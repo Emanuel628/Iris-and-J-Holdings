@@ -1,4 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
+import AdminImagePicker from '../../components/admin/AdminImagePicker';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { fetchAdminMe, fetchAdminSiteContent, type SiteContentRecord } from '../../lib/adminAuth';
 import { parseSiteContentBody, siteContentTemplates, stringifySiteContentBody, type SiteContentTemplate } from '../../lib/siteContent';
@@ -8,7 +9,7 @@ type ContentForm = {
   pageKey: string;
   title: string;
   values: Record<string, string>;
-  heroImageUrl: string;
+  heroImages: string[];
 };
 
 function toContentForm(entry: SiteContentRecord, template: SiteContentTemplate): ContentForm {
@@ -16,14 +17,14 @@ function toContentForm(entry: SiteContentRecord, template: SiteContentTemplate):
     pageKey: entry.page_key,
     title: entry.title,
     values: parseSiteContentBody(entry.body, template.defaults),
-    heroImageUrl: entry.hero_image_url,
+    heroImages: entry.hero_image_url ? [entry.hero_image_url] : [],
   };
 }
 
 function AdminSiteContent() {
   usePageMeta('Admin Site Content', 'Edit public site copy and page imagery.', { robots: 'noindex,nofollow' });
   const [entries, setEntries] = useState<SiteContentRecord[]>([]);
-  const [contentForm, setContentForm] = useState<ContentForm>({ pageKey: '', title: '', values: {}, heroImageUrl: '' });
+  const [contentForm, setContentForm] = useState<ContentForm>({ pageKey: '', title: '', values: {}, heroImages: [] });
   const [busy, setBusy] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -45,7 +46,7 @@ function AdminSiteContent() {
         setContentForm(
           entry
             ? toContentForm(entry, firstTemplate)
-            : { pageKey: firstTemplate.pageKey, title: firstTemplate.title, values: firstTemplate.defaults, heroImageUrl: firstTemplate.heroImageUrl || '' },
+            : { pageKey: firstTemplate.pageKey, title: firstTemplate.title, values: firstTemplate.defaults, heroImages: firstTemplate.heroImageUrl ? [firstTemplate.heroImageUrl] : [] },
         );
       }
     }
@@ -67,7 +68,7 @@ function AdminSiteContent() {
     setContentForm(
       entry
         ? toContentForm(entry, template)
-        : { pageKey: template.pageKey, title: template.title, values: template.defaults, heroImageUrl: template.heroImageUrl || '' },
+        : { pageKey: template.pageKey, title: template.title, values: template.defaults, heroImages: template.heroImageUrl ? [template.heroImageUrl] : [] },
     );
   }
 
@@ -82,7 +83,7 @@ function AdminSiteContent() {
         body: JSON.stringify({
           pageKey: contentForm.pageKey,
           title: contentForm.title,
-          heroImageUrl: contentForm.heroImageUrl,
+          heroImageUrl: contentForm.heroImages[0] || '',
           body: stringifySiteContentBody(contentForm.values),
         }),
       });
@@ -113,7 +114,12 @@ function AdminSiteContent() {
           </div>
           <div className="form-shell">
             <div className="input-group"><label htmlFor="admin-content-title">Title</label><input id="admin-content-title" value={contentForm.title} onChange={(event) => setContentForm({ ...contentForm, title: event.target.value })} /></div>
-            <div className="input-group"><label htmlFor="admin-content-image">Hero Image URL</label><input id="admin-content-image" value={contentForm.heroImageUrl} onChange={(event) => setContentForm({ ...contentForm, heroImageUrl: event.target.value })} /></div>
+            <AdminImagePicker
+              label="Hero Images"
+              images={contentForm.heroImages}
+              onChange={(heroImages) => setContentForm({ ...contentForm, heroImages })}
+              helperText="The first image is used as the active hero image for this page."
+            />
             {siteContentTemplates.find((item) => item.pageKey === contentForm.pageKey)?.fields.map((field) => (
               <div className="input-group" key={field.key}>
                 <label htmlFor={`admin-content-${field.key}`}>{field.label}</label>
@@ -189,4 +195,3 @@ function AdminSiteContent() {
 }
 
 export default AdminSiteContent;
-
