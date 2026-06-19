@@ -89,6 +89,7 @@ export type BuyerLeadRecord = {
   budget_max: number;
   timeline: string;
   financing_status: string;
+  approval_status: string;
   notes: string;
   created_at: string;
 };

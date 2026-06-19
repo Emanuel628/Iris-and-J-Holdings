@@ -451,9 +451,14 @@ async function ensureAdminTables() {
       budget_max INTEGER NOT NULL DEFAULT 0,
       timeline TEXT NOT NULL DEFAULT '',
       financing_status TEXT NOT NULL DEFAULT '',
+      approval_status TEXT NOT NULL DEFAULT '',
       notes TEXT NOT NULL DEFAULT '',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+  `);
+  await pgPool.query(`
+    ALTER TABLE buyer_leads
+    ADD COLUMN IF NOT EXISTS approval_status TEXT NOT NULL DEFAULT '';
   `);
   await pgPool.query(`
     CREATE TABLE IF NOT EXISTS seller_leads (
@@ -1702,6 +1707,7 @@ app.post('/api/admin/buyer-leads', async (req, res) => {
     const budgetMax = Number(req.body?.budgetMax || 0);
     const timeline = clean(req.body?.timeline);
     const financingStatus = clean(req.body?.financingStatus);
+    const approvalStatus = clean(req.body?.approvalStatus);
     const notes = clean(req.body?.notes);
 
     if (!clientName || !email) {
@@ -1719,9 +1725,10 @@ app.post('/api/admin/buyer-leads', async (req, res) => {
              budget_max = $7,
              timeline = $8,
              financing_status = $9,
-             notes = $10
+             approval_status = $10,
+             notes = $11
          WHERE id = $1`,
-        [id, clientName, email, phone, targetAreas, budgetMin, budgetMax, timeline, financingStatus, notes],
+        [id, clientName, email, phone, targetAreas, budgetMin, budgetMax, timeline, financingStatus, approvalStatus, notes],
       );
     } else {
       await pgPool.query(
@@ -1734,9 +1741,10 @@ app.post('/api/admin/buyer-leads', async (req, res) => {
           budget_max,
           timeline,
           financing_status,
+          approval_status,
           notes
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-        [clientName, email, phone, targetAreas, budgetMin, budgetMax, timeline, financingStatus, notes],
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [clientName, email, phone, targetAreas, budgetMin, budgetMax, timeline, financingStatus, approvalStatus, notes],
       );
     }
 

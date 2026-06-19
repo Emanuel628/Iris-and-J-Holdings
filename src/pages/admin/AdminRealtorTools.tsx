@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
+import { ChevronsUpDown } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import {
   fetchAdminBuyerLeads,
@@ -19,6 +20,7 @@ type BuyerLeadForm = {
   budgetMax: string;
   timeline: string;
   financingStatus: string;
+  approvalStatus: string;
   notes: string;
 };
 
@@ -34,6 +36,12 @@ type SellerLeadForm = {
   notes: string;
 };
 
+const BUYER_TIMELINE_OPTIONS = ['7 days', '14 days', '30 days', '60 days', '90 days', '6 months', '1 year', '2+ years', 'Custom'];
+const BUYER_FINANCING_OPTIONS = ['Cash', 'Conventional loan', 'FHA loan', 'VA loan', 'USDA loan', 'Other financing', 'Custom'];
+const BUYER_APPROVAL_OPTIONS = ['Pre-approved', 'Looking for approval', 'Needs lender referral', 'Paying cash', 'Custom'];
+const SELLER_TIMELINE_OPTIONS = ['ASAP', '30 days', '60 days', '90 days', '6 months', '1 year', 'Custom'];
+const SELLER_OCCUPANCY_OPTIONS = ['Owner occupied', 'Tenant occupied', 'Vacant', 'Seasonal use', 'Custom'];
+
 function emptyBuyerLeadForm(): BuyerLeadForm {
   return {
     clientName: '',
@@ -44,6 +52,7 @@ function emptyBuyerLeadForm(): BuyerLeadForm {
     budgetMax: '',
     timeline: '',
     financingStatus: '',
+    approvalStatus: '',
     notes: '',
   };
 }
@@ -64,6 +73,65 @@ function emptySellerLeadForm(): SellerLeadForm {
 function formatCurrency(amount: number) {
   if (!amount) return '--';
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
+}
+
+function getSelectValue(value: string, options: string[]) {
+  if (!value) return '';
+  return options.includes(value) ? value : 'Custom';
+}
+
+function renderSelectWithCustom({
+  id,
+  label,
+  value,
+  options,
+  onSelectChange,
+  onCustomChange,
+  customPlaceholder,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  options: string[];
+  onSelectChange: (value: string) => void;
+  onCustomChange: (value: string) => void;
+  customPlaceholder: string;
+}) {
+  const selectedValue = getSelectValue(value, options);
+  const showCustom = selectedValue === 'Custom';
+
+  return (
+    <div className="input-group">
+      <label htmlFor={id}>{label}</label>
+      <div className="admin-select-shell">
+        <select
+          id={id}
+          value={selectedValue}
+          onChange={(event) => {
+            const nextValue = event.target.value;
+            if (nextValue === 'Custom') {
+              onSelectChange(value && !options.includes(value) ? value : '');
+              return;
+            }
+            onSelectChange(nextValue);
+          }}
+        >
+          <option value="">Select an option</option>
+          {options.map((option) => (
+            <option key={option} value={option}>{option}</option>
+          ))}
+        </select>
+        <ChevronsUpDown size={16} aria-hidden="true" />
+      </div>
+      {showCustom ? (
+        <input
+          value={value}
+          onChange={(event) => onCustomChange(event.target.value)}
+          placeholder={customPlaceholder}
+        />
+      ) : null}
+    </div>
+  );
 }
 
 function AdminRealtorTools() {
@@ -114,6 +182,7 @@ function AdminRealtorTools() {
           budgetMax: Number(buyerForm.budgetMax || 0),
           timeline: buyerForm.timeline,
           financingStatus: buyerForm.financingStatus,
+          approvalStatus: buyerForm.approvalStatus,
           notes: buyerForm.notes,
         }),
       });
@@ -207,6 +276,9 @@ function AdminRealtorTools() {
     }
   }
 
+  const buyerLeadRows = useMemo(() => buyerLeads, [buyerLeads]);
+  const sellerLeadRows = useMemo(() => sellerLeads, [sellerLeads]);
+
   return (
     <AdminLayout>
       <div className="admin-page">
@@ -235,8 +307,36 @@ function AdminRealtorTools() {
                 <div className="input-group"><label htmlFor="buyer-budget-max">Budget Max</label><input id="buyer-budget-max" type="number" value={buyerForm.budgetMax} onChange={(event) => setBuyerForm({ ...buyerForm, budgetMax: event.target.value })} /></div>
               </div>
               <div className="form-row">
-                <div className="input-group"><label htmlFor="buyer-timeline">Timeline</label><input id="buyer-timeline" value={buyerForm.timeline} onChange={(event) => setBuyerForm({ ...buyerForm, timeline: event.target.value })} placeholder="30 days, 3 months, just starting..." /></div>
-                <div className="input-group"><label htmlFor="buyer-financing">Financing Status</label><input id="buyer-financing" value={buyerForm.financingStatus} onChange={(event) => setBuyerForm({ ...buyerForm, financingStatus: event.target.value })} placeholder="Cash, pre-approved, needs lender..." /></div>
+                {renderSelectWithCustom({
+                  id: 'buyer-timeline',
+                  label: 'Timeline',
+                  value: buyerForm.timeline,
+                  options: BUYER_TIMELINE_OPTIONS,
+                  onSelectChange: (value) => setBuyerForm({ ...buyerForm, timeline: value }),
+                  onCustomChange: (value) => setBuyerForm({ ...buyerForm, timeline: value }),
+                  customPlaceholder: 'Enter custom timeline',
+                })}
+                {renderSelectWithCustom({
+                  id: 'buyer-financing',
+                  label: 'Financing Status',
+                  value: buyerForm.financingStatus,
+                  options: BUYER_FINANCING_OPTIONS,
+                  onSelectChange: (value) => setBuyerForm({ ...buyerForm, financingStatus: value }),
+                  onCustomChange: (value) => setBuyerForm({ ...buyerForm, financingStatus: value }),
+                  customPlaceholder: 'Enter custom financing status',
+                })}
+              </div>
+              <div className="form-row">
+                {renderSelectWithCustom({
+                  id: 'buyer-approval',
+                  label: 'Approval Status',
+                  value: buyerForm.approvalStatus,
+                  options: BUYER_APPROVAL_OPTIONS,
+                  onSelectChange: (value) => setBuyerForm({ ...buyerForm, approvalStatus: value }),
+                  onCustomChange: (value) => setBuyerForm({ ...buyerForm, approvalStatus: value }),
+                  customPlaceholder: 'Enter custom approval status',
+                })}
+                <div className="input-group" aria-hidden="true" />
               </div>
               <div className="input-group"><label htmlFor="buyer-notes">Notes</label><textarea id="buyer-notes" value={buyerForm.notes} onChange={(event) => setBuyerForm({ ...buyerForm, notes: event.target.value })} /></div>
               <div className="admin-inline-actions">
@@ -261,9 +361,25 @@ function AdminRealtorTools() {
               </div>
               <div className="form-row">
                 <div className="input-group"><label htmlFor="seller-target-price">Target Price</label><input id="seller-target-price" type="number" value={sellerForm.targetPrice} onChange={(event) => setSellerForm({ ...sellerForm, targetPrice: event.target.value })} /></div>
-                <div className="input-group"><label htmlFor="seller-timeline">Timeline</label><input id="seller-timeline" value={sellerForm.timeline} onChange={(event) => setSellerForm({ ...sellerForm, timeline: event.target.value })} placeholder="ASAP, 60 days, later this year..." /></div>
+                {renderSelectWithCustom({
+                  id: 'seller-timeline',
+                  label: 'Timeline',
+                  value: sellerForm.timeline,
+                  options: SELLER_TIMELINE_OPTIONS,
+                  onSelectChange: (value) => setSellerForm({ ...sellerForm, timeline: value }),
+                  onCustomChange: (value) => setSellerForm({ ...sellerForm, timeline: value }),
+                  customPlaceholder: 'Enter custom timeline',
+                })}
               </div>
-              <div className="input-group"><label htmlFor="seller-occupancy">Occupancy Status</label><input id="seller-occupancy" value={sellerForm.occupancyStatus} onChange={(event) => setSellerForm({ ...sellerForm, occupancyStatus: event.target.value })} placeholder="Owner occupied, tenant occupied, vacant..." /></div>
+              {renderSelectWithCustom({
+                id: 'seller-occupancy',
+                label: 'Occupancy Status',
+                value: sellerForm.occupancyStatus,
+                options: SELLER_OCCUPANCY_OPTIONS,
+                onSelectChange: (value) => setSellerForm({ ...sellerForm, occupancyStatus: value }),
+                onCustomChange: (value) => setSellerForm({ ...sellerForm, occupancyStatus: value }),
+                customPlaceholder: 'Enter custom occupancy status',
+              })}
               <div className="input-group"><label htmlFor="seller-notes">Notes</label><textarea id="seller-notes" value={sellerForm.notes} onChange={(event) => setSellerForm({ ...sellerForm, notes: event.target.value })} /></div>
               <div className="admin-inline-actions">
                 <button className="button button-primary" type="button" onClick={saveSellerLead} disabled={busy}>{sellerForm.id ? 'Update seller intake' : 'Save seller intake'}</button>
@@ -285,7 +401,7 @@ function AdminRealtorTools() {
               <span>Search</span>
               <span>Notes</span>
             </div>
-            {buyerLeads.map((lead) => (
+            {buyerLeadRows.map((lead) => (
               <div className="admin-data-row" key={lead.id}>
                 <div>
                   <strong>{lead.client_name}</strong>
@@ -299,6 +415,7 @@ function AdminRealtorTools() {
                   <p>{lead.target_areas || 'No areas yet'}</p>
                   <p>{formatCurrency(lead.budget_min)} to {formatCurrency(lead.budget_max)}</p>
                   <p>{lead.timeline || 'No timeline'} | {lead.financing_status || 'No financing note'}</p>
+                  <p>{lead.approval_status || 'No approval note'}</p>
                 </div>
                 <div>
                   <p>{lead.notes || 'No notes saved.'}</p>
@@ -313,6 +430,7 @@ function AdminRealtorTools() {
                       budgetMax: String(lead.budget_max || ''),
                       timeline: lead.timeline,
                       financingStatus: lead.financing_status,
+                      approvalStatus: lead.approval_status,
                       notes: lead.notes,
                     })}>Edit</button>
                     <button className="button-secondary" type="button" onClick={() => deleteBuyerLead(lead.id)} disabled={busy}>Delete</button>
@@ -336,7 +454,7 @@ function AdminRealtorTools() {
               <span>Property</span>
               <span>Notes</span>
             </div>
-            {sellerLeads.map((lead) => (
+            {sellerLeadRows.map((lead) => (
               <div className="admin-data-row" key={lead.id}>
                 <div>
                   <strong>{lead.client_name}</strong>
@@ -382,4 +500,3 @@ function AdminRealtorTools() {
 }
 
 export default AdminRealtorTools;
-
