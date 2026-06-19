@@ -9,7 +9,6 @@ type AdminLayoutProps = {
 const adminLinks = [
   { href: '/admin', label: 'Control Center' },
   { href: '/admin/rentals', label: 'Rentals' },
-  { href: '/admin/bookings', label: 'Bookings', notificationKey: 'bookings' as const },
   { href: '/admin/vacation-bookings', label: 'Vacation Queue', notificationKey: 'vacation' as const },
   { href: '/admin/notary-requests', label: 'Notary Queue', notificationKey: 'notary' as const },
   { href: '/admin/realtor-tools', label: 'Realtor Tools' },
@@ -20,7 +19,7 @@ const adminLinks = [
   { href: '/admin/settings', label: 'Settings' },
 ];
 
-type NotificationKey = 'bookings' | 'vacation' | 'notary';
+type NotificationKey = 'vacation' | 'notary';
 
 function seenStorageKey(key: NotificationKey) {
   return `ijh_admin_seen_${key}`;
@@ -61,11 +60,7 @@ function AdminLayout({ children, showNav = true }: AdminLayoutProps) {
         const payload = await fetchAdminNotifications();
         if (!alive) return;
         setNotifications(payload);
-        if (currentPath === '/admin/bookings') {
-          markSeen('bookings', payload.bookings.latestCreatedAt);
-          markSeen('vacation', payload.vacation.latestCreatedAt);
-          markSeen('notary', payload.notary.latestCreatedAt);
-        } else if (currentPath === '/admin/vacation-bookings') {
+        if (currentPath === '/admin/vacation-bookings') {
           markSeen('vacation', payload.vacation.latestCreatedAt);
         } else if (currentPath === '/admin/notary-requests') {
           markSeen('notary', payload.notary.latestCreatedAt);
@@ -118,11 +113,11 @@ function AdminLayout({ children, showNav = true }: AdminLayoutProps) {
             <div className="admin-topbar">
               <div>
                 <strong>Operations</strong>
-                <span>Bookings, availability, content, and site controls</span>
+                <span>Queues, availability, content, and site controls</span>
               </div>
               <div className="admin-topbar-actions">
                 <a href="/admin/rentals">New rental</a>
-                <a href="/admin/vacation-bookings">Booked dates</a>
+                <a href="/admin/vacation-bookings">Vacation queue</a>
                 <a href="/admin/notary-requests">Notary queue</a>
                 <a href="/admin/realtor-tools">Buyer and seller intake</a>
               </div>

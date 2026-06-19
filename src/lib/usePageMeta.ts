@@ -15,11 +15,6 @@ const ROUTE_META: Record<string, { title?: string; description?: string; robots?
     description: 'Admin control center for Iris & J Holdings.',
     robots: 'noindex,nofollow',
   },
-  '/admin/bookings': {
-    title: 'Admin Bookings',
-    description: 'Admin route hub for booking operations.',
-    robots: 'noindex,nofollow',
-  },
   '/admin/login': {
     title: 'Admin Login',
     description: 'Secure admin login for Iris & J Holdings.',
@@ -31,7 +26,7 @@ const ROUTE_META: Record<string, { title?: string; description?: string; robots?
     robots: 'noindex,nofollow',
   },
   '/admin/notary-requests': {
-    title: 'Admin Notary Requests',
+    title: 'Notary Queue',
     description: 'Review paid notary booking requests.',
     robots: 'noindex,nofollow',
   },
@@ -76,7 +71,7 @@ const ROUTE_META: Record<string, { title?: string; description?: string; robots?
     robots: 'noindex,nofollow',
   },
   '/admin/vacation-bookings': {
-    title: 'Booked Dates',
+    title: 'Vacation Queue',
     description: 'Review vacation rental bookings and guest details.',
     robots: 'noindex,nofollow',
   },

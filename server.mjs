@@ -1524,6 +1524,62 @@ app.post('/api/admin/vacation-bookings/status', async (req, res) => {
   }
 });
 
+app.post('/api/admin/vacation-bookings/save', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const id = Number(req.body?.id || 0);
+    const guestName = clean(req.body?.guestName);
+    const guestEmail = clean(req.body?.guestEmail);
+    const guestPhone = clean(req.body?.guestPhone);
+    const guestCount = Number(req.body?.guestCount || 1);
+    const guestListText = clean(req.body?.guestListText);
+    const checkIn = clean(req.body?.checkIn);
+    const checkOut = clean(req.body?.checkOut);
+    const status = clean(req.body?.status).toLowerCase();
+    if (!id || !guestName || !guestEmail || !isIsoDate(checkIn) || !isIsoDate(checkOut) || checkOut < checkIn) {
+      return res.status(400).json({ message: 'Valid booking details are required.' });
+    }
+    if (!['paid', 'reviewed', 'cancel-requested', 'cancelled'].includes(status)) {
+      return res.status(400).json({ message: 'Valid booking status is required.' });
+    }
+    await pgPool.query(
+      `UPDATE vacation_bookings
+       SET guest_name = $2,
+           guest_email = $3,
+           guest_phone = $4,
+           guest_count = $5,
+           guest_list_text = $6,
+           check_in = $7::date,
+           check_out = $8::date,
+           status = $9
+       WHERE id = $1`,
+      [id, guestName, guestEmail, guestPhone, guestCount, guestListText, checkIn, checkOut, status],
+    );
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin vacation booking save failed:', error);
+    return res.status(500).json({ message: 'Could not save vacation booking.' });
+  }
+});
+
+app.post('/api/admin/vacation-bookings/delete', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const id = Number(req.body?.id || 0);
+    const confirmation = clean(req.body?.confirmation);
+    if (!id || confirmation !== 'DELETE') {
+      return res.status(400).json({ message: 'Booking id and DELETE confirmation are required.' });
+    }
+    await pgPool.query('DELETE FROM vacation_bookings WHERE id = $1', [id]);
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin vacation booking delete failed:', error);
+    return res.status(500).json({ message: 'Could not delete vacation booking.' });
+  }
+});
+
 app.get('/api/admin/notary-requests', async (req, res) => {
   try {
     const admin = await requireAdmin(req, res);
@@ -1555,6 +1611,64 @@ app.post('/api/admin/notary-requests/status', async (req, res) => {
   } catch (error) {
     console.error('Admin notary request status update failed:', error);
     return res.status(500).json({ message: 'Could not update notary request status.' });
+  }
+});
+
+app.post('/api/admin/notary-requests/save', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const id = Number(req.body?.id || 0);
+    const fullName = clean(req.body?.fullName);
+    const email = clean(req.body?.email);
+    const phone = clean(req.body?.phone);
+    const city = clean(req.body?.city);
+    const appointmentDate = clean(req.body?.appointmentDate);
+    const appointmentTime = clean(req.body?.appointmentTime);
+    const documentType = clean(req.body?.documentType);
+    const notes = clean(req.body?.notes);
+    const status = clean(req.body?.status).toLowerCase();
+    if (!id || !fullName || !email || !isIsoDate(appointmentDate) || !appointmentTime) {
+      return res.status(400).json({ message: 'Valid request details are required.' });
+    }
+    if (!['paid', 'reviewed', 'confirmed', 'cancelled'].includes(status)) {
+      return res.status(400).json({ message: 'Valid request status is required.' });
+    }
+    await pgPool.query(
+      `UPDATE notary_requests
+       SET full_name = $2,
+           email = $3,
+           phone = $4,
+           city = $5,
+           appointment_date = $6::date,
+           appointment_time = $7,
+           document_type = $8,
+           notes = $9,
+           status = $10
+       WHERE id = $1`,
+      [id, fullName, email, phone, city, appointmentDate, appointmentTime, documentType, notes, status],
+    );
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin notary request save failed:', error);
+    return res.status(500).json({ message: 'Could not save notary request.' });
+  }
+});
+
+app.post('/api/admin/notary-requests/delete', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const id = Number(req.body?.id || 0);
+    const confirmation = clean(req.body?.confirmation);
+    if (!id || confirmation !== 'DELETE') {
+      return res.status(400).json({ message: 'Request id and DELETE confirmation are required.' });
+    }
+    await pgPool.query('DELETE FROM notary_requests WHERE id = $1', [id]);
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin notary request delete failed:', error);
+    return res.status(500).json({ message: 'Could not delete notary request.' });
   }
 });
 

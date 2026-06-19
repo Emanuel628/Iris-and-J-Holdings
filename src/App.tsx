@@ -1,4 +1,3 @@
-import AdminBookingsHub from './pages/admin/AdminBookingsHub';
 import Home from './pages/public/Home';
 import AdminControlCenter from './pages/admin/AdminControlCenter';
 import AdminForgotPassword from './pages/admin/AdminForgotPassword';
@@ -38,7 +37,6 @@ import AccessibilityWidget from './components/ui/AccessibilityWidget';
 const routes = {
   '/': Home,
   '/admin': AdminControlCenter,
-  '/admin/bookings': AdminBookingsHub,
   '/admin/forgot-password': AdminForgotPassword,
   '/admin/login': AdminLogin,
   '/admin/media': AdminMediaLibrary,

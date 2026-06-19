@@ -1133,12 +1133,11 @@ summary:focus-visible,
 
 .admin-reminder-row {
   display: grid;
-  grid-template-columns: 92px minmax(0, 1fr);
+  grid-template-columns: 92px minmax(0, 1fr) auto;
   gap: 0.9rem;
   align-items: start;
   padding: 0.9rem 0;
   color: var(--color-ink);
-  text-decoration: none;
   border-top: 1px solid #ece4d8;
 }
 
@@ -1180,6 +1179,13 @@ summary:focus-visible,
   margin: 0.18rem 0 0;
   color: var(--color-ink-soft);
   font-size: 0.86rem;
+}
+
+.admin-reminder-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
 }
 
 .admin-empty-note {
@@ -1369,6 +1375,10 @@ html.desktop-view .notary-hero {
   .admin-data-row {
     grid-template-columns: 1fr;
     gap: 0.6rem;
+  }
+
+  .admin-reminder-row {
+    grid-template-columns: 1fr;
   }
 
   .admin-image-grid {
@@ -1761,5 +1771,9 @@ html.a11y-underline a {
   .rental-selector-controls {
     grid-auto-flow: column;
     align-items: center;
+  }
+
+  .admin-reminder-actions {
+    justify-content: flex-start;
   }
 }
