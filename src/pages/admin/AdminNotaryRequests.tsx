@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { fetchAdminMe, fetchAdminNotaryRequests, type NotaryRequestRecord } from '../../lib/adminAuth';
 import { usePageMeta } from '../../lib/usePageMeta';
@@ -113,3 +113,4 @@ function AdminNotaryRequests() {
 }
 
 export default AdminNotaryRequests;
+

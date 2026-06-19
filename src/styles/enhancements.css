@@ -1,4 +1,4 @@
-/* Improvements layer: mobile nav, form feedback, testimonials, FAQ,
+﻿/* Improvements layer: mobile nav, form feedback, testimonials, FAQ,
    accessibility, and small contrast/focus polish. Loaded last. */
 
 /* ---- Skip link (accessibility) ---- */
@@ -852,9 +852,27 @@ summary:focus-visible,
   margin: 4rem auto;
 }
 
+.admin-auth-page-shell {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.admin-auth-page-shell-single {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.admin-auth-header {
+  padding: 0.5rem 0 0;
+}
+
+.admin-auth-header .brand {
+  width: fit-content;
+}
+
 .admin-auth-page {
   display: grid;
-  grid-template-columns: minmax(420px, 520px) minmax(360px, 1fr);
+  grid-template-columns: minmax(500px, 600px) minmax(360px, 1fr);
   gap: clamp(2rem, 5vw, 4rem);
   align-items: stretch;
   min-height: min(760px, calc(100vh - 4rem));
@@ -1288,10 +1306,14 @@ html.desktop-view .notary-hero {
     order: -1;
     min-height: 280px;
   }
+
+  .admin-auth-page {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* A quiet-band used as a split-section column shouldn't carry its standalone
-   top margin — keep it top-aligned with the panel beside it. */
+   top margin â€” keep it top-aligned with the panel beside it. */
 .split-section .quiet-band {
   margin-top: 0;
 }
@@ -1529,3 +1551,4 @@ html.a11y-underline a {
   max-width: 100%;
   min-width: 0;
 }
+

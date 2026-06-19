@@ -1,4 +1,4 @@
-import PublicLayout from '../../components/layout/PublicLayout';
+﻿import PublicLayout from '../../components/layout/PublicLayout';
 import NotaryBooking from '../../components/booking/NotaryBooking';
 import Faq from '../../components/sections/Faq';
 import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
@@ -18,7 +18,7 @@ const notaryFaqs = [
   {
     question: 'Is a fee required to book?',
     answer:
-      'Yes � the travel or booking fee is paid through secure checkout when you submit the request. Notary fees are separate and depend on the document type and number of notarizations. Daiana will confirm the details by email.',
+      'Yes — the travel or booking fee is paid through secure checkout when you submit the request. Notary fees are separate and depend on the document type and number of notarizations. Daiana will confirm the details by email.',
   },
   {
     question: 'What types of documents can you notarize?',
@@ -89,3 +89,4 @@ function MobileNotary() {
 }
 
 export default MobileNotary;
+

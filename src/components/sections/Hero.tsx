@@ -1,4 +1,4 @@
-import { ArrowRight } from 'lucide-react';
+﻿import { ArrowRight } from 'lucide-react';
 import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
 
 function Hero() {
@@ -27,3 +27,4 @@ function Hero() {
 }
 
 export default Hero;
+

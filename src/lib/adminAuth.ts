@@ -1,4 +1,4 @@
-export type AdminUser = {
+﻿export type AdminUser = {
   email: string;
   name?: string;
   createdAt: string;
@@ -191,3 +191,4 @@ export function fetchAdminNotifications() {
 export function fetchAdminSettings() {
   return fetchJson<AdminSettingsPayload>('/api/admin/settings');
 }
+

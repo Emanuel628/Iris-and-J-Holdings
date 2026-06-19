@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { fetchAdminMe, fetchAdminSettings, type AdminSettingsPayload } from '../../lib/adminAuth';
 import { usePageMeta } from '../../lib/usePageMeta';
@@ -90,3 +90,4 @@ function AdminSettings() {
 }
 
 export default AdminSettings;
+

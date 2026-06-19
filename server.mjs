@@ -1,4 +1,4 @@
-import express from 'express';
+﻿import express from 'express';
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import Stripe from 'stripe';
 import crypto from 'node:crypto';
@@ -78,7 +78,7 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
         await persistNotaryRequest(session);
         await notifyNotaryBookingV2(session);
       } else {
-        bookedCache = { at: 0, ranges: [] }; // vacation booking — refresh website/Airbnb availability merge
+        bookedCache = { at: 0, ranges: [] }; // vacation booking â€” refresh website/Airbnb availability merge
         await persistVacationBooking(session);
         await notifyBookingV2(session);
       }
@@ -657,7 +657,7 @@ async function notifyBooking(session) {
 
   await sendResendEmail({
     to: contactTo,
-    subject: `New vacation rental booking — ${checkIn} to ${checkOut}`,
+    subject: `New vacation rental booking â€” ${checkIn} to ${checkOut}`,
     text: `A vacation rental booking was paid through Stripe.\n\nDates: ${checkIn} to ${checkOut}\nGuest: ${guestEmail || 'unknown'}\nAmount: ${amount}\nStripe session: ${session.id}`,
     html: `<h2>New vacation rental booking</h2><p><strong>Dates:</strong> ${escapeHtml(checkIn)} to ${escapeHtml(checkOut)}<br><strong>Guest:</strong> ${escapeHtml(guestEmail || 'unknown')}<br><strong>Amount:</strong> ${escapeHtml(amount)}<br><strong>Stripe session:</strong> ${escapeHtml(session.id)}</p>`,
   });
@@ -673,14 +673,14 @@ async function notifyBooking(session) {
         `Dates: ${checkIn} to ${checkOut}\n` +
         `Amount paid: ${amount}\n\n` +
         `A Stripe receipt should arrive separately by email. Daiana will follow up with the booking details, house rules, and check-in information.\n\n` +
-        `— Iris & J Holdings`,
+        `â€” Iris & J Holdings`,
       html:
         `<p>Hi,</p>` +
         `<p>Your Orlando vacation rental booking has been paid and received.</p>` +
         `<p><strong>Dates:</strong> ${escapeHtml(checkIn)} to ${escapeHtml(checkOut)}<br>` +
         `<strong>Amount paid:</strong> ${escapeHtml(amount)}</p>` +
         `<p>A Stripe receipt should arrive separately by email. Daiana will follow up with the booking details, house rules, and check-in information.</p>` +
-        `<p>— Iris &amp; J Holdings</p>`,
+        `<p>â€” Iris &amp; J Holdings</p>`,
     });
   }
 }
@@ -701,7 +701,7 @@ async function notifyNotaryBooking(session) {
   await sendResendEmail({
     to: contactTo,
     replyTo: email || undefined,
-    subject: `Paid notary booking fee — ${appointmentDate} at ${appointmentTime}`,
+    subject: `Paid notary booking fee â€” ${appointmentDate} at ${appointmentTime}`,
     text:
       `A notary booking fee was paid through Stripe.\n\n` +
       `Name: ${name}\n` +
@@ -741,7 +741,7 @@ async function notifyNotaryBooking(session) {
         `Amount paid: ${amount}\n\n` +
         `A Stripe receipt should arrive separately by email. Daiana will follow up to confirm the appointment time, service area, signer requirements, and any separate notary fees.\n\n` +
         `Payment does not guarantee that a notarial act can be completed if legal, signer, document, or identification requirements cannot be satisfied.\n\n` +
-        `— Iris & J Holdings`,
+        `â€” Iris & J Holdings`,
       html:
         `<p>Hi ${escapeHtml(name || 'there')},</p>` +
         `<p>Your mobile notary travel / booking fee has been paid and received.</p>` +
@@ -750,7 +750,7 @@ async function notifyNotaryBooking(session) {
         `<strong>Amount paid:</strong> ${escapeHtml(amount)}</p>` +
         `<p>A Stripe receipt should arrive separately by email. Daiana will follow up to confirm the appointment time, service area, signer requirements, and any separate notary fees.</p>` +
         `<p>Payment does not guarantee that a notarial act can be completed if legal, signer, document, or identification requirements cannot be satisfied.</p>` +
-        `<p>— Iris &amp; J Holdings</p>`,
+        `<p>â€” Iris &amp; J Holdings</p>`,
     });
   }
 }
@@ -1261,6 +1261,24 @@ app.post('/api/admin/rentals', async (req, res) => {
   }
 });
 
+app.post('/api/admin/rentals/delete', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const id = Number(req.body?.id || 0);
+    const confirmation = clean(req.body?.confirmation);
+    if (!id || confirmation !== 'DELETE') {
+      return res.status(400).json({ message: 'Rental id and DELETE confirmation are required.' });
+    }
+    await pgPool.query('DELETE FROM rentals WHERE id = $1', [id]);
+    bookedCache = { at: 0, ranges: [] };
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin rental delete failed:', error);
+    return res.status(500).json({ message: 'Could not delete rental.' });
+  }
+});
+
 app.get('/api/admin/blocked-dates', async (req, res) => {
   try {
     const admin = await requireAdmin(req, res);
@@ -1514,6 +1532,7 @@ app.post('/api/admin/buyer-leads', async (req, res) => {
   try {
     const admin = await requireAdmin(req, res);
     if (!admin) return;
+    const id = Number(req.body?.id || 0);
     const clientName = clean(req.body?.clientName);
     const email = clean(req.body?.email);
     const phone = clean(req.body?.phone);
@@ -1528,25 +1547,58 @@ app.post('/api/admin/buyer-leads', async (req, res) => {
       return res.status(400).json({ message: 'Client name and email are required.' });
     }
 
-    await pgPool.query(
-      `INSERT INTO buyer_leads (
-        client_name,
-        email,
-        phone,
-        target_areas,
-        budget_min,
-        budget_max,
-        timeline,
-        financing_status,
-        notes
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [clientName, email, phone, targetAreas, budgetMin, budgetMax, timeline, financingStatus, notes],
-    );
+    if (id > 0) {
+      await pgPool.query(
+        `UPDATE buyer_leads
+         SET client_name = $2,
+             email = $3,
+             phone = $4,
+             target_areas = $5,
+             budget_min = $6,
+             budget_max = $7,
+             timeline = $8,
+             financing_status = $9,
+             notes = $10
+         WHERE id = $1`,
+        [id, clientName, email, phone, targetAreas, budgetMin, budgetMax, timeline, financingStatus, notes],
+      );
+    } else {
+      await pgPool.query(
+        `INSERT INTO buyer_leads (
+          client_name,
+          email,
+          phone,
+          target_areas,
+          budget_min,
+          budget_max,
+          timeline,
+          financing_status,
+          notes
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [clientName, email, phone, targetAreas, budgetMin, budgetMax, timeline, financingStatus, notes],
+      );
+    }
 
     return res.json({ ok: true });
   } catch (error) {
     console.error('Admin buyer lead save failed:', error);
     return res.status(500).json({ message: 'Could not save buyer lead.' });
+  }
+});
+
+app.post('/api/admin/buyer-leads/delete', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const id = Number(req.body?.id || 0);
+    if (!id) {
+      return res.status(400).json({ message: 'Buyer record id is required.' });
+    }
+    await pgPool.query('DELETE FROM buyer_leads WHERE id = $1', [id]);
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin buyer lead delete failed:', error);
+    return res.status(500).json({ message: 'Could not delete buyer record.' });
   }
 });
 
@@ -1571,6 +1623,7 @@ app.post('/api/admin/seller-leads', async (req, res) => {
   try {
     const admin = await requireAdmin(req, res);
     if (!admin) return;
+    const id = Number(req.body?.id || 0);
     const clientName = clean(req.body?.clientName);
     const email = clean(req.body?.email);
     const phone = clean(req.body?.phone);
@@ -1584,24 +1637,56 @@ app.post('/api/admin/seller-leads', async (req, res) => {
       return res.status(400).json({ message: 'Client name and email are required.' });
     }
 
-    await pgPool.query(
-      `INSERT INTO seller_leads (
-        client_name,
-        email,
-        phone,
-        property_address,
-        target_price,
-        timeline,
-        occupancy_status,
-        notes
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [clientName, email, phone, propertyAddress, targetPrice, timeline, occupancyStatus, notes],
-    );
+    if (id > 0) {
+      await pgPool.query(
+        `UPDATE seller_leads
+         SET client_name = $2,
+             email = $3,
+             phone = $4,
+             property_address = $5,
+             target_price = $6,
+             timeline = $7,
+             occupancy_status = $8,
+             notes = $9
+         WHERE id = $1`,
+        [id, clientName, email, phone, propertyAddress, targetPrice, timeline, occupancyStatus, notes],
+      );
+    } else {
+      await pgPool.query(
+        `INSERT INTO seller_leads (
+          client_name,
+          email,
+          phone,
+          property_address,
+          target_price,
+          timeline,
+          occupancy_status,
+          notes
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [clientName, email, phone, propertyAddress, targetPrice, timeline, occupancyStatus, notes],
+      );
+    }
 
     return res.json({ ok: true });
   } catch (error) {
     console.error('Admin seller lead save failed:', error);
     return res.status(500).json({ message: 'Could not save seller lead.' });
+  }
+});
+
+app.post('/api/admin/seller-leads/delete', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const id = Number(req.body?.id || 0);
+    if (!id) {
+      return res.status(400).json({ message: 'Seller record id is required.' });
+    }
+    await pgPool.query('DELETE FROM seller_leads WHERE id = $1', [id]);
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin seller lead delete failed:', error);
+    return res.status(500).json({ message: 'Could not delete seller record.' });
   }
 });
 
@@ -1717,10 +1802,10 @@ app.get('/api/availability', async (_req, res) => {
 app.post('/api/checkout', async (req, res) => {
   try {
     if (!stripe) {
-      return res.status(503).json({ message: 'Online booking isn’t available yet. Please join the interest list.' });
+      return res.status(503).json({ message: 'Online booking isnâ€™t available yet. Please join the interest list.' });
     }
     if (!(booking.nightlyRateCents > 0)) {
-      return res.status(503).json({ message: 'Pricing isn’t set up yet. Please join the interest list.' });
+      return res.status(503).json({ message: 'Pricing isnâ€™t set up yet. Please join the interest list.' });
     }
 
     const checkIn = clean(req.body?.checkIn);
@@ -1766,7 +1851,7 @@ app.post('/api/checkout', async (req, res) => {
           currency: booking.currency,
           unit_amount: booking.nightlyRateCents * stay.nights,
           product_data: {
-            name: `Orlando vacation rental — ${stay.nights} night${stay.nights > 1 ? 's' : ''}`,
+            name: `Orlando vacation rental â€” ${stay.nights} night${stay.nights > 1 ? 's' : ''}`,
             description: `${checkIn} to ${checkOut}`,
           },
         },
@@ -2086,9 +2171,9 @@ app.post('/api/contact', async (req, res) => {
       await sendResendEmail({
         to: email,
         replyTo: contactTo,
-        subject: 'We received your message — Iris & J Holdings',
-        text: `Hi ${name},\n\nThanks for reaching out to Iris & J Holdings. Daiana received your message and will follow up by email soon.\n\nIf your request is time-sensitive, you can call (908) 499-6320.\n\n— Iris & J Holdings`,
-        html: `<p>Hi ${escapeHtml(name)},</p><p>Thanks for reaching out to Iris &amp; J Holdings. Daiana received your message and will follow up by email soon.</p><p>If your request is time-sensitive, you can call <a href="tel:19084996320">(908) 499-6320</a>.</p><p>— Iris &amp; J Holdings</p>`,
+        subject: 'We received your message â€” Iris & J Holdings',
+        text: `Hi ${name},\n\nThanks for reaching out to Iris & J Holdings. Daiana received your message and will follow up by email soon.\n\nIf your request is time-sensitive, you can call (908) 499-6320.\n\nâ€” Iris & J Holdings`,
+        html: `<p>Hi ${escapeHtml(name)},</p><p>Thanks for reaching out to Iris &amp; J Holdings. Daiana received your message and will follow up by email soon.</p><p>If your request is time-sensitive, you can call <a href="tel:19084996320">(908) 499-6320</a>.</p><p>â€” Iris &amp; J Holdings</p>`,
       });
     } catch (confirmError) {
       console.error('Confirmation email failed:', confirmError);
@@ -2121,3 +2206,4 @@ startServer().catch((error) => {
   console.error('Server startup failed:', error);
   process.exit(1);
 });
+

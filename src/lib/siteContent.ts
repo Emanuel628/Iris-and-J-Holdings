@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 
 export type SiteContentField = {
   key: string;
@@ -34,7 +34,7 @@ export const siteContentTemplates: SiteContentTemplate[] = [
     defaults: {
       heroTitle: 'Your Next Move, Made Clear.',
       heroDescription:
-        'Buying, selling, or signing important documents can feel like a lot. I’ll help you understand the next step, make a plan, and move forward with confidence — real estate throughout New Jersey, mobile notary service, and Orlando vacation rentals.',
+        'Buying, selling, or signing important documents can feel like a lot. Iâ€™ll help you understand the next step, make a plan, and move forward with confidence â€” real estate throughout New Jersey, mobile notary service, and Orlando vacation rentals.',
       primaryCtaLabel: 'Find the Right Service',
       secondaryCtaLabel: 'Book a Call',
     },
@@ -62,7 +62,7 @@ export const siteContentTemplates: SiteContentTemplate[] = [
       introEyebrow: 'What to expect',
       introTitle: 'Get your bearings before you start touring.',
       introDescription:
-        'Start with a no-pressure conversation about your budget and pre-approval, the neighborhoods and home types that fit, and how New Jersey’s process works — from making an offer and attorney review to inspections and the closing timeline.',
+        'Start with a no-pressure conversation about your budget and pre-approval, the neighborhoods and home types that fit, and how New Jerseyâ€™s process works â€” from making an offer and attorney review to inspections and the closing timeline.',
     },
   },
   {
@@ -113,7 +113,7 @@ export const siteContentTemplates: SiteContentTemplate[] = [
       introEyebrow: 'Property details',
       introTitle: 'A few details to get started.',
       introDescription:
-        'Daiana reviews recent comparable sales, current nearby listings, and your home’s condition and updates, then follows up by email with a price range and the reasoning behind it. There’s no cost and no obligation.',
+        'Daiana reviews recent comparable sales, current nearby listings, and your homeâ€™s condition and updates, then follows up by email with a price range and the reasoning behind it. Thereâ€™s no cost and no obligation.',
     },
   },
   {
@@ -161,7 +161,7 @@ export const siteContentTemplates: SiteContentTemplate[] = [
       heroEyebrow: 'Vacation Rentals',
       heroTitle: 'Book your Orlando vacation stay.',
       heroDescription:
-        'Check the calendar for open dates in Orlando and Central Florida, then reserve with secure checkout. Prefer to ask first? Send Daiana a question and she’ll follow up by email.',
+        'Check the calendar for open dates in Orlando and Central Florida, then reserve with secure checkout. Prefer to ask first? Send Daiana a question and sheâ€™ll follow up by email.',
       availabilityEyebrow: 'Availability',
       availabilityTitle: 'Available dates for the rental.',
       availabilityDescription:
@@ -183,7 +183,7 @@ export const siteContentTemplates: SiteContentTemplate[] = [
       heroEyebrow: 'About Daiana',
       heroTitle: 'Real estate and notary help that keeps things simple.',
       heroDescription:
-        'Daiana Castro, REALTOR®, provides real estate services throughout New Jersey through All Star Real Estate Agency. She also offers mobile notary services and independently manages Orlando vacation rental accommodations through Iris & J Holdings.',
+        'Daiana Castro, REALTORÂ®, provides real estate services throughout New Jersey through All Star Real Estate Agency. She also offers mobile notary services and independently manages Orlando vacation rental accommodations through Iris & J Holdings.',
     },
   },
   {
@@ -199,7 +199,7 @@ export const siteContentTemplates: SiteContentTemplate[] = [
     ],
     defaults: {
       heroEyebrow: 'Resources',
-      heroTitle: 'Helpful info before you’re ready to reach out.',
+      heroTitle: 'Helpful info before youâ€™re ready to reach out.',
       heroDescription:
         'Not everyone is ready for a call right away. Start with a buyer guide, seller guide, or local market update and come back when the timing feels right.',
     },
@@ -220,7 +220,7 @@ export const siteContentTemplates: SiteContentTemplate[] = [
       heroEyebrow: 'Book or Contact',
       heroTitle: 'Tell Daiana what you need.',
       heroDescription:
-        'Tell Daiana what you need and she’ll point you to the right next step — a buyer consultation, seller strategy call, mobile notary appointment, or a general question. She’ll follow up by email.',
+        'Tell Daiana what you need and sheâ€™ll point you to the right next step â€” a buyer consultation, seller strategy call, mobile notary appointment, or a general question. Sheâ€™ll follow up by email.',
     },
   },
   {
@@ -325,3 +325,4 @@ export function usePublicSiteContent(pageKey: string, defaults: Record<string, s
 
   return { content, heroImageUrl };
 }
+

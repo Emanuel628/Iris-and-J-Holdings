@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+﻿import { useEffect, useState, type ReactNode } from 'react';
 import { fetchAdminNotifications, type AdminNotificationsPayload } from '../../lib/adminAuth';
 
 type AdminLayoutProps = {
@@ -136,3 +136,4 @@ function AdminLayout({ children, showNav = true }: AdminLayoutProps) {
 }
 
 export default AdminLayout;
+

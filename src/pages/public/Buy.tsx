@@ -1,4 +1,4 @@
-import PublicLayout from '../../components/layout/PublicLayout';
+﻿import PublicLayout from '../../components/layout/PublicLayout';
 import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
 import { usePageMeta } from '../../lib/usePageMeta';
 
@@ -83,3 +83,4 @@ function Buy() {
 }
 
 export default Buy;
+

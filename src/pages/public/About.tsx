@@ -1,11 +1,11 @@
-import PublicLayout from '../../components/layout/PublicLayout';
+ï»¿import PublicLayout from '../../components/layout/PublicLayout';
 import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
 import { usePageMeta } from '../../lib/usePageMeta';
 
 function About() {
   usePageMeta(
-    'About Daiana Castro, REALTOR®',
-    'Meet Daiana Castro, REALTOR® and mobile notary serving New Jersey buyers, sellers, and notary clients through Iris & J Holdings and All Star Real Estate Agency.',
+    'About Daiana Castro, REALTORÂ®',
+    'Meet Daiana Castro, REALTORÂ® and mobile notary serving New Jersey buyers, sellers, and notary clients through Iris & J Holdings and All Star Real Estate Agency.',
   );
   const template = getSiteContentTemplate('about');
   const { content } = usePublicSiteContent('about', template?.defaults || {});
@@ -24,7 +24,7 @@ function About() {
           </div>
           <figure className="about-portrait">
             <div className="page-hero-visual about-hero-visual" role="img" aria-label="Portrait of Daiana Castro" />
-            <figcaption>Daiana Castro, REALTOR®</figcaption>
+            <figcaption>Daiana Castro, REALTORÂ®</figcaption>
           </figure>
         </section>
 
@@ -36,14 +36,14 @@ function About() {
               <p>
                 Big decisions feel easier when someone explains the steps in plain language. Daiana responds
                 promptly, keeps the paperwork and timeline organized, and makes sure you understand each option
-                before you decide — whether you’re touring homes, preparing to list, or signing a document.
+                before you decide â€” whether youâ€™re touring homes, preparing to list, or signing a document.
               </p>
             </div>
 
             <div className="info-panel">
               <h3>Professional focus</h3>
               <ul className="detail-list">
-                <li>REALTOR® with All Star Real Estate Agency</li>
+                <li>REALTORÂ® with All Star Real Estate Agency</li>
                 <li>Real estate services throughout New Jersey</li>
                 <li>Mobile notary services by appointment</li>
                 <li>Orlando vacation rentals through Iris &amp; J Holdings</li>
@@ -74,3 +74,4 @@ function About() {
 }
 
 export default About;
+

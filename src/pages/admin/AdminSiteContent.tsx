@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { fetchAdminMe, fetchAdminSiteContent, type SiteContentRecord } from '../../lib/adminAuth';
 import { parseSiteContentBody, siteContentTemplates, stringifySiteContentBody, type SiteContentTemplate } from '../../lib/siteContent';
@@ -189,3 +189,4 @@ function AdminSiteContent() {
 }
 
 export default AdminSiteContent;
+

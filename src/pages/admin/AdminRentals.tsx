@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { fetchAdminBlockedDates, fetchAdminMe, fetchAdminRentals, type BlockedDateRecord, type RentalRecord } from '../../lib/adminAuth';
 import { usePageMeta } from '../../lib/usePageMeta';
@@ -174,6 +174,32 @@ function AdminRentals() {
     }
   }
 
+  async function deleteRental() {
+    if (!rentalForm.id) return;
+    const confirmation = window.prompt('Type DELETE to permanently remove this rental.');
+    if (confirmation === null) return;
+
+    setBusy(true);
+    setErrorMessage('');
+    setStatusMessage('');
+    try {
+      const res = await fetch('/api/admin/rentals/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ id: rentalForm.id, confirmation }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload.message || 'Could not delete rental.');
+      await loadData();
+      setRentalForm(emptyRentalForm());
+      setStatusMessage('Rental deleted.');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Could not delete rental.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <AdminLayout>
       <div className="admin-page">
@@ -214,7 +240,10 @@ function AdminRentals() {
             <div className="input-group"><label htmlFor="admin-rental-hero">Hero Image URL</label><input id="admin-rental-hero" value={rentalForm.heroImageUrl} onChange={(event) => setRentalForm({ ...rentalForm, heroImageUrl: event.target.value })} /></div>
             <div className="input-group"><label htmlFor="admin-rental-gallery">Gallery Image URLs</label><textarea id="admin-rental-gallery" value={rentalForm.galleryImageUrls} onChange={(event) => setRentalForm({ ...rentalForm, galleryImageUrls: event.target.value })} placeholder="One URL per line" /></div>
             <div className="input-group"><label htmlFor="admin-rental-amenities">Amenities</label><textarea id="admin-rental-amenities" value={rentalForm.amenities} onChange={(event) => setRentalForm({ ...rentalForm, amenities: event.target.value })} placeholder="One amenity per line" /></div>
-            <button className="button button-primary" type="button" onClick={saveRental} disabled={busy}>Save rental</button>
+            <div className="admin-inline-actions">
+              <button className="button button-primary" type="button" onClick={saveRental} disabled={busy}>Save rental</button>
+              {rentalForm.id ? <button className="button-secondary" type="button" onClick={deleteRental} disabled={busy}>Delete rental</button> : null}
+            </div>
           </div>
         </section>
 
@@ -245,7 +274,7 @@ function AdminRentals() {
               <div className="admin-list-row" key={entry.id}>
                 <div>
                   <strong>{entry.rental_title}</strong>
-                  <p>{entry.start_date} to {entry.end_date}{entry.reason ? ` • ${entry.reason}` : ''}</p>
+                  <p>{entry.start_date} to {entry.end_date}{entry.reason ? ` â€¢ ${entry.reason}` : ''}</p>
                 </div>
                 <button className="button-secondary" type="button" onClick={() => deleteBlockedDate(entry.id)} disabled={busy}>Remove</button>
               </div>
@@ -261,3 +290,4 @@ function AdminRentals() {
 }
 
 export default AdminRentals;
+

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import {
   fetchAdminBuyerLeads,
@@ -10,6 +10,7 @@ import {
 import { usePageMeta } from '../../lib/usePageMeta';
 
 type BuyerLeadForm = {
+  id?: number;
   clientName: string;
   email: string;
   phone: string;
@@ -22,6 +23,7 @@ type BuyerLeadForm = {
 };
 
 type SellerLeadForm = {
+  id?: number;
   clientName: string;
   email: string;
   phone: string;
@@ -103,6 +105,7 @@ function AdminRealtorTools() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
+          id: buyerForm.id,
           clientName: buyerForm.clientName,
           email: buyerForm.email,
           phone: buyerForm.phone,
@@ -135,6 +138,7 @@ function AdminRealtorTools() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
+          id: sellerForm.id,
           clientName: sellerForm.clientName,
           email: sellerForm.email,
           phone: sellerForm.phone,
@@ -152,6 +156,52 @@ function AdminRealtorTools() {
       setStatusMessage('Seller intake saved.');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Could not save seller lead.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteBuyerLead(id: number) {
+    if (!window.confirm('Delete this buyer record?')) return;
+    setBusy(true);
+    setStatusMessage('');
+    setErrorMessage('');
+    try {
+      const res = await fetch('/api/admin/buyer-leads/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload.message || 'Could not delete buyer record.');
+      await loadData();
+      if (buyerForm.id === id) setBuyerForm(emptyBuyerLeadForm());
+      setStatusMessage('Buyer record deleted.');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Could not delete buyer record.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteSellerLead(id: number) {
+    if (!window.confirm('Delete this seller record?')) return;
+    setBusy(true);
+    setStatusMessage('');
+    setErrorMessage('');
+    try {
+      const res = await fetch('/api/admin/seller-leads/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload.message || 'Could not delete seller record.');
+      await loadData();
+      if (sellerForm.id === id) setSellerForm(emptySellerLeadForm());
+      setStatusMessage('Seller record deleted.');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Could not delete seller record.');
     } finally {
       setBusy(false);
     }
@@ -189,7 +239,10 @@ function AdminRealtorTools() {
                 <div className="input-group"><label htmlFor="buyer-financing">Financing Status</label><input id="buyer-financing" value={buyerForm.financingStatus} onChange={(event) => setBuyerForm({ ...buyerForm, financingStatus: event.target.value })} placeholder="Cash, pre-approved, needs lender..." /></div>
               </div>
               <div className="input-group"><label htmlFor="buyer-notes">Notes</label><textarea id="buyer-notes" value={buyerForm.notes} onChange={(event) => setBuyerForm({ ...buyerForm, notes: event.target.value })} /></div>
-              <button className="button button-primary" type="button" onClick={saveBuyerLead} disabled={busy}>Save buyer intake</button>
+              <div className="admin-inline-actions">
+                <button className="button button-primary" type="button" onClick={saveBuyerLead} disabled={busy}>{buyerForm.id ? 'Update buyer intake' : 'Save buyer intake'}</button>
+                {buyerForm.id ? <button className="button-secondary" type="button" onClick={() => setBuyerForm(emptyBuyerLeadForm())} disabled={busy}>Cancel edit</button> : null}
+              </div>
             </div>
           </section>
 
@@ -212,7 +265,10 @@ function AdminRealtorTools() {
               </div>
               <div className="input-group"><label htmlFor="seller-occupancy">Occupancy Status</label><input id="seller-occupancy" value={sellerForm.occupancyStatus} onChange={(event) => setSellerForm({ ...sellerForm, occupancyStatus: event.target.value })} placeholder="Owner occupied, tenant occupied, vacant..." /></div>
               <div className="input-group"><label htmlFor="seller-notes">Notes</label><textarea id="seller-notes" value={sellerForm.notes} onChange={(event) => setSellerForm({ ...sellerForm, notes: event.target.value })} /></div>
-              <button className="button button-primary" type="button" onClick={saveSellerLead} disabled={busy}>Save seller intake</button>
+              <div className="admin-inline-actions">
+                <button className="button button-primary" type="button" onClick={saveSellerLead} disabled={busy}>{sellerForm.id ? 'Update seller intake' : 'Save seller intake'}</button>
+                {sellerForm.id ? <button className="button-secondary" type="button" onClick={() => setSellerForm(emptySellerLeadForm())} disabled={busy}>Cancel edit</button> : null}
+              </div>
             </div>
           </section>
         </section>
@@ -244,7 +300,24 @@ function AdminRealtorTools() {
                   <p>{formatCurrency(lead.budget_min)} to {formatCurrency(lead.budget_max)}</p>
                   <p>{lead.timeline || 'No timeline'} | {lead.financing_status || 'No financing note'}</p>
                 </div>
-                <div><p>{lead.notes || 'No notes saved.'}</p></div>
+                <div>
+                  <p>{lead.notes || 'No notes saved.'}</p>
+                  <div className="admin-inline-actions">
+                    <button className="button-secondary" type="button" onClick={() => setBuyerForm({
+                      id: lead.id,
+                      clientName: lead.client_name,
+                      email: lead.email,
+                      phone: lead.phone,
+                      targetAreas: lead.target_areas,
+                      budgetMin: String(lead.budget_min || ''),
+                      budgetMax: String(lead.budget_max || ''),
+                      timeline: lead.timeline,
+                      financingStatus: lead.financing_status,
+                      notes: lead.notes,
+                    })}>Edit</button>
+                    <button className="button-secondary" type="button" onClick={() => deleteBuyerLead(lead.id)} disabled={busy}>Delete</button>
+                  </div>
+                </div>
               </div>
             ))}
             {!buyerLeads.length ? <p className="admin-empty-note">No buyer intake records saved yet.</p> : null}
@@ -278,7 +351,23 @@ function AdminRealtorTools() {
                   <p>{formatCurrency(lead.target_price)}</p>
                   <p>{lead.timeline || 'No timeline'} | {lead.occupancy_status || 'No occupancy note'}</p>
                 </div>
-                <div><p>{lead.notes || 'No notes saved.'}</p></div>
+                <div>
+                  <p>{lead.notes || 'No notes saved.'}</p>
+                  <div className="admin-inline-actions">
+                    <button className="button-secondary" type="button" onClick={() => setSellerForm({
+                      id: lead.id,
+                      clientName: lead.client_name,
+                      email: lead.email,
+                      phone: lead.phone,
+                      propertyAddress: lead.property_address,
+                      targetPrice: String(lead.target_price || ''),
+                      timeline: lead.timeline,
+                      occupancyStatus: lead.occupancy_status,
+                      notes: lead.notes,
+                    })}>Edit</button>
+                    <button className="button-secondary" type="button" onClick={() => deleteSellerLead(lead.id)} disabled={busy}>Delete</button>
+                  </div>
+                </div>
               </div>
             ))}
             {!sellerLeads.length ? <p className="admin-empty-note">No seller intake records saved yet.</p> : null}
@@ -293,3 +382,4 @@ function AdminRealtorTools() {
 }
 
 export default AdminRealtorTools;
+

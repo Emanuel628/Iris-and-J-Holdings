@@ -1,4 +1,5 @@
-import { useMemo, useState, type FormEvent } from 'react';
+﻿import { useMemo, useState, type FormEvent } from 'react';
+import AdminAuthHeader from '../../components/admin/AdminAuthHeader';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { usePageMeta } from '../../lib/usePageMeta';
 
@@ -48,25 +49,29 @@ function AdminResetPassword() {
 
   return (
     <AdminLayout showNav={false}>
-      <div className="admin-auth-shell info-panel">
-        <h1>Reset password</h1>
-        <form className="form-shell" onSubmit={submit}>
-          <div className="input-group">
-            <label htmlFor="admin-reset-password">New Password</label>
-            <input id="admin-reset-password" type="password" autoComplete="new-password" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} required />
-          </div>
-          <div className="input-group">
-            <label htmlFor="admin-reset-confirm">Confirm Password</label>
-            <input id="admin-reset-confirm" type="password" autoComplete="new-password" minLength={8} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required />
-          </div>
-          <button className="button button-primary" type="submit" disabled={status === 'sending'}>
-            {status === 'sending' ? 'Resetting...' : 'Reset password'}
-          </button>
-          {status === 'error' ? <p className="form-status form-status-error" role="alert">{errorMessage}</p> : null}
-        </form>
+      <div className="admin-auth-page-shell admin-auth-page-shell-single">
+        <AdminAuthHeader />
+        <div className="admin-auth-shell info-panel">
+          <h1>Reset password</h1>
+          <form className="form-shell" onSubmit={submit}>
+            <div className="input-group">
+              <label htmlFor="admin-reset-password">New Password</label>
+              <input id="admin-reset-password" type="password" autoComplete="new-password" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} required />
+            </div>
+            <div className="input-group">
+              <label htmlFor="admin-reset-confirm">Confirm Password</label>
+              <input id="admin-reset-confirm" type="password" autoComplete="new-password" minLength={8} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required />
+            </div>
+            <button className="button button-primary" type="submit" disabled={status === 'sending'}>
+              {status === 'sending' ? 'Resetting...' : 'Reset password'}
+            </button>
+            {status === 'error' ? <p className="form-status form-status-error" role="alert">{errorMessage}</p> : null}
+          </form>
+        </div>
       </div>
     </AdminLayout>
   );
 }
 
 export default AdminResetPassword;
+

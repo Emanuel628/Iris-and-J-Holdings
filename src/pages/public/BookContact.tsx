@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+ï»¿import { useEffect, useRef, useState } from 'react';
 import PublicLayout from '../../components/layout/PublicLayout';
 import FormStatus from '../../components/ui/FormStatus';
 import { useContactForm } from '../../lib/useContactForm';
@@ -104,7 +104,7 @@ function BookContact() {
               <p className="eyebrow">Not sure?</p>
               <h2>Ask a question first.</h2>
               <p>
-                Not ready to schedule? Send a question — about buying, selling, a home value, or a notary visit —
+                Not ready to schedule? Send a question â€” about buying, selling, a home value, or a notary visit â€”
                 and Daiana will help you figure out the right next step.
               </p>
               <div className="notice-box">
@@ -153,7 +153,7 @@ function BookContact() {
                 />
               </div>
               <button className="button button-primary" type="submit" disabled={status === 'sending'}>
-                {status === 'sending' ? 'Sending…' : 'Send Message'}
+                {status === 'sending' ? 'Sendingâ€¦' : 'Send Message'}
               </button>
               <FormStatus status={status} />
             </form>
@@ -165,3 +165,4 @@ function BookContact() {
 }
 
 export default BookContact;
+

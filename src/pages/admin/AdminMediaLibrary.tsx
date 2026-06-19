@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { fetchAdminMe, fetchAdminRentals, fetchAdminSiteContent, type RentalRecord, type SiteContentRecord } from '../../lib/adminAuth';
 import { siteContentTemplates } from '../../lib/siteContent';
@@ -83,3 +83,4 @@ function AdminMediaLibrary() {
 }
 
 export default AdminMediaLibrary;
+

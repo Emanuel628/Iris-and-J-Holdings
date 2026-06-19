@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from 'react';
+﻿import { useState, type FormEvent } from 'react';
+import AdminAuthHeader from '../../components/admin/AdminAuthHeader';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { usePageMeta } from '../../lib/usePageMeta';
 
@@ -36,7 +37,9 @@ function AdminLogin() {
 
   return (
     <AdminLayout showNav={false}>
-      <div className="admin-auth-page">
+      <div className="admin-auth-page-shell">
+        <AdminAuthHeader />
+        <div className="admin-auth-page">
         <section className="admin-auth-shell info-panel">
           <h1>Sign in</h1>
           <form className="form-shell" onSubmit={submit}>
@@ -61,9 +64,11 @@ function AdminLogin() {
         <aside className="admin-auth-visual page-hero-image-frame" aria-label="Iris and J Holdings admin sign in">
           <img src="/images/site/vacation-hero.jpg" alt="Warm interior styled to match the Iris and J Holdings palette" />
         </aside>
+        </div>
       </div>
     </AdminLayout>
   );
 }
 
 export default AdminLogin;
+

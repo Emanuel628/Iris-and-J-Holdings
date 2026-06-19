@@ -1,4 +1,4 @@
-import PublicLayout from '../../components/layout/PublicLayout';
+﻿import PublicLayout from '../../components/layout/PublicLayout';
 import FormStatus from '../../components/ui/FormStatus';
 import { useContactForm } from '../../lib/useContactForm';
 import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
@@ -71,3 +71,4 @@ function HomeValue() {
 }
 
 export default HomeValue;
+

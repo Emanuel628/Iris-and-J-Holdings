@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from 'react';
+﻿import { useState, type FormEvent } from 'react';
+import AdminAuthHeader from '../../components/admin/AdminAuthHeader';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { usePageMeta } from '../../lib/usePageMeta';
 
@@ -34,7 +35,9 @@ function AdminRegister() {
 
   return (
     <AdminLayout showNav={false}>
-      <div className="admin-auth-page">
+      <div className="admin-auth-page-shell">
+        <AdminAuthHeader />
+        <div className="admin-auth-page">
         <section className="admin-auth-shell info-panel">
           <h1>Create admin account</h1>
           <p>Use this once to create Daiana&apos;s admin access. After the first account exists, registration closes.</p>
@@ -63,9 +66,11 @@ function AdminRegister() {
         <aside className="admin-auth-visual page-hero-image-frame" aria-label="Iris and J Holdings admin registration">
           <img src="/images/site/vacation-hero.jpg" alt="Warm interior styled to match the Iris and J Holdings palette" />
         </aside>
+        </div>
       </div>
     </AdminLayout>
   );
 }
 
 export default AdminRegister;
+
