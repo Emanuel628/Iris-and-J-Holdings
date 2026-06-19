@@ -1008,6 +1008,29 @@ async function persistNotaryRequest(session) {
   );
 }
 
+let checkoutSyncCache = { at: 0 };
+const CHECKOUT_SYNC_TTL_MS = 60 * 1000;
+
+async function syncRecentPaidCheckoutSessions(force = false) {
+  if (!stripe || !pgPool) return;
+  const now = Date.now();
+  if (!force && now - checkoutSyncCache.at < CHECKOUT_SYNC_TTL_MS) {
+    return;
+  }
+
+  const sessions = await stripe.checkout.sessions.list({ limit: 100 });
+  for (const session of sessions.data) {
+    if (session.payment_status !== 'paid') continue;
+    if (session.metadata?.type === 'notary') {
+      await persistNotaryRequest(session);
+    } else if (session.metadata?.type === 'vacation') {
+      await persistVacationBooking(session);
+    }
+  }
+
+  checkoutSyncCache.at = now;
+}
+
 app.get('/health', (_req, res) => {
   res.json({ ok: true });
 });
@@ -1201,6 +1224,7 @@ app.get('/api/admin/dashboard', async (req, res) => {
   try {
     const admin = await requireAdmin(req, res);
     if (!admin) return;
+    await syncRecentPaidCheckoutSessions();
 
     const [rentals, blockedDates, vacationBookings, notaryRequests, siteContent] = await Promise.all([
       pgPool.query('SELECT COUNT(*)::int AS count FROM rentals'),
@@ -1460,6 +1484,7 @@ app.get('/api/admin/notifications', async (req, res) => {
   try {
     const admin = await requireAdmin(req, res);
     if (!admin) return;
+    await syncRecentPaidCheckoutSessions();
     const [vacation, notary] = await Promise.all([
       pgPool.query(
         `SELECT COUNT(*)::int AS new_count, COALESCE(MAX(created_at)::text, '') AS latest_created_at
@@ -1498,6 +1523,7 @@ app.get('/api/admin/vacation-bookings', async (req, res) => {
   try {
     const admin = await requireAdmin(req, res);
     if (!admin) return;
+    await syncRecentPaidCheckoutSessions();
     const result = await pgPool.query(
       `SELECT b.*, r.title AS rental_title
        FROM vacation_bookings b
@@ -1589,6 +1615,7 @@ app.get('/api/admin/notary-requests', async (req, res) => {
   try {
     const admin = await requireAdmin(req, res);
     if (!admin) return;
+    await syncRecentPaidCheckoutSessions();
     const result = await pgPool.query(
       `SELECT *
        FROM notary_requests
@@ -2197,6 +2224,13 @@ app.get('/api/checkout-session', async (req, res) => {
       return res.status(400).json({ message: 'Missing session id.' });
     }
     const session = await stripe.checkout.sessions.retrieve(id);
+    if (session.payment_status === 'paid') {
+      if (session.metadata?.type === 'notary') {
+        await persistNotaryRequest(session);
+      } else if (session.metadata?.type === 'vacation') {
+        await persistVacationBooking(session);
+      }
+    }
     return res.json({
       status: session.payment_status,
       amountTotal: session.amount_total,
