@@ -42,7 +42,7 @@ function ServiceSelector() {
         <span className="gold-line short" aria-hidden="true" />
       </div>
 
-      <div className="service-grid">
+      <div className="service-grid service-grid-scroll">
         {services.map((service) => {
           const Icon = service.icon;
           return (

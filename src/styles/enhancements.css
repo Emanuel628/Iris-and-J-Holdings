@@ -760,6 +760,27 @@ summary:focus-visible,
   cursor: pointer;
 }
 
+.service-grid-scroll {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: clamp(1rem, 2vw, 1.4rem);
+  justify-content: flex-start;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding-bottom: 0.35rem;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.service-grid-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.service-grid-scroll .service-card {
+  flex: 0 0 clamp(220px, 18vw, 250px);
+  min-height: 310px;
+}
+
 .cal-note {
   font-size: 0.88rem;
   color: var(--color-ink-soft);
