@@ -1,9 +1,13 @@
 import Home from './pages/public/Home';
-import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminControlCenter from './pages/admin/AdminControlCenter';
 import AdminForgotPassword from './pages/admin/AdminForgotPassword';
 import AdminLogin from './pages/admin/AdminLogin';
+import AdminNotaryRequests from './pages/admin/AdminNotaryRequests';
 import AdminRegister from './pages/admin/AdminRegister';
+import AdminRentals from './pages/admin/AdminRentals';
 import AdminResetPassword from './pages/admin/AdminResetPassword';
+import AdminSiteContent from './pages/admin/AdminSiteContent';
+import AdminVacationBookings from './pages/admin/AdminVacationBookings';
 import Buy from './pages/public/Buy';
 import Sell from './pages/public/Sell';
 import HomeValue from './pages/public/HomeValue';
@@ -27,11 +31,15 @@ import AccessibilityWidget from './components/ui/AccessibilityWidget';
 
 const routes = {
   '/': Home,
-  '/admin': AdminDashboard,
+  '/admin': AdminControlCenter,
   '/admin/forgot-password': AdminForgotPassword,
   '/admin/login': AdminLogin,
+  '/admin/notary-requests': AdminNotaryRequests,
   '/admin/register': AdminRegister,
+  '/admin/rentals': AdminRentals,
   '/admin/reset-password': AdminResetPassword,
+  '/admin/site-content': AdminSiteContent,
+  '/admin/vacation-bookings': AdminVacationBookings,
   '/buy': Buy,
   '/sell': Sell,
   '/home-value': HomeValue,

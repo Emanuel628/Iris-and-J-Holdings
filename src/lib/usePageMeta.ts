@@ -20,6 +20,11 @@ const ROUTE_META: Record<string, { title?: string; description?: string; robots?
     description: 'Secure admin login for Iris & J Holdings.',
     robots: 'noindex,nofollow',
   },
+  '/admin/notary-requests': {
+    title: 'Admin Notary Requests',
+    description: 'Review paid notary booking requests.',
+    robots: 'noindex,nofollow',
+  },
   '/admin/forgot-password': {
     title: 'Forgot Password',
     description: 'Reset the Iris & J Holdings admin password.',
@@ -30,9 +35,24 @@ const ROUTE_META: Record<string, { title?: string; description?: string; robots?
     description: 'Create the first admin user for Iris & J Holdings.',
     robots: 'noindex,nofollow',
   },
+  '/admin/rentals': {
+    title: 'Admin Rentals',
+    description: 'Manage rental listings and availability controls.',
+    robots: 'noindex,nofollow',
+  },
   '/admin/reset-password': {
     title: 'Reset Password',
     description: 'Set a new Iris & J Holdings admin password.',
+    robots: 'noindex,nofollow',
+  },
+  '/admin/site-content': {
+    title: 'Admin Site Content',
+    description: 'Edit public site copy and image references.',
+    robots: 'noindex,nofollow',
+  },
+  '/admin/vacation-bookings': {
+    title: 'Booked Dates',
+    description: 'Review vacation rental bookings and guest details.',
     robots: 'noindex,nofollow',
   },
   '/buy': {

@@ -722,14 +722,113 @@ summary:focus-visible,
   max-width: 1120px;
 }
 
+.admin-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  padding: 0 0 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin-nav a,
+.admin-nav button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 0.2rem;
+  color: var(--color-ink);
+  background: none;
+  border: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-nav button {
+  margin-left: auto;
+}
+
 .admin-auth-shell {
   max-width: 520px;
   margin: 4rem auto;
 }
 
-.admin-dashboard {
+.admin-dashboard,
+.admin-page {
   display: grid;
   gap: 2rem;
+}
+
+.admin-section {
+  padding: 0 0 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin-section-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin-section-head h2,
+.admin-section-head p {
+  margin: 0;
+}
+
+.admin-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.admin-overview-grid div {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.admin-overview-grid span {
+  color: var(--color-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.admin-overview-grid strong {
+  font-family: var(--font-heading);
+  font-size: clamp(1.5rem, 2vw, 2rem);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.admin-route-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-route-list a {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.15rem 0;
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+.admin-route-list a + a {
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.admin-route-list strong {
+  font-size: 1rem;
+}
+
+.admin-route-list span {
+  color: var(--color-ink-soft);
 }
 
 .admin-list {
@@ -758,6 +857,14 @@ summary:focus-visible,
 .admin-list-button {
   width: 100%;
   cursor: pointer;
+}
+
+.admin-record {
+  align-items: start;
+}
+
+.admin-record-copy {
+  min-width: 0;
 }
 
 .admin-inline-actions {
@@ -803,6 +910,18 @@ summary:focus-visible,
 @media (max-width: 480px) {
   .availability-calendar {
     max-width: 100%;
+  }
+
+  .admin-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-nav {
+    align-items: start;
+  }
+
+  .admin-nav button {
+    margin-left: 0;
   }
 }
 
