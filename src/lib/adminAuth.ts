@@ -79,6 +79,35 @@ export type NotaryRequestRecord = {
   created_at: string;
 };
 
+export type AdminInvoiceRecord = {
+  id: number;
+  service_type: 'vacation' | 'notary';
+  recipient_name: string;
+  recipient_email: string;
+  recipient_phone: string;
+  description: string;
+  notes: string;
+  amount_total_cents: number;
+  currency: string;
+  status: string;
+  rental_id: number | null;
+  rental_title?: string;
+  check_in: string | null;
+  check_out: string | null;
+  guest_count: number;
+  guest_list_text: string;
+  appointment_date: string | null;
+  appointment_time: string;
+  city: string;
+  document_type: string;
+  stripe_session_id: string;
+  stripe_checkout_url: string;
+  vacation_booking_id: number | null;
+  notary_request_id: number | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type BuyerLeadRecord = {
   id: number;
   client_name: string;
@@ -182,6 +211,10 @@ export function fetchAdminVacationBookings() {
 
 export function fetchAdminNotaryRequests() {
   return fetchJson<{ requests: NotaryRequestRecord[] }>('/api/admin/notary-requests');
+}
+
+export function fetchAdminInvoices() {
+  return fetchJson<{ invoices: AdminInvoiceRecord[] }>('/api/admin/invoices');
 }
 
 export function fetchAdminBuyerLeads() {

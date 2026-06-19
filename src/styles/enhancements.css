@@ -1818,14 +1818,31 @@ html.a11y-underline a {
   }
 }
 .admin-overview-cards-static > div {
+  min-height: 220px;
   padding: 1rem 1rem 1.1rem;
   background: #fffdf9;
   border: 1px solid #ddd3c7;
   border-radius: 10px;
+  align-content: center !important;
+  justify-items: center;
+  text-align: center;
+}
+
+.admin-overview-cards-static > div span,
+.admin-overview-cards-static > div strong {
+  text-align: center;
+}
+
+.admin-overview-cards-static > div strong {
+  width: 100%;
 }
 
 .admin-home-value-summary {
   margin-top: 1rem;
+}
+
+.admin-home-value-summary .admin-inline-button {
+  margin-top: 0.6rem;
 }
 
 .admin-home-value-section {
@@ -1849,6 +1866,10 @@ html.a11y-underline a {
   align-items: start;
   justify-content: space-between;
   gap: 1.25rem;
+}
+
+.admin-invoice-calendar {
+  max-width: 100%;
 }
 
 .admin-home-usage-card {

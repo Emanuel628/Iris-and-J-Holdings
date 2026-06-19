@@ -240,6 +240,7 @@ function AdminNotaryRequests() {
                           <option value="paid">Paid</option>
                           <option value="reviewed">Reviewed</option>
                           <option value="confirmed">Confirmed</option>
+                          <option value="approved">Approved</option>
                           <option value="cancelled">Cancelled</option>
                         </select>
                       </div>

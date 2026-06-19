@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
+import { ChevronsUpDown } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import {
   fetchAdminDashboard,
@@ -22,6 +23,8 @@ type ReminderItem = {
   href: string;
 };
 
+type ReminderSortOption = 'upcoming' | 'type' | 'name';
+
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -31,6 +34,7 @@ function AdminControlCenter() {
   const [user, setUser] = useState<AdminUser | null | undefined>(undefined);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [reminders, setReminders] = useState<ReminderItem[]>([]);
+  const [sortBy, setSortBy] = useState<ReminderSortOption>('upcoming');
   const [busyKey, setBusyKey] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -103,6 +107,17 @@ function AdminControlCenter() {
     };
   }, []);
 
+  const sortedReminders = useMemo(() => {
+    const items = [...reminders];
+    if (sortBy === 'name') {
+      return items.sort((a, b) => a.title.localeCompare(b.title));
+    }
+    if (sortBy === 'type') {
+      return items.sort((a, b) => a.kind.localeCompare(b.kind) || a.sortDate.localeCompare(b.sortDate));
+    }
+    return items.sort((a, b) => a.sortDate.localeCompare(b.sortDate));
+  }, [reminders, sortBy]);
+
   async function deleteReminder(item: ReminderItem) {
     const confirmation = window.prompt('Type DELETE to permanently remove this item.');
     if (confirmation === null) return;
@@ -167,10 +182,21 @@ function AdminControlCenter() {
           <section className="admin-panel">
             <div className="admin-section-head">
               <h2>Upcoming reminders</h2>
-              <p>{reminders.length} queued</p>
+              <div className="admin-queue-toolbar">
+                <p>{reminders.length} queued</p>
+                <div className="admin-select-shell admin-sort-shell">
+                  <label className="sr-only" htmlFor="control-center-sort">Sort reminders</label>
+                  <select id="control-center-sort" value={sortBy} onChange={(event) => setSortBy(event.target.value as ReminderSortOption)}>
+                    <option value="upcoming">Upcoming first</option>
+                    <option value="type">Type</option>
+                    <option value="name">Name</option>
+                  </select>
+                  <ChevronsUpDown size={16} aria-hidden="true" />
+                </div>
+              </div>
             </div>
             <div className="admin-reminder-list">
-              {reminders.map((item) => (
+              {sortedReminders.map((item) => (
                 <article className="admin-reminder-row" key={`${item.kind}-${item.id}`}>
                   <div className={`admin-reminder-kind admin-reminder-kind-${item.kind}`}>
                     {item.kind === 'vacation' ? 'Vacation' : 'Notary'}
@@ -186,7 +212,7 @@ function AdminControlCenter() {
                   </div>
                 </article>
               ))}
-              {!reminders.length ? <p className="admin-empty-note">No upcoming appointments or stays are in the queue yet.</p> : null}
+              {!sortedReminders.length ? <p className="admin-empty-note">No upcoming appointments or stays are in the queue yet.</p> : null}
             </div>
           </section>
 
@@ -219,6 +245,10 @@ function AdminControlCenter() {
                 <strong>Home value lab</strong>
                 <span>Build the data-backed estimator workflow instead of publishing a fake calculator.</span>
               </a>
+              <a href="/admin/invoices">
+                <strong>Quotes and invoices</strong>
+                <span>Create invoices, send payment links, and approve records into the live queues.</span>
+              </a>
             </div>
           </section>
         </div>
@@ -240,17 +270,17 @@ function AdminControlCenter() {
               <strong>Notary Queue</strong>
               <span>Manage signer records, appointment dates, time changes, notes, and request status.</span>
             </a>
+            <a href="/admin/invoices">
+              <strong>Quotes and Invoices</strong>
+              <span>Create quotes, email payment links, approve reservations, and sync them into the live queues.</span>
+            </a>
             <a href="/admin/media">
               <strong>Media Library</strong>
               <span>Scaffold route for hero images, rental galleries, page-by-page image swaps, and future uploads.</span>
             </a>
-            <a href="/admin/policies">
-              <strong>Policies</strong>
-              <span>Scaffold route for terms, house rules, refund policies, and controlled policy copy.</span>
-            </a>
             <a href="/admin/settings">
               <strong>Settings</strong>
-              <span>Scaffold route for auth, site configuration, booking defaults, and future operational settings.</span>
+              <span>Account security, admin email verification, and password controls.</span>
             </a>
             <a href="/admin/site-content">
               <strong>Site Content</strong>

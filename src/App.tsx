@@ -2,6 +2,7 @@ import Home from './pages/public/Home';
 import AdminConfirmEmailChange from './pages/admin/AdminConfirmEmailChange';
 import AdminControlCenter from './pages/admin/AdminControlCenter';
 import AdminForgotPassword from './pages/admin/AdminForgotPassword';
+import AdminInvoices from './pages/admin/AdminInvoices';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminMediaLibrary from './pages/admin/AdminMediaLibrary';
 import AdminNotaryRequests from './pages/admin/AdminNotaryRequests';
@@ -20,6 +21,7 @@ import MobileNotary from './pages/public/MobileNotary';
 import Resources from './pages/public/Resources';
 import About from './pages/public/About';
 import BookContact from './pages/public/BookContact';
+import InvoiceSuccess from './pages/public/InvoiceSuccess';
 import VacationRentals from './pages/public/VacationRentals';
 import BookingSuccess from './pages/public/BookingSuccess';
 import NotarySuccess from './pages/public/NotarySuccess';
@@ -39,6 +41,7 @@ const routes = {
   '/admin/confirm-email-change': AdminConfirmEmailChange,
   '/admin': AdminControlCenter,
   '/admin/forgot-password': AdminForgotPassword,
+  '/admin/invoices': AdminInvoices,
   '/admin/login': AdminLogin,
   '/admin/media': AdminMediaLibrary,
   '/admin/notary-requests': AdminNotaryRequests,
@@ -58,6 +61,7 @@ const routes = {
   '/about': About,
   '/book': BookContact,
   '/contact': BookContact,
+  '/invoice-success': InvoiceSuccess,
   '/vacation-rentals': VacationRentals,
   '/booking-success': BookingSuccess,
   '/notary-success': NotarySuccess,

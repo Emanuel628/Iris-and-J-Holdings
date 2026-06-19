@@ -45,6 +45,11 @@ const ROUTE_META: Record<string, { title?: string; description?: string; robots?
     description: 'Reset the Iris & J Holdings admin password.',
     robots: 'noindex,nofollow',
   },
+  '/admin/invoices': {
+    title: 'Admin Invoices',
+    description: 'Create and manage invoices for vacation rentals and notary appointments.',
+    robots: 'noindex,nofollow',
+  },
   '/admin/register': {
     title: 'Admin Register',
     description: 'Create the first admin user for Iris & J Holdings.',
@@ -119,6 +124,11 @@ const ROUTE_META: Record<string, { title?: string; description?: string; robots?
     title: 'Book a Consultation or Notary Appointment',
     description:
       'Contact Daiana Castro to schedule a New Jersey buyer consultation, seller strategy call, home value review, mobile notary appointment, or general question.',
+  },
+  '/invoice-success': {
+    title: 'Invoice Payment Received',
+    description: 'Your Iris & J Holdings invoice payment status.',
+    robots: 'noindex,nofollow',
   },
   '/vacation-rentals': {
     title: 'Orlando Vacation Rental Near Theme Parks',

@@ -13,6 +13,8 @@ type Availability = {
 
 type VacationBookingCalendarProps = {
   rentalId?: number;
+  mode?: 'public' | 'admin';
+  className?: string;
 };
 
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -68,7 +70,7 @@ function formatShortDate(value: string) {
   }).format(date);
 }
 
-function VacationBookingCalendar({ rentalId }: VacationBookingCalendarProps) {
+function VacationBookingCalendar({ rentalId, mode = 'public', className = '' }: VacationBookingCalendarProps) {
   const [data, setData] = useState<Availability | null>(null);
   const [loadError, setLoadError] = useState(false);
   const today = todayIso();
@@ -157,7 +159,7 @@ function VacationBookingCalendar({ rentalId }: VacationBookingCalendarProps) {
   const atCurrentMonth = view.year === now.getFullYear() && view.month === now.getMonth();
 
   return (
-    <div className="availability-calendar">
+    <div className={`availability-calendar ${className}`.trim()}>
       <div className="cal-bar">
         <button type="button" className="cal-arrow" onClick={() => goToMonth(-1)} disabled={atCurrentMonth} aria-label="Previous month">
           <ChevronLeft size={18} />
@@ -243,7 +245,11 @@ function VacationBookingCalendar({ rentalId }: VacationBookingCalendarProps) {
                     <dd>{formatMoney(total, currency)}</dd>
                   </div>
                 </dl>
-                {data.bookingEnabled ? (
+                {mode === 'admin' ? (
+                  <p className="cal-note">
+                    This calendar is synced to the rental availability feed used on the public vacation-rentals page.
+                  </p>
+                ) : data.bookingEnabled ? (
                   <>
                     <p className="cal-note">
                       Continue to the guest intake page to enter traveler details, review the house rules, and complete secure checkout.

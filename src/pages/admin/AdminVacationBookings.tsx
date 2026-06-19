@@ -235,6 +235,7 @@ function AdminVacationBookings() {
                         <select id={`booking-status-${booking.id}`} value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}>
                           <option value="paid">Paid</option>
                           <option value="reviewed">Reviewed</option>
+                          <option value="approved">Approved</option>
                           <option value="cancel-requested">Cancel requested</option>
                           <option value="cancelled">Cancelled</option>
                         </select>

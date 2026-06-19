@@ -90,6 +90,7 @@ function AdminHomeValueLab() {
   const [propertyTypeCustom, setPropertyTypeCustom] = useState(false);
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [statusMessage, setStatusMessage] = useState('');
   const [result, setResult] = useState<EstimateResult | null>(null);
   const [rentcastConfigured, setRentcastConfigured] = useState(false);
   const [usage, setUsage] = useState<AdminSettingsPayload['rentcastUsage'] | null>(null);
@@ -97,6 +98,7 @@ function AdminHomeValueLab() {
   const [settingsBusy, setSettingsBusy] = useState(false);
   const [settingsStatusMessage, setSettingsStatusMessage] = useState('');
   const [settingsErrorMessage, setSettingsErrorMessage] = useState('');
+  const [emailingResults, setEmailingResults] = useState(false);
 
   useEffect(() => {
     Promise.all([fetchAdminMe(), fetchAdminSettings()])
@@ -170,6 +172,33 @@ function AdminHomeValueLab() {
       setSettingsErrorMessage(error instanceof Error ? error.message : 'Could not save the estimator defaults.');
     } finally {
       setSettingsBusy(false);
+    }
+  }
+
+  async function emailResults() {
+    if (!result) return;
+    const recipientEmail = window.prompt('Email comparable sales results to:', 'listingsbyd@gmail.com');
+    if (!recipientEmail) return;
+    setEmailingResults(true);
+    setStatusMessage('');
+    setErrorMessage('');
+    try {
+      const res = await fetch('/api/admin/home-value-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          recipientEmail,
+          subjectAddress: subject?.formattedAddress || `${form.address}, ${form.city}, ${form.state} ${form.zipCode}`.trim(),
+          estimate: result,
+        }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload.message || 'Could not email the comparable sales.');
+      setStatusMessage(`Comparable sales emailed to ${recipientEmail}.`);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Could not email the comparable sales.');
+    } finally {
+      setEmailingResults(false);
     }
   }
 
@@ -252,6 +281,7 @@ function AdminHomeValueLab() {
                 {busy ? 'Running estimate...' : 'Run estimate'}
               </button>
               {!rentcastConfigured ? <p className="form-note">Add `RENTCAST_API_KEY` to enable live estimates.</p> : null}
+              {statusMessage ? <p className="form-status form-status-success">{statusMessage}</p> : null}
               {errorMessage ? <p className="form-status form-status-error" role="alert">{errorMessage}</p> : null}
             </div>
           </section>
@@ -281,6 +311,9 @@ function AdminHomeValueLab() {
                   <div>
                     <strong>Comparable sales returned</strong>
                     <span>{comparables.length}</span>
+                    <button className="button-secondary admin-inline-button" type="button" onClick={emailResults} disabled={emailingResults}>
+                      {emailingResults ? 'Emailing...' : 'Email results'}
+                    </button>
                   </div>
                   <div>
                     <strong>Subject address</strong>

@@ -12,6 +12,7 @@ const adminLinks = [
   { href: '/admin/vacation-bookings', label: 'Vacation Queue', notificationKey: 'vacation' as const },
   { href: '/admin/notary-requests', label: 'Notary Queue', notificationKey: 'notary' as const },
   { href: '/admin/realtor-tools', label: 'Realtor Tools' },
+  { href: '/admin/invoices', label: 'Invoices' },
   { href: '/admin/home-value-lab', label: 'Home Value Lab' },
   { href: '/admin/site-content', label: 'Site Content' },
   { href: '/admin/media', label: 'Media' },

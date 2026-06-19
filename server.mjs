@@ -80,6 +80,8 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
       if (session.metadata?.type === 'notary') {
         await persistNotaryRequest(session);
         await notifyNotaryBookingV2(session);
+      } else if (session.metadata?.type === 'invoice') {
+        await markInvoicePaidFromSession(session);
       } else {
         bookedCache = { at: 0, ranges: [] }; // vacation booking â€” refresh website/Airbnb availability merge
         await persistVacationBooking(session);
@@ -454,6 +456,38 @@ async function ensureAdminTables() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS admin_invoices (
+      id SERIAL PRIMARY KEY,
+      service_type TEXT NOT NULL,
+      recipient_name TEXT NOT NULL DEFAULT '',
+      recipient_email TEXT NOT NULL DEFAULT '',
+      recipient_phone TEXT NOT NULL DEFAULT '',
+      description TEXT NOT NULL DEFAULT '',
+      notes TEXT NOT NULL DEFAULT '',
+      amount_total_cents INTEGER NOT NULL DEFAULT 0,
+      currency TEXT NOT NULL DEFAULT 'usd',
+      status TEXT NOT NULL DEFAULT 'draft',
+      rental_id INTEGER REFERENCES rentals(id) ON DELETE SET NULL,
+      check_in DATE,
+      check_out DATE,
+      guest_count INTEGER NOT NULL DEFAULT 1,
+      guest_list_text TEXT NOT NULL DEFAULT '',
+      appointment_date DATE,
+      appointment_time TEXT NOT NULL DEFAULT '',
+      city TEXT NOT NULL DEFAULT '',
+      document_type TEXT NOT NULL DEFAULT '',
+      stripe_session_id TEXT UNIQUE,
+      stripe_checkout_url TEXT NOT NULL DEFAULT '',
+      vacation_booking_id INTEGER REFERENCES vacation_bookings(id) ON DELETE SET NULL,
+      notary_request_id INTEGER REFERENCES notary_requests(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await pgPool.query(`ALTER TABLE admin_invoices ALTER COLUMN stripe_session_id DROP NOT NULL;`).catch(() => undefined);
+  await pgPool.query(`ALTER TABLE admin_invoices ALTER COLUMN stripe_session_id DROP DEFAULT;`).catch(() => undefined);
+  await pgPool.query(`UPDATE admin_invoices SET stripe_session_id = NULL WHERE stripe_session_id = '';`).catch(() => undefined);
   await pgPool.query(`
     CREATE TABLE IF NOT EXISTS buyer_leads (
       id SERIAL PRIMARY KEY,
@@ -1090,6 +1124,190 @@ async function persistNotaryRequest(session) {
   );
 }
 
+async function markInvoicePaidFromSession(session) {
+  if (!pgPool) return;
+  const invoiceId = Number(session.metadata?.invoiceId || 0);
+  if (!invoiceId) return;
+  await pgPool.query(
+    `UPDATE admin_invoices
+     SET status = CASE WHEN status = 'approved' THEN 'approved' ELSE 'paid' END,
+         stripe_session_id = $2,
+         updated_at = NOW()
+     WHERE id = $1`,
+    [invoiceId, session.id],
+  );
+}
+
+async function createInvoiceStripeSession(req, invoiceRecord) {
+  if (!stripe) {
+    throw new Error('Stripe is not configured.');
+  }
+  const origin = buildOrigin(req);
+  const serviceLabel = invoiceRecord.service_type === 'vacation' ? 'Vacation rental' : 'Notary appointment';
+  const detailLabel = invoiceRecord.service_type === 'vacation'
+    ? `${invoiceRecord.check_in || ''} to ${invoiceRecord.check_out || ''}`
+    : `${invoiceRecord.appointment_date || ''} at ${invoiceRecord.appointment_time || ''}`;
+
+  const session = await stripe.checkout.sessions.create({
+    mode: 'payment',
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency: invoiceRecord.currency,
+          unit_amount: invoiceRecord.amount_total_cents,
+          product_data: {
+            name: `${serviceLabel} invoice`,
+            description: detailLabel || invoiceRecord.description || serviceLabel,
+          },
+        },
+      },
+    ],
+    success_url: `${origin}/invoice-success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: invoiceRecord.service_type === 'vacation' ? `${origin}/vacation-rentals` : `${origin}/mobile-notary`,
+    customer_email: invoiceRecord.recipient_email,
+    payment_intent_data: { receipt_email: invoiceRecord.recipient_email || undefined },
+    metadata: {
+      type: 'invoice',
+      invoiceId: String(invoiceRecord.id),
+      serviceType: metadataValue(invoiceRecord.service_type),
+      recipientName: metadataValue(invoiceRecord.recipient_name),
+      recipientEmail: metadataValue(invoiceRecord.recipient_email),
+      recipientPhone: metadataValue(invoiceRecord.recipient_phone),
+      description: metadataValue(invoiceRecord.description),
+      notes: metadataValue(invoiceRecord.notes),
+      rentalId: String(invoiceRecord.rental_id || ''),
+      rentalTitle: metadataValue(invoiceRecord.rental_title || ''),
+      checkIn: metadataValue(invoiceRecord.check_in || ''),
+      checkOut: metadataValue(invoiceRecord.check_out || ''),
+      guestCount: String(invoiceRecord.guest_count || 1),
+      guestList: metadataValue(invoiceRecord.guest_list_text || ''),
+      appointmentDate: metadataValue(invoiceRecord.appointment_date || ''),
+      appointmentTime: metadataValue(invoiceRecord.appointment_time || ''),
+      city: metadataValue(invoiceRecord.city || ''),
+      documentType: metadataValue(invoiceRecord.document_type || ''),
+      origin: metadataValue(origin),
+    },
+  });
+
+  return session;
+}
+
+async function approveInvoice(invoiceId) {
+  if (!pgPool) throw new Error('DATABASE_URL is not configured.');
+  const result = await pgPool.query(
+    `SELECT i.*, r.title AS rental_title
+     FROM admin_invoices i
+     LEFT JOIN rentals r ON r.id = i.rental_id
+     WHERE i.id = $1
+     LIMIT 1`,
+    [invoiceId],
+  );
+  const invoice = result.rows[0];
+  if (!invoice) {
+    throw new Error('Invoice not found.');
+  }
+  if (invoice.status === 'approved') {
+    return invoice;
+  }
+  if (invoice.status === 'cancelled') {
+    throw new Error('Cancelled invoices cannot be approved.');
+  }
+  if (invoice.service_type === 'vacation') {
+    if (!invoice.check_in || !invoice.check_out || !invoice.recipient_email || !invoice.recipient_name) {
+      throw new Error('Vacation invoice is missing required booking details.');
+    }
+    const upsert = await pgPool.query(
+      `INSERT INTO vacation_bookings (
+        stripe_session_id, rental_id, guest_name, guest_email, guest_phone, guest_count,
+        guest_list_text, check_in, check_out, amount_total_cents, currency, status
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8::date, $9::date, $10, $11, 'approved')
+      ON CONFLICT (stripe_session_id) DO UPDATE SET
+        rental_id = EXCLUDED.rental_id,
+        guest_name = EXCLUDED.guest_name,
+        guest_email = EXCLUDED.guest_email,
+        guest_phone = EXCLUDED.guest_phone,
+        guest_count = EXCLUDED.guest_count,
+        guest_list_text = EXCLUDED.guest_list_text,
+        check_in = EXCLUDED.check_in,
+        check_out = EXCLUDED.check_out,
+        amount_total_cents = EXCLUDED.amount_total_cents,
+        currency = EXCLUDED.currency,
+        status = 'approved'
+      RETURNING id`,
+      [
+        invoice.stripe_session_id || `invoice-vacation-${invoice.id}`,
+        invoice.rental_id || null,
+        invoice.recipient_name,
+        invoice.recipient_email,
+        invoice.recipient_phone || '',
+        Number(invoice.guest_count || 1),
+        invoice.guest_list_text || '',
+        invoice.check_in,
+        invoice.check_out,
+        Number(invoice.amount_total_cents || 0),
+        invoice.currency || 'usd',
+      ],
+    );
+    await pgPool.query(
+      `UPDATE admin_invoices
+       SET status = 'approved',
+           vacation_booking_id = $2,
+           updated_at = NOW()
+       WHERE id = $1`,
+      [invoice.id, upsert.rows[0].id],
+    );
+  } else {
+    if (!invoice.appointment_date || !invoice.appointment_time || !invoice.recipient_email || !invoice.recipient_name) {
+      throw new Error('Notary invoice is missing required appointment details.');
+    }
+    const upsert = await pgPool.query(
+      `INSERT INTO notary_requests (
+        stripe_session_id, full_name, email, phone, city, appointment_date, appointment_time,
+        document_type, notes, amount_total_cents, currency, status
+      )
+      VALUES ($1, $2, $3, $4, $5, $6::date, $7, $8, $9, $10, $11, 'approved')
+      ON CONFLICT (stripe_session_id) DO UPDATE SET
+        full_name = EXCLUDED.full_name,
+        email = EXCLUDED.email,
+        phone = EXCLUDED.phone,
+        city = EXCLUDED.city,
+        appointment_date = EXCLUDED.appointment_date,
+        appointment_time = EXCLUDED.appointment_time,
+        document_type = EXCLUDED.document_type,
+        notes = EXCLUDED.notes,
+        amount_total_cents = EXCLUDED.amount_total_cents,
+        currency = EXCLUDED.currency,
+        status = 'approved'
+      RETURNING id`,
+      [
+        invoice.stripe_session_id || `invoice-notary-${invoice.id}`,
+        invoice.recipient_name,
+        invoice.recipient_email,
+        invoice.recipient_phone || '',
+        invoice.city || '',
+        invoice.appointment_date,
+        invoice.appointment_time || '',
+        invoice.document_type || '',
+        invoice.notes || '',
+        Number(invoice.amount_total_cents || 0),
+        invoice.currency || 'usd',
+      ],
+    );
+    await pgPool.query(
+      `UPDATE admin_invoices
+       SET status = 'approved',
+           notary_request_id = $2,
+           updated_at = NOW()
+       WHERE id = $1`,
+      [invoice.id, upsert.rows[0].id],
+    );
+  }
+  bookedCache = { at: 0, ranges: [] };
+  return invoice;
+}
+
 let checkoutSyncCache = { at: 0 };
 const CHECKOUT_SYNC_TTL_MS = 60 * 1000;
 
@@ -1105,6 +1323,8 @@ async function syncRecentPaidCheckoutSessions(force = false) {
     if (session.payment_status !== 'paid') continue;
     if (session.metadata?.type === 'notary') {
       await persistNotaryRequest(session);
+    } else if (session.metadata?.type === 'invoice') {
+      await markInvoicePaidFromSession(session);
     } else if (session.metadata?.type === 'vacation') {
       await persistVacationBooking(session);
     }
@@ -1758,7 +1978,7 @@ app.post('/api/admin/vacation-bookings/status', async (req, res) => {
     if (!admin) return;
     const id = Number(req.body?.id || 0);
     const status = clean(req.body?.status).toLowerCase();
-    if (!id || !['paid', 'reviewed', 'cancel-requested', 'cancelled'].includes(status)) {
+    if (!id || !['paid', 'reviewed', 'cancel-requested', 'approved', 'cancelled'].includes(status)) {
       return res.status(400).json({ message: 'Valid booking id and status are required.' });
     }
     await pgPool.query('UPDATE vacation_bookings SET status = $2 WHERE id = $1', [id, status]);
@@ -1785,7 +2005,7 @@ app.post('/api/admin/vacation-bookings/save', async (req, res) => {
     if (!id || !guestName || !guestEmail || !isIsoDate(checkIn) || !isIsoDate(checkOut) || checkOut < checkIn) {
       return res.status(400).json({ message: 'Valid booking details are required.' });
     }
-    if (!['paid', 'reviewed', 'cancel-requested', 'cancelled'].includes(status)) {
+    if (!['paid', 'reviewed', 'cancel-requested', 'approved', 'cancelled'].includes(status)) {
       return res.status(400).json({ message: 'Valid booking status is required.' });
     }
     await pgPool.query(
@@ -1849,7 +2069,7 @@ app.post('/api/admin/notary-requests/status', async (req, res) => {
     if (!admin) return;
     const id = Number(req.body?.id || 0);
     const status = clean(req.body?.status).toLowerCase();
-    if (!id || !['paid', 'reviewed', 'confirmed', 'cancelled'].includes(status)) {
+    if (!id || !['paid', 'reviewed', 'confirmed', 'approved', 'cancelled'].includes(status)) {
       return res.status(400).json({ message: 'Valid request id and status are required.' });
     }
     await pgPool.query('UPDATE notary_requests SET status = $2 WHERE id = $1', [id, status]);
@@ -1877,7 +2097,7 @@ app.post('/api/admin/notary-requests/save', async (req, res) => {
     if (!id || !fullName || !email || !isIsoDate(appointmentDate) || !appointmentTime) {
       return res.status(400).json({ message: 'Valid request details are required.' });
     }
-    if (!['paid', 'reviewed', 'confirmed', 'cancelled'].includes(status)) {
+    if (!['paid', 'reviewed', 'confirmed', 'approved', 'cancelled'].includes(status)) {
       return res.status(400).json({ message: 'Valid request status is required.' });
     }
     await pgPool.query(
@@ -2097,6 +2317,268 @@ app.post('/api/admin/seller-leads/delete', async (req, res) => {
   } catch (error) {
     console.error('Admin seller lead delete failed:', error);
     return res.status(500).json({ message: 'Could not delete seller record.' });
+  }
+});
+
+app.get('/api/admin/invoices', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    await syncRecentPaidCheckoutSessions();
+    const result = await pgPool.query(
+      `SELECT i.*, r.title AS rental_title
+       FROM admin_invoices i
+       LEFT JOIN rentals r ON r.id = i.rental_id
+       ORDER BY i.created_at DESC`,
+    );
+    return res.json({ invoices: result.rows });
+  } catch (error) {
+    console.error('Admin invoices load failed:', error);
+    return res.status(500).json({ message: 'Could not load invoices.' });
+  }
+});
+
+app.post('/api/admin/invoices/save', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const id = Number(req.body?.id || 0);
+    const serviceType = clean(req.body?.serviceType).toLowerCase();
+    const recipientName = clean(req.body?.recipientName);
+    const recipientEmail = clean(req.body?.recipientEmail);
+    const recipientPhone = clean(req.body?.recipientPhone);
+    const description = clean(req.body?.description);
+    const notes = clean(req.body?.notes);
+    const amountTotalCents = Number(req.body?.amountTotalCents || 0);
+    const rentalId = Number(req.body?.rentalId || 0) || null;
+    const checkIn = clean(req.body?.checkIn);
+    const checkOut = clean(req.body?.checkOut);
+    const guestCount = Number(req.body?.guestCount || 1);
+    const guestListText = clean(req.body?.guestListText);
+    const appointmentDate = clean(req.body?.appointmentDate);
+    const appointmentTime = clean(req.body?.appointmentTime);
+    const city = clean(req.body?.city);
+    const documentType = clean(req.body?.documentType);
+
+    if (!['vacation', 'notary'].includes(serviceType)) {
+      return res.status(400).json({ message: 'Valid service type is required.' });
+    }
+    if (!recipientName || !recipientEmail || amountTotalCents <= 0) {
+      return res.status(400).json({ message: 'Recipient name, email, and invoice amount are required.' });
+    }
+    if (serviceType === 'vacation' && (!isIsoDate(checkIn) || !isIsoDate(checkOut) || checkOut < checkIn)) {
+      return res.status(400).json({ message: 'Vacation invoices require valid check-in and check-out dates.' });
+    }
+    if (serviceType === 'notary' && (!isIsoDate(appointmentDate) || !appointmentTime)) {
+      return res.status(400).json({ message: 'Notary invoices require a valid date and time.' });
+    }
+
+    const result = await pgPool.query(
+      `INSERT INTO admin_invoices (
+        id, service_type, recipient_name, recipient_email, recipient_phone, description, notes,
+        amount_total_cents, currency, rental_id, check_in, check_out, guest_count, guest_list_text,
+        appointment_date, appointment_time, city, document_type, updated_at
+      )
+      VALUES (
+        NULLIF($1, 0), $2, $3, $4, $5, $6, $7,
+        $8, $9, $10, $11::date, $12::date, $13, $14,
+        $15::date, $16, $17, $18, NOW()
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        service_type = EXCLUDED.service_type,
+        recipient_name = EXCLUDED.recipient_name,
+        recipient_email = EXCLUDED.recipient_email,
+        recipient_phone = EXCLUDED.recipient_phone,
+        description = EXCLUDED.description,
+        notes = EXCLUDED.notes,
+        amount_total_cents = EXCLUDED.amount_total_cents,
+        rental_id = EXCLUDED.rental_id,
+        check_in = EXCLUDED.check_in,
+        check_out = EXCLUDED.check_out,
+        guest_count = EXCLUDED.guest_count,
+        guest_list_text = EXCLUDED.guest_list_text,
+        appointment_date = EXCLUDED.appointment_date,
+        appointment_time = EXCLUDED.appointment_time,
+        city = EXCLUDED.city,
+        document_type = EXCLUDED.document_type,
+        updated_at = NOW()
+      RETURNING id`,
+      [
+        id,
+        serviceType,
+        recipientName,
+        recipientEmail,
+        recipientPhone,
+        description,
+        notes,
+        amountTotalCents,
+        booking.currency,
+        rentalId,
+        checkIn || null,
+        checkOut || null,
+        guestCount,
+        guestListText,
+        appointmentDate || null,
+        appointmentTime,
+        city,
+        documentType,
+      ],
+    );
+    return res.json({ ok: true, id: result.rows[0].id });
+  } catch (error) {
+    console.error('Admin invoice save failed:', error);
+    return res.status(500).json({ message: 'Could not save invoice.' });
+  }
+});
+
+app.post('/api/admin/invoices/send', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const id = Number(req.body?.id || 0);
+    if (!id) return res.status(400).json({ message: 'Invoice id is required.' });
+
+    const result = await pgPool.query(
+      `SELECT i.*, r.title AS rental_title
+       FROM admin_invoices i
+       LEFT JOIN rentals r ON r.id = i.rental_id
+       WHERE i.id = $1
+       LIMIT 1`,
+      [id],
+    );
+    const invoice = result.rows[0];
+    if (!invoice) return res.status(404).json({ message: 'Invoice not found.' });
+
+    const session = await createInvoiceStripeSession(req, invoice);
+    await pgPool.query(
+      `UPDATE admin_invoices
+       SET stripe_session_id = $2,
+           stripe_checkout_url = $3,
+           status = CASE WHEN status = 'approved' THEN 'approved' ELSE 'sent' END,
+           updated_at = NOW()
+       WHERE id = $1`,
+      [id, session.id, session.url || ''],
+    );
+
+    await sendResendEmail({
+      to: invoice.recipient_email,
+      replyTo: contactTo,
+      subject: `Invoice from Iris & J Holdings - ${invoice.service_type === 'vacation' ? 'Vacation rental' : 'Notary appointment'}`,
+      text:
+        `Hi ${invoice.recipient_name || 'there'},\n\n` +
+        `${invoice.description || 'An invoice is ready for you.'}\n\n` +
+        `Amount due: ${money(invoice.amount_total_cents || 0, invoice.currency || 'usd')}\n` +
+        `${session.url ? `Payment link: ${session.url}\n\n` : '\n'}` +
+        `Reply to this email with any questions.\n\n` +
+        `- Iris & J Holdings`,
+      html:
+        `<p>Hi ${escapeHtml(invoice.recipient_name || 'there')},</p>` +
+        `<p>${escapeHtml(invoice.description || 'An invoice is ready for you.')}</p>` +
+        `<p><strong>Amount due:</strong> ${escapeHtml(money(invoice.amount_total_cents || 0, invoice.currency || 'usd'))}</p>` +
+        `${session.url ? `<p><a href="${escapeHtml(session.url)}">Pay this invoice</a></p>` : ''}` +
+        `<p>Reply to this email with any questions.</p>` +
+        `<p>- Iris &amp; J Holdings</p>`,
+    });
+
+    return res.json({ ok: true, checkoutUrl: session.url || '' });
+  } catch (error) {
+    console.error('Admin invoice send failed:', error);
+    return res.status(500).json({ message: 'Could not send invoice.' });
+  }
+});
+
+app.post('/api/admin/invoices/status', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const id = Number(req.body?.id || 0);
+    const status = clean(req.body?.status).toLowerCase();
+    if (!id || !['draft', 'sent', 'paid', 'approved', 'cancelled'].includes(status)) {
+      return res.status(400).json({ message: 'Valid invoice id and status are required.' });
+    }
+    if (status === 'approved') {
+      await approveInvoice(id);
+    } else {
+      await pgPool.query('UPDATE admin_invoices SET status = $2, updated_at = NOW() WHERE id = $1', [id, status]);
+      if (status === 'cancelled') {
+        const invoiceResult = await pgPool.query('SELECT vacation_booking_id, notary_request_id FROM admin_invoices WHERE id = $1', [id]);
+        const invoice = invoiceResult.rows[0];
+        if (invoice?.vacation_booking_id) {
+          await pgPool.query('UPDATE vacation_bookings SET status = $2 WHERE id = $1', [invoice.vacation_booking_id, 'cancelled']);
+        }
+        if (invoice?.notary_request_id) {
+          await pgPool.query('UPDATE notary_requests SET status = $2 WHERE id = $1', [invoice.notary_request_id, 'cancelled']);
+        }
+      }
+    }
+    bookedCache = { at: 0, ranges: [] };
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin invoice status update failed:', error);
+    return res.status(500).json({ message: error instanceof Error ? error.message : 'Could not update invoice status.' });
+  }
+});
+
+app.post('/api/admin/invoices/delete', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const id = Number(req.body?.id || 0);
+    const confirmation = clean(req.body?.confirmation);
+    if (!id || confirmation !== 'DELETE') {
+      return res.status(400).json({ message: 'Invoice id and DELETE confirmation are required.' });
+    }
+    await pgPool.query('DELETE FROM admin_invoices WHERE id = $1', [id]);
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin invoice delete failed:', error);
+    return res.status(500).json({ message: 'Could not delete invoice.' });
+  }
+});
+
+app.post('/api/admin/home-value-email', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const recipientEmail = clean(req.body?.recipientEmail || contactTo);
+    const subjectAddress = clean(req.body?.subjectAddress || 'Property');
+    const estimate = req.body?.estimate || {};
+    const comparables = Array.isArray(estimate.comparables) ? estimate.comparables : [];
+
+    if (!recipientEmail) {
+      return res.status(400).json({ message: 'Recipient email is required.' });
+    }
+
+    const compLines = comparables.length
+      ? comparables.map((comp, index) =>
+          `${index + 1}. ${clean(comp.formattedAddress || 'Unknown address')} | ${clean(comp.propertyType || 'Unknown type')} | ${clean(String(comp.bedrooms || 0))} bd | ${clean(String(comp.bathrooms || 0))} ba | ${clean(String(comp.squareFootage || 0))} sq ft | ${money(Number(comp.price || 0) * 100, 'usd')}`,
+        ).join('\n')
+      : 'No comparable sales were returned.';
+
+    await sendResendEmail({
+      to: recipientEmail,
+      replyTo: contactTo,
+      subject: `Home value comparables - ${subjectAddress}`,
+      text:
+        `Comparable sales for ${subjectAddress}\n\n` +
+        `Estimated value: ${money(Number(estimate.price || 0) * 100, 'usd')}\n` +
+        `Low range: ${money(Number(estimate.priceRangeLow || 0) * 100, 'usd')}\n` +
+        `High range: ${money(Number(estimate.priceRangeHigh || 0) * 100, 'usd')}\n\n` +
+        `${compLines}\n\n` +
+        `Powered by RentCast.`,
+      html:
+        `<p><strong>Comparable sales for ${escapeHtml(subjectAddress)}</strong></p>` +
+        `<p><strong>Estimated value:</strong> ${escapeHtml(money(Number(estimate.price || 0) * 100, 'usd'))}<br>` +
+        `<strong>Low range:</strong> ${escapeHtml(money(Number(estimate.priceRangeLow || 0) * 100, 'usd'))}<br>` +
+        `<strong>High range:</strong> ${escapeHtml(money(Number(estimate.priceRangeHigh || 0) * 100, 'usd'))}</p>` +
+        `<p>${escapeHtml(compLines).replace(/\n/g, '<br>')}</p>` +
+        `<p>Powered by RentCast.</p>`,
+    });
+
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin home value email failed:', error);
+    return res.status(500).json({ message: 'Could not send the comparable sales email.' });
   }
 });
 
