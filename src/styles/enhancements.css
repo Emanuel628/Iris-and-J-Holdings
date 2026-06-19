@@ -1315,6 +1315,17 @@ summary:focus-visible,
   letter-spacing: 0.08em;
 }
 
+.admin-image-caption-field {
+  margin-top: 0.75rem;
+}
+
+.vacation-photo-card figcaption {
+  padding: 0.75rem 0.9rem 0.95rem;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: #5d6674;
+}
+
 .admin-record {
   align-items: start;
 }

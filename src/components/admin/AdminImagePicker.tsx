@@ -4,6 +4,8 @@ type AdminImagePickerProps = {
   label: string;
   images: string[];
   onChange: (images: string[]) => void;
+  captions?: string[];
+  onCaptionsChange?: (captions: string[]) => void;
   helperText?: string;
 };
 
@@ -11,7 +13,7 @@ function emptySlots(images: string[]) {
   return Math.max(4, images.length + 1);
 }
 
-function AdminImagePicker({ label, images, onChange, helperText }: AdminImagePickerProps) {
+function AdminImagePicker({ label, images, onChange, captions = [], onCaptionsChange, helperText }: AdminImagePickerProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const inputId = useId();
   const [slotCount, setSlotCount] = useState(emptySlots(images));
@@ -43,9 +45,17 @@ function AdminImagePicker({ label, images, onChange, helperText }: AdminImagePic
         next[targetIndex] = filtered[0];
       }
       onChange(next);
+      if (onCaptionsChange) {
+        const nextCaptions = [...captions];
+        nextCaptions[targetIndex] = nextCaptions[targetIndex] || '';
+        onCaptionsChange(nextCaptions);
+      }
       setTargetIndex(null);
     } else {
       onChange([...images, ...filtered]);
+      if (onCaptionsChange) {
+        onCaptionsChange([...captions, ...filtered.map(() => '')]);
+      }
     }
     setSlotCount((current) => Math.max(current, images.length + filtered.length, 4));
     if (inputRef.current) {
@@ -87,13 +97,35 @@ function AdminImagePicker({ label, images, onChange, helperText }: AdminImagePic
                 {image ? <img src={image} alt="" /> : <span>Add Pic</span>}
               </button>
               {image ? (
-                <button
-                  type="button"
-                  className="admin-image-remove"
-                  onClick={() => onChange(images.filter((_, imageIndex) => imageIndex !== index))}
-                >
-                  Remove Pic
-                </button>
+                <>
+                  {onCaptionsChange ? (
+                    <div className="input-group admin-image-caption-field">
+                      <label htmlFor={`${inputId}-caption-${index}`}>Caption</label>
+                      <input
+                        id={`${inputId}-caption-${index}`}
+                        value={captions[index] || ''}
+                        onChange={(event) => {
+                          const nextCaptions = [...captions];
+                          nextCaptions[index] = event.target.value;
+                          onCaptionsChange(nextCaptions);
+                        }}
+                        placeholder="Optional caption"
+                      />
+                    </div>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="admin-image-remove"
+                    onClick={() => {
+                      onChange(images.filter((_, imageIndex) => imageIndex !== index));
+                      if (onCaptionsChange) {
+                        onCaptionsChange(captions.filter((_, captionIndex) => captionIndex !== index));
+                      }
+                    }}
+                  >
+                    Remove Pic
+                  </button>
+                </>
               ) : null}
             </div>
           );

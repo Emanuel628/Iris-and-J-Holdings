@@ -19,7 +19,9 @@ type PublicRental = {
   cleaning_fee_cents: number;
   max_guests: number;
   hero_image_url: string;
+  hero_image_captions: string[];
   gallery_image_urls: string[];
+  gallery_image_captions: string[];
   amenities: string[];
 };
 
@@ -104,7 +106,13 @@ function VacationRentals() {
     [selectedRental],
   );
   const rentalPhotos = useMemo(() => {
-    const images = [selectedRental?.hero_image_url, ...(selectedRental?.gallery_image_urls || [])].filter(Boolean) as string[];
+    const images = [
+      { url: selectedRental?.hero_image_url || '', caption: selectedRental?.hero_image_captions?.[0] || '' },
+      ...(selectedRental?.gallery_image_urls || []).map((url, index) => ({
+        url,
+        caption: selectedRental?.gallery_image_captions?.[index] || '',
+      })),
+    ].filter((entry) => entry.url);
     return images.length ? images : fallbackPhotoSlots;
   }, [selectedRental]);
 
@@ -227,12 +235,15 @@ function VacationRentals() {
           </div>
           <div className="vacation-photo-grid">
             {rentalPhotos.map((item, index) => (
-              isImageValue(String(item)) ? (
-                <div className="vacation-photo-card has-photo" key={`photo-${index}`}>
-                  <img src={String(item)} alt={selectedRental ? `${selectedRental.title} photo ${index + 1}` : `Vacation rental photo ${index + 1}`} />
-                </div>
+              typeof item === 'string' ? (
+                <div className="vacation-photo-card" key={`placeholder-${index}`}>{item}</div>
+              ) : isImageValue(item.url) ? (
+                <figure className="vacation-photo-card has-photo" key={`photo-${index}`}>
+                  <img src={item.url} alt={item.caption || (selectedRental ? `${selectedRental.title} photo ${index + 1}` : `Vacation rental photo ${index + 1}`)} />
+                  {item.caption ? <figcaption>{item.caption}</figcaption> : null}
+                </figure>
               ) : (
-                <div className="vacation-photo-card" key={`placeholder-${index}`}>{String(item)}</div>
+                <div className="vacation-photo-card" key={`placeholder-${index}`}>{item.url}</div>
               )
             ))}
           </div>

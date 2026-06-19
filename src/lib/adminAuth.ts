@@ -21,7 +21,9 @@ export type RentalRecord = {
   cleaning_fee_cents: number;
   max_guests: number;
   hero_image_url: string;
+  hero_image_captions: string[];
   gallery_image_urls: string[];
+  gallery_image_captions: string[];
   amenities: string[];
   is_active: boolean;
   updated_at: string;

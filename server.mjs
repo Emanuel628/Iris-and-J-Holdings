@@ -95,7 +95,7 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
   return res.json({ received: true });
 });
 
-app.use(express.json({ limit: '100kb' }));
+app.use(express.json({ limit: '25mb' }));
 
 // Simple in-memory rate limit for the public contact endpoint.
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
@@ -393,7 +393,9 @@ async function ensureAdminTables() {
       cleaning_fee_cents INTEGER NOT NULL DEFAULT 0,
       max_guests INTEGER NOT NULL DEFAULT 10,
       hero_image_url TEXT NOT NULL DEFAULT '',
+      hero_image_captions JSONB NOT NULL DEFAULT '[]'::jsonb,
       gallery_image_urls JSONB NOT NULL DEFAULT '[]'::jsonb,
+      gallery_image_captions JSONB NOT NULL DEFAULT '[]'::jsonb,
       amenities JSONB NOT NULL DEFAULT '[]'::jsonb,
       is_active BOOLEAN NOT NULL DEFAULT TRUE,
       deleted_at TIMESTAMPTZ,
@@ -402,6 +404,8 @@ async function ensureAdminTables() {
     );
   `);
   await pgPool.query(`ALTER TABLE rentals ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;`);
+  await pgPool.query(`ALTER TABLE rentals ADD COLUMN IF NOT EXISTS hero_image_captions JSONB NOT NULL DEFAULT '[]'::jsonb;`);
+  await pgPool.query(`ALTER TABLE rentals ADD COLUMN IF NOT EXISTS gallery_image_captions JSONB NOT NULL DEFAULT '[]'::jsonb;`);
   await pgPool.query(`
     CREATE TABLE IF NOT EXISTS blocked_dates (
       id SERIAL PRIMARY KEY,
@@ -1730,7 +1734,8 @@ app.get('/api/admin/rentals', async (req, res) => {
 
     const result = await pgPool.query(
       `SELECT id, slug, title, location_label, description, nightly_rate_cents, cleaning_fee_cents,
-              max_guests, hero_image_url, gallery_image_urls, amenities, is_active, created_at, updated_at
+              max_guests, hero_image_url, hero_image_captions, gallery_image_urls, gallery_image_captions,
+              amenities, is_active, created_at, updated_at
        FROM rentals
        WHERE deleted_at IS NULL
        ORDER BY created_at ASC`,
@@ -1749,7 +1754,8 @@ app.get('/api/public-rentals', async (_req, res) => {
     }
     const result = await pgPool.query(
       `SELECT id, slug, title, location_label, description, nightly_rate_cents, cleaning_fee_cents,
-              max_guests, hero_image_url, gallery_image_urls, amenities, is_active, updated_at
+              max_guests, hero_image_url, hero_image_captions, gallery_image_urls, gallery_image_captions,
+              amenities, is_active, updated_at
        FROM rentals
        WHERE is_active = TRUE AND deleted_at IS NULL
        ORDER BY created_at ASC`,
@@ -1775,7 +1781,9 @@ app.post('/api/admin/rentals', async (req, res) => {
     const cleaningFeeCents = Number(req.body?.cleaningFeeCents || 0);
     const maxGuests = Number(req.body?.maxGuests || 10);
     const heroImageUrl = clean(req.body?.heroImageUrl);
+    const heroImageCaptions = parseJsonArray(req.body?.heroImageCaptions);
     const galleryImageUrls = parseJsonArray(req.body?.galleryImageUrls);
+    const galleryImageCaptions = parseJsonArray(req.body?.galleryImageCaptions);
     const amenities = parseJsonArray(req.body?.amenities);
     const isActive = Boolean(req.body?.isActive);
 
@@ -1788,18 +1796,19 @@ app.post('/api/admin/rentals', async (req, res) => {
         `UPDATE rentals
          SET slug = $2, title = $3, location_label = $4, description = $5,
              nightly_rate_cents = $6, cleaning_fee_cents = $7, max_guests = $8,
-             hero_image_url = $9, gallery_image_urls = $10::jsonb, amenities = $11::jsonb,
-             is_active = $12, updated_at = NOW()
+             hero_image_url = $9, hero_image_captions = $10::jsonb, gallery_image_urls = $11::jsonb,
+             gallery_image_captions = $12::jsonb, amenities = $13::jsonb,
+             is_active = $14, updated_at = NOW()
          WHERE id = $1`,
-        [id, slug, title, locationLabel, description, nightlyRateCents, cleaningFeeCents, maxGuests, heroImageUrl, JSON.stringify(galleryImageUrls), JSON.stringify(amenities), isActive],
+        [id, slug, title, locationLabel, description, nightlyRateCents, cleaningFeeCents, maxGuests, heroImageUrl, JSON.stringify(heroImageCaptions), JSON.stringify(galleryImageUrls), JSON.stringify(galleryImageCaptions), JSON.stringify(amenities), isActive],
       );
     } else {
       await pgPool.query(
         `INSERT INTO rentals (
           slug, title, location_label, description, nightly_rate_cents, cleaning_fee_cents,
-          max_guests, hero_image_url, gallery_image_urls, amenities, is_active
+          max_guests, hero_image_url, hero_image_captions, gallery_image_urls, gallery_image_captions, amenities, is_active
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10::jsonb, $11)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10::jsonb, $11::jsonb, $12::jsonb, $13)
         ON CONFLICT (slug) DO UPDATE SET
           title = EXCLUDED.title,
           location_label = EXCLUDED.location_label,
@@ -1808,12 +1817,14 @@ app.post('/api/admin/rentals', async (req, res) => {
           cleaning_fee_cents = EXCLUDED.cleaning_fee_cents,
           max_guests = EXCLUDED.max_guests,
           hero_image_url = EXCLUDED.hero_image_url,
+          hero_image_captions = EXCLUDED.hero_image_captions,
           gallery_image_urls = EXCLUDED.gallery_image_urls,
+          gallery_image_captions = EXCLUDED.gallery_image_captions,
           amenities = EXCLUDED.amenities,
           is_active = EXCLUDED.is_active,
           deleted_at = NULL,
           updated_at = NOW()`,
-        [slug, title, locationLabel, description, nightlyRateCents, cleaningFeeCents, maxGuests, heroImageUrl, JSON.stringify(galleryImageUrls), JSON.stringify(amenities), isActive],
+        [slug, title, locationLabel, description, nightlyRateCents, cleaningFeeCents, maxGuests, heroImageUrl, JSON.stringify(heroImageCaptions), JSON.stringify(galleryImageUrls), JSON.stringify(galleryImageCaptions), JSON.stringify(amenities), isActive],
       );
     }
 

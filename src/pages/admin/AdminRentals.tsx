@@ -14,7 +14,9 @@ type RentalForm = {
   cleaningFee: string;
   maxGuests: string;
   heroImages: string[];
+  heroImageCaptions: string[];
   galleryImages: string[];
+  galleryImageCaptions: string[];
   amenities: string;
   isActive: boolean;
 };
@@ -35,7 +37,9 @@ function emptyRentalForm(): RentalForm {
     cleaningFee: '',
     maxGuests: '10',
     heroImages: [],
+    heroImageCaptions: [],
     galleryImages: [],
+    galleryImageCaptions: [],
     amenities: '',
     isActive: true,
   };
@@ -51,7 +55,9 @@ function toRentalForm(rental: RentalRecord): RentalForm {
     cleaningFee: (rental.cleaning_fee_cents / 100).toFixed(2),
     maxGuests: String(rental.max_guests),
     heroImages: rental.hero_image_url ? [rental.hero_image_url] : [],
+    heroImageCaptions: rental.hero_image_captions || [],
     galleryImages: rental.gallery_image_urls || [],
+    galleryImageCaptions: rental.gallery_image_captions || [],
     amenities: (rental.amenities || []).join('\n'),
     isActive: rental.is_active,
   };
@@ -130,7 +136,9 @@ function AdminRentals() {
           cleaningFeeCents: dollarsToCents(rentalForm.cleaningFee),
           maxGuests: Number(rentalForm.maxGuests || 10),
           heroImageUrl: rentalForm.heroImages[0] || '',
+          heroImageCaptions: rentalForm.heroImageCaptions,
           galleryImageUrls: rentalForm.galleryImages.join('\n'),
+          galleryImageCaptions: rentalForm.galleryImageCaptions,
           amenities: rentalForm.amenities,
           isActive: rentalForm.isActive,
         }),
@@ -269,12 +277,16 @@ function AdminRentals() {
               label="Hero Images"
               images={rentalForm.heroImages}
               onChange={(heroImages) => setRentalForm({ ...rentalForm, heroImages })}
+              captions={rentalForm.heroImageCaptions}
+              onCaptionsChange={(heroImageCaptions) => setRentalForm({ ...rentalForm, heroImageCaptions })}
               helperText="The first image is used as the active hero image for the rental."
             />
             <AdminImagePicker
               label="Gallery Images"
               images={rentalForm.galleryImages}
               onChange={(galleryImages) => setRentalForm({ ...rentalForm, galleryImages })}
+              captions={rentalForm.galleryImageCaptions}
+              onCaptionsChange={(galleryImageCaptions) => setRentalForm({ ...rentalForm, galleryImageCaptions })}
             />
             <div className="input-group"><label htmlFor="admin-rental-amenities">Amenities</label><textarea id="admin-rental-amenities" value={rentalForm.amenities} onChange={(event) => setRentalForm({ ...rentalForm, amenities: event.target.value })} placeholder="One amenity per line" /></div>
             <div className="admin-inline-actions">
