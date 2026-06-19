@@ -1,7 +1,7 @@
 ﻿import AdminLayout from '../../components/admin/AdminLayout';
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronsUpDown } from 'lucide-react';
-import { fetchAdminMe, fetchAdminSettings } from '../../lib/adminAuth';
+import { ChevronsUpDown, ExternalLink } from 'lucide-react';
+import { fetchAdminMe, fetchAdminSettings, type AdminSettingsPayload } from '../../lib/adminAuth';
 import { usePageMeta } from '../../lib/usePageMeta';
 
 const CUSTOM_OPTION = '__custom__';
@@ -43,6 +43,12 @@ type EstimateResult = {
   };
 };
 
+type EstimateResponse = {
+  estimate?: EstimateResult;
+  usage?: AdminSettingsPayload['rentcastUsage'];
+  message?: string;
+};
+
 function formatCurrency(value?: number) {
   if (!value) return 'Not returned';
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
@@ -65,6 +71,10 @@ function formatDecimal(value?: number, digits = 2) {
   return value.toFixed(digits);
 }
 
+function searchUrl(address?: string) {
+  return `https://www.google.com/search?q=${encodeURIComponent(address || '')}`;
+}
+
 function AdminHomeValueLab() {
   usePageMeta('Admin Home Value Lab', 'Plan the home value estimator data and API stack.', { robots: 'noindex,nofollow' });
   const [form, setForm] = useState({
@@ -82,6 +92,7 @@ function AdminHomeValueLab() {
   const [errorMessage, setErrorMessage] = useState('');
   const [result, setResult] = useState<EstimateResult | null>(null);
   const [rentcastConfigured, setRentcastConfigured] = useState(false);
+  const [usage, setUsage] = useState<AdminSettingsPayload['rentcastUsage'] | null>(null);
 
   useEffect(() => {
     Promise.all([fetchAdminMe(), fetchAdminSettings()])
@@ -91,6 +102,7 @@ function AdminHomeValueLab() {
           return;
         }
         setRentcastConfigured(settingsPayload.status.rentcastConfigured);
+        setUsage(settingsPayload.rentcastUsage);
       })
       .catch(() => {
         window.location.href = '/admin/login';
@@ -111,9 +123,12 @@ function AdminHomeValueLab() {
           squareFootage: Number(form.squareFootage || 0),
         }),
       });
-      const payload = await res.json().catch(() => ({}));
+      const payload = await res.json().catch(() => ({} as EstimateResponse));
+      if (payload.usage) {
+        setUsage(payload.usage);
+      }
       if (!res.ok) throw new Error(payload.message || 'Could not retrieve the estimate.');
-      setResult(payload.estimate);
+      setResult(payload.estimate || null);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Could not retrieve the estimate.');
     } finally {
@@ -128,10 +143,17 @@ function AdminHomeValueLab() {
   return (
     <AdminLayout>
       <div className="admin-page">
-        <div className="page-intro">
-          <p className="eyebrow">Home Value Lab</p>
-          <h1>Home value estimator</h1>
-          <p>Powered by RentCast.</p>
+        <div className="admin-home-value-header">
+          <div className="page-intro">
+            <p className="eyebrow">Home Value Lab</p>
+            <h1>Home value estimator</h1>
+            <p>Powered by RentCast.</p>
+          </div>
+          <aside className="admin-home-usage-card" aria-label="RentCast usage this month">
+            <span>RentCast usage</span>
+            <strong>{usage ? `${usage.remainingThisMonth} of ${usage.monthlyLimit} hits left this month` : '-- of 50 hits left this month'}</strong>
+            <p>{usage ? `${usage.usedThisMonth} used. Resets ${formatDate(usage.resetsOn)}. ${formatCurrency(usage.overageCostPerHitUsd)} per hit after the free plan.` : '$0.20 per hit after 50. Resets monthly.'}</p>
+          </aside>
         </div>
 
         <section className="admin-dashboard-grid">
@@ -284,6 +306,7 @@ function AdminHomeValueLab() {
                         <div>
                           <strong>{comp.formattedAddress || 'Not returned'}</strong>
                           <p>{comp.propertyType || 'Property type not returned'}</p>
+                          {comp.formattedAddress ? <a className="admin-comp-link" href={searchUrl(comp.formattedAddress)} target="_blank" rel="noreferrer">Search address <ExternalLink size={14} /></a> : null}
                         </div>
                         <div>
                           <p>{comp.bedrooms || 0} bd | {comp.bathrooms || 0} ba</p>

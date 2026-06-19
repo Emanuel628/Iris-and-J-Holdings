@@ -127,6 +127,13 @@ export type AdminSettingsPayload = {
     resendConfigured: boolean;
     rentcastConfigured: boolean;
   };
+  rentcastUsage: {
+    monthlyLimit: number;
+    usedThisMonth: number;
+    remainingThisMonth: number;
+    resetsOn: string;
+    overageCostPerHitUsd: number;
+  };
 };
 
 export async function fetchAdminMe() {

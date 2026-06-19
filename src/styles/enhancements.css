@@ -1844,3 +1844,67 @@ html.a11y-underline a {
     grid-template-columns: 1fr;
   }
 }
+.admin-home-value-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1.25rem;
+}
+
+.admin-home-usage-card {
+  min-width: 320px;
+  max-width: 420px;
+  padding: 1rem 1.1rem;
+  background: #fffdf9;
+  border: 1px solid #ddd3c7;
+  border-radius: 10px;
+}
+
+.admin-home-usage-card span {
+  display: block;
+  color: var(--color-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.admin-home-usage-card strong {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 1rem;
+  color: var(--color-ink);
+}
+
+.admin-home-usage-card p {
+  margin: 0.5rem 0 0;
+  color: var(--color-ink-soft);
+  font-size: 0.88rem;
+}
+
+.admin-comp-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+  color: var(--color-champagne-dark);
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.admin-comp-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 840px) {
+  .admin-home-value-header {
+    flex-direction: column;
+  }
+
+  .admin-home-usage-card {
+    min-width: 0;
+    width: 100%;
+    max-width: none;
+  }
+}

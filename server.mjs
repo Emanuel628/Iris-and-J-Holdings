@@ -21,6 +21,9 @@ const databaseUrl = process.env.DATABASE_URL || '';
 const adminSessionDays = Number(process.env.ADMIN_SESSION_DAYS || 14);
 const secureCookies = process.env.NODE_ENV === 'production';
 const rentcastApiKey = process.env.RENTCAST_API_KEY || '';
+const RENTCAST_MONTHLY_FREE_LIMIT = 50;
+const RENTCAST_OVERAGE_COST_USD = 0.2;
+const RENTCAST_INITIAL_USED_THIS_MONTH = 3;
 
 const pgPool = databaseUrl ? new pg.Pool({ connectionString: databaseUrl, ssl: databaseUrl.includes('localhost') ? false : { rejectUnauthorized: false } }) : null;
 
@@ -536,6 +539,67 @@ async function readAppSettings() {
   if (!pgPool) return {};
   const result = await pgPool.query('SELECT key, value FROM app_settings');
   return Object.fromEntries(result.rows.map((row) => [row.key, row.value]));
+}
+
+function currentUsageMonth() {
+  return new Date().toISOString().slice(0, 7);
+}
+
+function usageResetDate(monthKey) {
+  const [year, month] = String(monthKey || currentUsageMonth()).split('-').map(Number);
+  const reset = new Date(year, month, 0);
+  return reset.toISOString().slice(0, 10);
+}
+
+async function upsertAppSetting(key, value) {
+  if (!pgPool) return;
+  await pgPool.query(
+    `INSERT INTO app_settings (key, value, updated_at)
+     VALUES ($1, $2, NOW())
+     ON CONFLICT (key) DO UPDATE
+     SET value = EXCLUDED.value, updated_at = NOW()`,
+    [clean(key), clean(value)],
+  );
+}
+
+async function getRentcastUsageStatus() {
+  const month = currentUsageMonth();
+  let settings = await readAppSettings();
+  let trackedMonth = settings.rentcast_usage_month || '';
+  let usedThisMonth = Number(settings.rentcast_usage_count || 0);
+
+  if (trackedMonth !== month) {
+    trackedMonth = month;
+    usedThisMonth = 0;
+    await upsertAppSetting('rentcast_usage_month', month);
+    await upsertAppSetting('rentcast_usage_count', '0');
+    settings = await readAppSettings();
+  } else if (!settings.rentcast_usage_count) {
+    usedThisMonth = RENTCAST_INITIAL_USED_THIS_MONTH;
+    await upsertAppSetting('rentcast_usage_count', String(usedThisMonth));
+    settings = await readAppSettings();
+  }
+
+  usedThisMonth = Number(settings.rentcast_usage_count || usedThisMonth || 0);
+
+  return {
+    monthlyLimit: RENTCAST_MONTHLY_FREE_LIMIT,
+    usedThisMonth,
+    remainingThisMonth: Math.max(0, RENTCAST_MONTHLY_FREE_LIMIT - usedThisMonth),
+    resetsOn: usageResetDate(trackedMonth || month),
+    overageCostPerHitUsd: RENTCAST_OVERAGE_COST_USD,
+  };
+}
+
+async function incrementRentcastUsage() {
+  const usage = await getRentcastUsageStatus();
+  const next = usage.usedThisMonth + 1;
+  await upsertAppSetting('rentcast_usage_count', String(next));
+  return {
+    ...usage,
+    usedThisMonth: next,
+    remainingThisMonth: Math.max(0, usage.monthlyLimit - next),
+  };
 }
 
 async function adminUserCount() {
@@ -1891,6 +1955,7 @@ app.get('/api/admin/settings', async (req, res) => {
     const admin = await requireAdmin(req, res);
     if (!admin) return;
     const settings = await readAppSettings();
+    const rentcastUsage = await getRentcastUsageStatus();
     return res.json({
       settings,
       status: {
@@ -1899,6 +1964,7 @@ app.get('/api/admin/settings', async (req, res) => {
         resendConfigured: Boolean(resendApiKey),
         rentcastConfigured: Boolean(rentcastApiKey),
       },
+      rentcastUsage,
     });
   } catch (error) {
     console.error('Admin settings load failed:', error);
@@ -1967,16 +2033,18 @@ app.post('/api/home-value-estimate', async (req, res) => {
         'X-Api-Key': rentcastApiKey,
       },
     });
+    const usage = await incrementRentcastUsage();
 
     const payload = await rentcastResponse.json().catch(() => ({}));
     if (!rentcastResponse.ok) {
       return res.status(rentcastResponse.status || 502).json({
         message: payload?.message || 'Could not retrieve a home value estimate.',
         provider: 'rentcast',
+        usage,
       });
     }
 
-    return res.json({ provider: 'rentcast', estimate: payload });
+    return res.json({ provider: 'rentcast', estimate: payload, usage });
   } catch (error) {
     console.error('Home value estimate failed:', error);
     return res.status(500).json({ message: 'Could not retrieve a home value estimate.' });
