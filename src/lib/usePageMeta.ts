@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 const BASE_TITLE = 'Iris & J Holdings';
 const DEFAULT_TITLE = 'Iris & J Holdings | New Jersey Real Estate, Mobile Notary & Orlando Rentals';
 const SITE_URL = 'https://www.irisjholdings.com';
-const DEFAULT_IMAGE = `${SITE_URL}/og-image.svg`;
+const DEFAULT_IMAGE = `${SITE_URL}/images/site/contact-hero.jpg`;
 
 const ROUTE_META: Record<string, { title?: string; description?: string; robots?: string }> = {
   '/': {
@@ -111,9 +111,9 @@ const ROUTE_META: Record<string, { title?: string; description?: string; robots?
       'Plain-language New Jersey buyer guides, seller guides, and local market updates for people preparing to buy, sell, or request a home value review.',
   },
   '/about': {
-    title: 'About Daiana Castro, REALTOR®',
+    title: 'About Daiana Castro, REALTOR',
     description:
-      'Meet Daiana Castro, REALTOR® and mobile notary serving New Jersey buyers, sellers, and notary clients through Iris & J Holdings and All Star Real Estate Agency.',
+      'Meet Daiana Castro, REALTOR and mobile notary serving New Jersey buyers, sellers, and notary clients through Iris & J Holdings and All Star Real Estate Agency.',
   },
   '/book': {
     title: 'Book a Consultation or Notary Appointment',
@@ -214,6 +214,9 @@ function normalizedCurrentPath() {
 }
 
 function canonicalUrlForCurrentPath(pathname: string) {
+  if (pathname === '/contact') {
+    return `${SITE_URL}/book`;
+  }
   return `${SITE_URL}${pathname}`;
 }
 
