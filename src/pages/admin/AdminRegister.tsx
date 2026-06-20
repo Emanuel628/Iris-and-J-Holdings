@@ -8,6 +8,7 @@ function AdminRegister() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<'idle' | 'sending' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -52,7 +53,15 @@ function AdminRegister() {
             </div>
             <div className="input-group">
               <label htmlFor="admin-register-password">Password</label>
-              <input id="admin-register-password" type="password" autoComplete="new-password" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} required />
+              <input id="admin-register-password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} required />
+              <label className="form-note admin-password-toggle" htmlFor="admin-register-show-password">
+                <input
+                  id="admin-register-show-password"
+                  type="checkbox"
+                  checked={showPassword}
+                  onChange={(event) => setShowPassword(event.target.checked)}
+                /> Show password
+              </label>
             </div>
             <button className="button button-primary" type="submit" disabled={status === 'sending'}>
               {status === 'sending' ? 'Creating account...' : 'Create admin account'}

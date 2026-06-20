@@ -959,6 +959,18 @@ summary:focus-visible,
   line-height: 0.96;
 }
 
+.admin-password-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 0.65rem;
+  cursor: pointer;
+}
+
+.admin-password-toggle input {
+  margin: 0;
+}
+
 .admin-auth-visual {
   min-height: 540px;
   overflow: hidden;

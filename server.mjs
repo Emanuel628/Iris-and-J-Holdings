@@ -625,10 +625,17 @@ function currentUsageMonth() {
   return new Date().toISOString().slice(0, 7);
 }
 
-function usageResetDate(monthKey) {
-  const [year, month] = String(monthKey || currentUsageMonth()).split('-').map(Number);
-  const reset = new Date(year, month, 0);
-  return reset.toISOString().slice(0, 10);
+function isoDateFromLocal(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function usageResetDate() {
+  const reset = new Date();
+  reset.setMonth(reset.getMonth() + 1);
+  return isoDateFromLocal(reset);
 }
 
 async function upsertAppSetting(key, value) {
@@ -673,7 +680,7 @@ async function getRentcastUsageStatus() {
     monthlyLimit: RENTCAST_MONTHLY_FREE_LIMIT,
     usedThisMonth,
     remainingThisMonth: Math.max(0, RENTCAST_MONTHLY_FREE_LIMIT - usedThisMonth),
-    resetsOn: usageResetDate(trackedMonth || month),
+    resetsOn: usageResetDate(),
     overageCostPerHitUsd: RENTCAST_OVERAGE_COST_USD,
   };
 }

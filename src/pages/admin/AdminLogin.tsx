@@ -7,6 +7,7 @@ function AdminLogin() {
   usePageMeta('Admin Login', 'Secure admin login for Iris & J Holdings.', { robots: 'noindex,nofollow' });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<'idle' | 'sending' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -49,7 +50,15 @@ function AdminLogin() {
             </div>
             <div className="input-group">
               <label htmlFor="admin-login-password">Password</label>
-              <input id="admin-login-password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+              <input id="admin-login-password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+              <label className="form-note admin-password-toggle" htmlFor="admin-login-show-password">
+                <input
+                  id="admin-login-show-password"
+                  type="checkbox"
+                  checked={showPassword}
+                  onChange={(event) => setShowPassword(event.target.checked)}
+                /> Show password
+              </label>
             </div>
             <button className="button button-primary" type="submit" disabled={status === 'sending'}>
               {status === 'sending' ? 'Signing in...' : 'Sign in'}
