@@ -26,15 +26,14 @@ function AdminImagePicker({ label, images, onChange, captions = [], onCaptionsCh
   }, [images]);
 
   async function uploadFile(file: File) {
-    const res = await fetch(`/api/admin/upload-image?filename=${encodeURIComponent(file.name)}`, {
+    const formData = new FormData();
+    formData.append('image', file, file.name);
+
+    const res = await fetch('/api/admin/upload-image', {
       method: 'POST',
-      headers: {
-        'Content-Type': file.type || 'application/octet-stream',
-        Accept: 'application/json',
-        'X-Upload-Filename': file.name,
-      },
+      headers: { Accept: 'application/json' },
       credentials: 'same-origin',
-      body: file,
+      body: formData,
     });
     const payload = await res.json().catch(() => ({}));
     if (!res.ok || !payload.url) {
@@ -91,7 +90,7 @@ function AdminImagePicker({ label, images, onChange, captions = [], onCaptionsCh
         id={inputId}
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept=".png,.jpg,.jpeg,.webp,.gif,.svg,.avif,.heic,.heif,image/*"
         multiple
         className="admin-file-input"
         onChange={(event) => {

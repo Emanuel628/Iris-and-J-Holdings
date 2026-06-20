@@ -6,6 +6,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
+import multer from 'multer';
 import { getBlockedRanges, overlapsBlocked } from './server/airbnb.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -26,6 +27,7 @@ const rentcastApiKey = process.env.RENTCAST_API_KEY || '';
 const RENTCAST_MONTHLY_FREE_LIMIT = 50;
 const RENTCAST_OVERAGE_COST_USD = 0.2;
 const RENTCAST_INITIAL_USED_THIS_MONTH = 3;
+const allowedUploadExtensions = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'avif', 'heic', 'heif']);
 const siteUrl = 'https://www.irisjholdings.com';
 const defaultSeoImage = `${siteUrl}/images/site/contact-hero.jpg`;
 
@@ -157,6 +159,35 @@ const notary = {
   cancelUrl: process.env.NOTARY_CANCEL_URL || '',
 };
 
+const uploadStorage = multer.diskStorage({
+  destination: async (_req, _file, cb) => {
+    try {
+      await fs.mkdir(uploadsDir, { recursive: true });
+      cb(null, uploadsDir);
+    } catch (error) {
+      cb(error);
+    }
+  },
+  filename: (_req, file, cb) => {
+    const extension = extensionFromMime(file.mimetype) || extensionFromFilename(file.originalname) || 'bin';
+    const stem = slugify(file.originalname.replace(/\.[a-z0-9]+$/i, '')) || 'image';
+    cb(null, `${Date.now()}-${randomBytes(6).toString('hex')}-${stem}.${extension === 'jpeg' ? 'jpg' : extension}`);
+  },
+});
+
+const uploadImage = multer({
+  storage: uploadStorage,
+  limits: { fileSize: 40 * 1024 * 1024, files: 1 },
+  fileFilter: (_req, file, cb) => {
+    const extension = extensionFromMime(file.mimetype) || extensionFromFilename(file.originalname);
+    if ((!file.mimetype.startsWith('image/') && file.mimetype !== 'application/octet-stream') || !allowedUploadExtensions.has(extension)) {
+      cb(new Error('Supported image types include PNG, JPG, JPEG, WebP, GIF, SVG, AVIF, HEIC, and HEIF.'));
+      return;
+    }
+    cb(null, true);
+  },
+});
+
 app.set('trust proxy', 1);
 
 app.use((req, res, next) => {
@@ -207,32 +238,36 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
   return res.json({ received: true });
 });
 
-app.post('/api/admin/upload-image', express.raw({ type: () => true, limit: '40mb' }), async (req, res) => {
+app.post('/api/admin/upload-image', (req, res, next) => {
+  uploadImage.single('image')(req, res, (error) => {
+    if (error) {
+      const message = error instanceof Error ? error.message : 'Could not upload image.';
+      const status = message.includes('Supported image types') || message.includes('File too large') ? 400 : 500;
+      return res.status(status).json({ message });
+    }
+    return next();
+  });
+}, async (req, res) => {
   try {
     const admin = await requireAdmin(req, res);
-    if (!admin) return;
-
-    const filename = clean(req.query?.filename || req.headers['x-upload-filename']) || 'image';
-    const contentType = clean(req.headers['content-type'] || '').toLowerCase();
-    const extension = extensionFromMime(contentType) || filename.split('.').pop()?.toLowerCase() || '';
-    const allowedExtensions = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'avif', 'heic', 'heif']);
-
-    if ((!contentType.startsWith('image/') && contentType !== 'application/octet-stream') || !allowedExtensions.has(extension)) {
-      return res.status(400).json({ message: 'Supported image types include PNG, JPG, JPEG, WebP, GIF, SVG, AVIF, HEIC, and HEIF.' });
+    if (!admin) {
+      const uploadedPath = req.file?.path;
+      if (uploadedPath) {
+        await fs.unlink(uploadedPath).catch(() => undefined);
+      }
+      return;
     }
-    if (!Buffer.isBuffer(req.body) || !req.body.length) {
+
+    if (!req.file?.filename) {
       return res.status(400).json({ message: 'Image file data is missing.' });
     }
 
-    const stem = slugify(filename.replace(/\.[a-z0-9]+$/i, '')) || 'image';
-    const normalizedExtension = extension === 'jpeg' ? 'jpg' : extension;
-    const uniqueName = `${Date.now()}-${randomBytes(6).toString('hex')}-${stem}.${normalizedExtension}`;
-    await fs.mkdir(uploadsDir, { recursive: true });
-    await fs.writeFile(path.join(uploadsDir, uniqueName), req.body);
-
-    return res.json({ url: `/uploads/${uniqueName}` });
+    return res.json({ url: `/uploads/${req.file.filename}` });
   } catch (error) {
     console.error('Admin image upload failed:', error);
+    if (req.file?.path) {
+      await fs.unlink(req.file.path).catch(() => undefined);
+    }
     return res.status(500).json({ message: 'Could not upload image.' });
   }
 });
@@ -1113,6 +1148,11 @@ function extensionFromMime(mimeType) {
   if (normalized === 'image/heic') return 'heic';
   if (normalized === 'image/heif') return 'heif';
   return '';
+}
+
+function extensionFromFilename(filename) {
+  const match = /\.([a-z0-9]+)$/i.exec(clean(filename));
+  return match ? match[1].toLowerCase() : '';
 }
 
 // Website bookings are stored in Stripe itself: any paid Checkout Session carries
