@@ -124,6 +124,10 @@ function AdminRentals() {
     setErrorMessage('');
     setStatusMessage('');
     try {
+      const heroImages = rentalForm.heroImages.filter(Boolean);
+      const heroImageCaptions = heroImages.map((_, index) => rentalForm.heroImageCaptions[index] || '');
+      const galleryImages = rentalForm.galleryImages.filter(Boolean);
+      const galleryImageCaptions = galleryImages.map((_, index) => rentalForm.galleryImageCaptions[index] || '');
       const res = await fetch('/api/admin/rentals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -135,10 +139,10 @@ function AdminRentals() {
           nightlyRateCents: dollarsToCents(rentalForm.nightlyRate),
           cleaningFeeCents: dollarsToCents(rentalForm.cleaningFee),
           maxGuests: Number(rentalForm.maxGuests || 10),
-          heroImageUrl: rentalForm.heroImages[0] || '',
-          heroImageCaptions: rentalForm.heroImageCaptions,
-          galleryImageUrls: rentalForm.galleryImages.join('\n'),
-          galleryImageCaptions: rentalForm.galleryImageCaptions,
+          heroImageUrl: heroImages[0] || '',
+          heroImageCaptions,
+          galleryImageUrls: galleryImages,
+          galleryImageCaptions,
           amenities: rentalForm.amenities,
           isActive: rentalForm.isActive,
         }),

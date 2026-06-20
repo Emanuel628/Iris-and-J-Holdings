@@ -50,14 +50,29 @@ function AdminImagePicker({ label, images, onChange, captions = [], onCaptionsCh
       const nextImages = await Promise.all(Array.from(fileList).map((file) => uploadFile(file)));
       const filtered = nextImages.filter(Boolean);
       if (targetIndex !== null) {
+        const isExistingImage = targetIndex < images.length;
         const next = [...images];
-        if (filtered[0]) {
-          next[targetIndex] = filtered[0];
+        if (isExistingImage) {
+          if (filtered[0]) {
+            next[targetIndex] = filtered[0];
+          }
+          if (filtered.length > 1) {
+            next.push(...filtered.slice(1));
+          }
+        } else {
+          next.push(...filtered);
         }
         onChange(next);
         if (onCaptionsChange) {
           const nextCaptions = [...captions];
-          nextCaptions[targetIndex] = nextCaptions[targetIndex] || '';
+          if (isExistingImage) {
+            nextCaptions[targetIndex] = nextCaptions[targetIndex] || '';
+            if (filtered.length > 1) {
+              nextCaptions.push(...filtered.slice(1).map(() => ''));
+            }
+          } else {
+            nextCaptions.push(...filtered.map(() => ''));
+          }
           onCaptionsChange(nextCaptions);
         }
         setTargetIndex(null);
@@ -106,7 +121,7 @@ function AdminImagePicker({ label, images, onChange, captions = [], onCaptionsCh
                 type="button"
                 className={`admin-image-frame${image ? ' has-image' : ''}`}
                 onClick={() => {
-                  setTargetIndex(index);
+                  setTargetIndex(image ? index : null);
                   inputRef.current?.click();
                 }}
                 aria-label={image ? `Replace image ${index + 1}` : `Add image ${index + 1}`}
