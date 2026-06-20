@@ -26,21 +26,15 @@ function AdminImagePicker({ label, images, onChange, captions = [], onCaptionsCh
   }, [images]);
 
   async function uploadFile(file: File) {
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result || ''));
-      reader.onerror = () => reject(new Error('Could not read image.'));
-      reader.readAsDataURL(file);
-    });
-
-    const res = await fetch('/api/admin/upload-image', {
+    const res = await fetch(`/api/admin/upload-image?filename=${encodeURIComponent(file.name)}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers: {
+        'Content-Type': file.type || 'application/octet-stream',
+        Accept: 'application/json',
+        'X-Upload-Filename': file.name,
+      },
       credentials: 'same-origin',
-      body: JSON.stringify({
-        filename: file.name,
-        dataUrl,
-      }),
+      body: file,
     });
     const payload = await res.json().catch(() => ({}));
     if (!res.ok || !payload.url) {

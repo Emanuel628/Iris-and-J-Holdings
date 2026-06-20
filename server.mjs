@@ -97,6 +97,36 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
   return res.json({ received: true });
 });
 
+app.post('/api/admin/upload-image', express.raw({ type: () => true, limit: '40mb' }), async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+
+    const filename = clean(req.query?.filename || req.headers['x-upload-filename']) || 'image';
+    const contentType = clean(req.headers['content-type'] || '').toLowerCase();
+    const extension = extensionFromMime(contentType) || filename.split('.').pop()?.toLowerCase() || '';
+    const allowedExtensions = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'avif', 'heic', 'heif']);
+
+    if ((!contentType.startsWith('image/') && contentType !== 'application/octet-stream') || !allowedExtensions.has(extension)) {
+      return res.status(400).json({ message: 'Supported image types include PNG, JPG, JPEG, WebP, GIF, SVG, AVIF, HEIC, and HEIF.' });
+    }
+    if (!Buffer.isBuffer(req.body) || !req.body.length) {
+      return res.status(400).json({ message: 'Image file data is missing.' });
+    }
+
+    const stem = slugify(filename.replace(/\.[a-z0-9]+$/i, '')) || 'image';
+    const normalizedExtension = extension === 'jpeg' ? 'jpg' : extension;
+    const uniqueName = `${Date.now()}-${randomBytes(6).toString('hex')}-${stem}.${normalizedExtension}`;
+    await fs.mkdir(uploadsDir, { recursive: true });
+    await fs.writeFile(path.join(uploadsDir, uniqueName), req.body);
+
+    return res.json({ url: `/uploads/${uniqueName}` });
+  } catch (error) {
+    console.error('Admin image upload failed:', error);
+    return res.status(500).json({ message: 'Could not upload image.' });
+  }
+});
+
 app.use(express.json({ limit: '25mb' }));
 
 // Simple in-memory rate limit for the public contact endpoint.
@@ -777,22 +807,10 @@ function extensionFromMime(mimeType) {
   if (normalized === 'image/webp') return 'webp';
   if (normalized === 'image/gif') return 'gif';
   if (normalized === 'image/svg+xml') return 'svg';
+  if (normalized === 'image/avif') return 'avif';
+  if (normalized === 'image/heic') return 'heic';
+  if (normalized === 'image/heif') return 'heif';
   return '';
-}
-
-function decodeDataUrl(dataUrl) {
-  if (typeof dataUrl !== 'string') return null;
-  const match = /^data:([^;,]+)(;base64)?,(.*)$/i.exec(dataUrl);
-  if (!match) return null;
-  const mimeType = clean(match[1]).toLowerCase();
-  const isBase64 = Boolean(match[2]);
-  const body = match[3] || '';
-  try {
-    const buffer = isBase64 ? Buffer.from(body, 'base64') : Buffer.from(decodeURIComponent(body), 'utf8');
-    return { mimeType, buffer };
-  } catch {
-    return null;
-  }
 }
 
 // Website bookings are stored in Stripe itself: any paid Checkout Session carries
@@ -1889,37 +1907,6 @@ app.post('/api/admin/rentals/delete', async (req, res) => {
   } catch (error) {
     console.error('Admin rental delete failed:', error);
     return res.status(500).json({ message: 'Could not delete rental.' });
-  }
-});
-
-app.post('/api/admin/upload-image', async (req, res) => {
-  try {
-    const admin = await requireAdmin(req, res);
-    if (!admin) return;
-
-    const filename = clean(req.body?.filename) || 'image';
-    const decoded = decodeDataUrl(req.body?.dataUrl);
-    if (!decoded) {
-      return res.status(400).json({ message: 'Invalid image upload payload.' });
-    }
-    if (!decoded.mimeType.startsWith('image/')) {
-      return res.status(400).json({ message: 'Only image uploads are allowed.' });
-    }
-
-    const extension = extensionFromMime(decoded.mimeType);
-    if (!extension) {
-      return res.status(400).json({ message: 'Unsupported image type.' });
-    }
-
-    const stem = slugify(filename.replace(/\.[a-z0-9]+$/i, '')) || 'image';
-    const uniqueName = `${Date.now()}-${randomBytes(6).toString('hex')}-${stem}.${extension}`;
-    await fs.mkdir(uploadsDir, { recursive: true });
-    await fs.writeFile(path.join(uploadsDir, uniqueName), decoded.buffer);
-
-    return res.json({ url: `/uploads/${uniqueName}` });
-  } catch (error) {
-    console.error('Admin image upload failed:', error);
-    return res.status(500).json({ message: 'Could not upload image.' });
   }
 });
 
