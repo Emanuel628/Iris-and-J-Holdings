@@ -83,12 +83,12 @@ function AdminImagePicker({ label, images, onChange, captions = [], onCaptionsCh
   return (
     <div className="input-group">
       <div className="admin-image-picker-head">
-        <label htmlFor={inputId}>{label}</label>
+        <p id={`${inputId}-label`}>{label}</p>
         <button className="button-secondary" type="button" onClick={() => setSlotCount((current) => current + 1)} disabled={uploading}>
           {uploading ? 'Uploading...' : 'Add Pic'}
         </button>
       </div>
-      <div className="admin-image-grid">
+      <div className="admin-image-grid" aria-labelledby={`${inputId}-label`}>
         {Array.from({ length: slotCount }).map((_, index) => {
           const image = images[index];
           const tileInputId = `${inputId}-${index}`;
