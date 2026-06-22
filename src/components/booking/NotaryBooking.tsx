@@ -200,7 +200,7 @@ function NotaryBooking() {
       </button>
       {!paid && <FormStatus status={status} />}
       {payError && <p className="form-status form-status-error" role="alert">{payError}</p>}
-      <p className="form-note">
+      <p className="form-note"></p>
         {paid
           ? 'Secure checkout reserves your time. The booking fee is shown above; any additional notary fees are confirmed by email.'
           : 'This sends a request. Daiana will confirm the time and any travel or notary fees by email.'}
