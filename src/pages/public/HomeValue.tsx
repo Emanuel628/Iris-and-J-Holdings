@@ -1,5 +1,6 @@
 ﻿import PublicLayout from '../../components/layout/PublicLayout';
 import FormStatus from '../../components/ui/FormStatus';
+import NewsletterOptIn from '../../components/ui/NewsletterOptIn';
 import { useContactForm } from '../../lib/useContactForm';
 import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
 import { usePageMeta } from '../../lib/usePageMeta';
@@ -59,6 +60,7 @@ function HomeValue() {
             <div className="input-group"><label htmlFor="value-city">City or Town</label><input id="value-city" name="cityOrTown" required /></div>
             <div className="input-group"><label htmlFor="value-timeline">Timeline</label><input id="value-timeline" name="timeline" /></div>
             <div className="input-group"><label htmlFor="value-details">Updates or details</label><textarea id="value-details" name="updatesOrDetails" /></div>
+            <NewsletterOptIn />
             <button className="button button-primary" type="submit" disabled={status === 'sending'}>
               {status === 'sending' ? 'Sending...' : 'Submit Request'}
             </button>

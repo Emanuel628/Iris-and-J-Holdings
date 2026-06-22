@@ -1,6 +1,7 @@
 ﻿import { useEffect, useRef, useState } from 'react';
 import PublicLayout from '../../components/layout/PublicLayout';
 import FormStatus from '../../components/ui/FormStatus';
+import NewsletterOptIn from '../../components/ui/NewsletterOptIn';
 import { useContactForm } from '../../lib/useContactForm';
 import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
 import { usePageMeta } from '../../lib/usePageMeta';
@@ -152,6 +153,7 @@ function BookContact() {
                   value={messageValue}
                 />
               </div>
+              <NewsletterOptIn />
               <button className="button button-primary" type="submit" disabled={status === 'sending'}>
                 {status === 'sending' ? 'Sending…' : 'Send Message'}
               </button>

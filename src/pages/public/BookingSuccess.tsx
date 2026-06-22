@@ -4,10 +4,13 @@ import { usePageMeta } from '../../lib/usePageMeta';
 
 type SessionInfo = {
   status: string;
+  type: string;
   amountTotal: number;
   currency: string;
   checkIn: string;
   checkOut: string;
+  appointmentDate: string;
+  appointmentTime: string;
   email: string;
 };
 
@@ -49,12 +52,35 @@ function BookingSuccess() {
   }, []);
 
   const paid = info?.status === 'paid';
+  const isNotary = info?.type === 'notary';
+  const amount = info?.amountTotal ? formatMoney(info.amountTotal, info.currency) : '';
 
   return (
     <PublicLayout>
       <main className="page-main">
         <section className="page-hero">
           <div className="page-hero-content">
+            <p className="eyebrow">{isNotary ? 'Appointment' : 'Booking'} {paid ? 'confirmed' : 'received'}</p>
+            <h1>
+              {isNotary
+                ? paid ? 'Thank you — your appointment is booked.' : 'Thank you — your appointment is being processed.'
+                : paid ? 'Thank you — your stay is reserved.' : 'Thank you — your booking is being processed.'}
+            </h1>
+
+            {!done ? (
+              <p>Confirming your {isNotary ? 'appointment' : 'booking'}…</p>
+            ) : isNotary && info && info.appointmentDate ? (
+              <p>
+                {paid ? 'You’re booked for' : 'We received your request for'}{' '}
+                <strong>{info.appointmentDate}{info.appointmentTime ? ` at ${info.appointmentTime}` : ''}</strong>
+                {paid && amount ? <> ({amount} paid)</> : null}. A receipt is on its way to {info.email || 'your email'},
+                and Daiana will confirm the final details by email.
+              </p>
+            ) : paid && info && info.checkIn ? (
+              <p>
+                You’re booked from <strong>{info.checkIn}</strong> to <strong>{info.checkOut}</strong>
+                {amount ? <> for {amount}</> : null}. A receipt is on its way to {info.email || 'your email'}, and
+                Daiana will follow up with the details.
             <p className="eyebrow">Booking {paid ? 'confirmed' : 'received'}</p>
             <h1>{paid ? 'Thank you - your stay is reserved.' : 'Thank you - your booking is being processed.'}</h1>
             {!done ? (
@@ -72,11 +98,14 @@ function BookingSuccess() {
                 email, and the stay is not confirmed until payment is completed and a booking confirmation is issued.
               </p>
             ) : (
-              <p>Your booking is being processed. Daiana will follow up by email with the details.</p>
+              <p>Your {isNotary ? 'appointment' : 'booking'} is being processed. Daiana will follow up by email with the details.</p>
             )}
+
             <div className="page-actions">
               <a className="button button-primary" href="/">Back to Home</a>
-              <a className="text-link" href="/vacation-rentals">View vacation rentals</a>
+              <a className="text-link" href={isNotary ? '/mobile-notary' : '/vacation-rentals'}>
+                {isNotary ? 'View mobile notary' : 'View vacation rentals'}
+              </a>
             </div>
           </div>
           <div className="page-hero-visual vacation-hero-visual" aria-hidden="true" />

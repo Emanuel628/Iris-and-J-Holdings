@@ -1,4 +1,4 @@
-﻿import express from 'express';
+import express from 'express';
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import Stripe from 'stripe';
 import crypto from 'node:crypto';
@@ -152,6 +152,13 @@ const booking = {
   webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
 };
 
+
+const newsletter = {
+  audienceId: process.env.RESEND_AUDIENCE_ID || '',
+  adminToken: process.env.NEWSLETTER_ADMIN_TOKEN || '',
+};
+
+const notaryFeeCents = Number(process.env.NOTARY_FEE_CENTS || 0);
 const notary = {
   currency: (process.env.NOTARY_CURRENCY || process.env.STRIPE_CURRENCY || 'usd').toLowerCase(),
   bookingFeeCents: Number(process.env.NOTARY_BOOKING_FEE_CENTS || 0),
@@ -205,7 +212,12 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-
+    try {
+      if (session.metadata?.type === 'notary') {
+        await notifyNotary(session);
+      } else {
+        bookedCache = { at: 0, ranges: [] }; // a new paid vacation booking — refresh availability
+        await notifyBooking(session);
     try {
       if (session.metadata?.type === 'notary') {
         await persistNotaryRequest(session);
@@ -1284,6 +1296,118 @@ async function notifyBooking(session) {
   }
 }
 
+async function notifyNotary(session) {
+  const m = session.metadata || {};
+  const guestEmail = session.customer_details?.email || session.customer_email || m.email || 'unknown';
+  const rows = [
+    ['Name', m.name],
+    ['Email', guestEmail],
+    ['Phone', m.phone],
+    ['City / Town', m.city],
+    ['Date', m.appointmentDate],
+    ['Time', m.appointmentTime],
+    ['Document type', m.documentType],
+    ['Notes', m.notes],
+    ['Amount paid', money(session.amount_total ?? 0, session.currency || 'usd')],
+    ['Stripe session', session.id],
+  ].filter(([, value]) => clean(value).length > 0);
+
+  await sendResendEmail({
+    to: contactTo,
+    replyTo: guestEmail !== 'unknown' ? guestEmail : undefined,
+    subject: `New mobile notary appointment — ${clean(m.appointmentDate)} ${clean(m.appointmentTime)}`,
+    text: `A mobile notary appointment was paid through Stripe.\n\n${rows.map(([k, v]) => `${k}: ${clean(v)}`).join('\n')}`,
+    html: `<h2>New mobile notary appointment</h2><table cellpadding="6" cellspacing="0">${rows.map(([k, v]) => `<tr><th align="left">${escapeHtml(k)}</th><td>${escapeHtml(v)}</td></tr>`).join('')}</table>`,
+  });
+
+  if (guestEmail && guestEmail !== 'unknown') {
+    try {
+      await sendResendEmail({
+        to: guestEmail,
+        replyTo: contactTo,
+        subject: 'Your mobile notary appointment — Iris & J Holdings',
+        text: `Hi ${clean(m.name) || 'there'},\n\nThanks — your mobile notary appointment for ${clean(m.appointmentDate)} at ${clean(m.appointmentTime)} is paid and received. Daiana will confirm the final details by email.\n\n— Iris & J Holdings`,
+        html: `<p>Hi ${escapeHtml(m.name) || 'there'},</p><p>Thanks — your mobile notary appointment for <strong>${escapeHtml(m.appointmentDate)} at ${escapeHtml(m.appointmentTime)}</strong> is paid and received. Daiana will confirm the final details by email.</p><p>— Iris &amp; J Holdings</p>`,
+      });
+    } catch (confirmError) {
+      console.error('Notary confirmation email failed:', confirmError);
+    }
+  }
+}
+
+app.get('/health', (_req, res) => {
+  res.json({ ok: true });
+});
+
+app.get('/api/notary-config', (_req, res) => {
+  res.json({
+    bookingEnabled: Boolean(stripe && notaryFeeCents > 0),
+    feeCents: notaryFeeCents,
+    currency: booking.currency,
+  });
+});
+
+app.post('/api/notary-checkout', async (req, res) => {
+  try {
+    if (!stripe || !(notaryFeeCents > 0)) {
+      return res.status(503).json({ message: 'Online notary booking isn’t available yet.' });
+    }
+    const b = req.body || {};
+    const name = clean(b.name);
+    const email = clean(b.email);
+    const appointmentDate = clean(b.appointmentDate);
+    const appointmentTime = clean(b.appointmentTime);
+    if (!name || !email || !appointmentDate || !appointmentTime) {
+      return res.status(400).json({ message: 'Name, email, date, and time are required.' });
+    }
+
+    const origin = `${req.protocol}://${req.get('host')}`;
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: booking.currency,
+            unit_amount: notaryFeeCents,
+            product_data: {
+              name: 'Mobile notary appointment',
+              description: `${appointmentDate} at ${appointmentTime}`,
+            },
+          },
+        },
+      ],
+      success_url: booking.successUrl || `${origin}/booking-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/mobile-notary`,
+      customer_email: email,
+      metadata: {
+        type: 'notary',
+        name,
+        email,
+        phone: clean(b.phone),
+        city: clean(b.city),
+        appointmentDate,
+        appointmentTime,
+        documentType: clean(b.documentType).slice(0, 200),
+        notes: clean(b.notes).slice(0, 450),
+      },
+    });
+
+    return res.json({ url: session.url });
+  } catch (error) {
+    console.error('Notary checkout failed:', error);
+    return res.status(500).json({ message: 'Could not start checkout. Please try again.' });
+  }
+});
+
+app.get('/api/availability', async (_req, res) => {
+  const blocked = await getAllBlockedRanges();
+  res.json({
+    blocked,
+    nightlyRateCents: booking.nightlyRateCents,
+    cleaningFeeCents: booking.cleaningFeeCents,
+    currency: booking.currency,
+    bookingEnabled: Boolean(stripe && booking.nightlyRateCents > 0),
 async function notifyNotaryBooking(session) {
   const {
     name = '',
@@ -3495,11 +3619,15 @@ app.get('/api/checkout-session', async (req, res) => {
     }
     return res.json({
       status: session.payment_status,
+      type: session.metadata?.type || 'vacation',
       amountTotal: session.amount_total,
       currency: session.currency,
       type: session.metadata?.type || 'vacation',
       checkIn: session.metadata?.checkIn || '',
       checkOut: session.metadata?.checkOut || '',
+      appointmentDate: session.metadata?.appointmentDate || '',
+      appointmentTime: session.metadata?.appointmentTime || '',
+      email: session.customer_details?.email || session.customer_email || '',
       email: session.customer_details?.email || session.customer_email || session.metadata?.email || '',
       name: session.metadata?.name || '',
       phone: session.metadata?.phone || '',
@@ -3662,8 +3790,10 @@ app.post('/api/contact', async (req, res) => {
       return res.status(400).json({ message: 'Name and email are required.' });
     }
 
+    const wantsNewsletter = clean(fields?.['Newsletter Opt In'] || fields?.Newsletter || fields?.newsletterOptIn).length > 0;
+
     const rows = Object.entries(fields || {})
-      .filter(([key]) => !key.startsWith('_'))
+      .filter(([key]) => !key.startsWith('_') && key !== 'Newsletter Opt In' && key !== 'Newsletter')
       .map(([key, value]) => [key, clean(value)])
       .filter(([, value]) => value.length > 0);
 
@@ -3693,10 +3823,145 @@ app.post('/api/contact', async (req, res) => {
       console.error('Confirmation email failed:', confirmError);
     }
 
+    if (wantsNewsletter) {
+      subscribeEmail(email, name).catch((subErr) => console.error('Newsletter subscribe failed:', subErr));
+    }
+
     return res.status(200).json({ message: 'Message sent.' });
   } catch (error) {
     console.error('Contact email failed:', error);
     return res.status(500).json({ message: 'Message could not be sent.' });
+  }
+});
+
+// ---- Newsletter: subscribers via Resend Audiences, sending via Broadcasts ----
+async function resendRequest(apiPath, method, body) {
+  if (!resendApiKey) throw new Error('RESEND_API_KEY is not configured.');
+  const response = await fetch(`https://api.resend.com${apiPath}`, {
+    method,
+    headers: { Authorization: `Bearer ${resendApiKey}`, 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const data = await response.json().catch(() => ({}));
+  return { ok: response.ok, status: response.status, data };
+}
+
+// Resend keeps one contact per email per audience, so re-adding an existing
+// email never creates a duplicate — a subscriber can't be subscribed twice.
+async function subscribeEmail(email, name) {
+  if (!resendApiKey || !newsletter.audienceId) {
+    throw new Error('Newsletter is not configured.');
+  }
+  const firstName = clean(name).split(' ')[0] || undefined;
+  const result = await resendRequest(`/audiences/${newsletter.audienceId}/contacts`, 'POST', {
+    email: clean(email).toLowerCase(),
+    first_name: firstName,
+    unsubscribed: false,
+  });
+  const already = !result.ok && /exist|already/i.test(JSON.stringify(result.data));
+  return { ok: result.ok || already, already };
+}
+
+function newsletterHtml({ title, date, body, images = [], listings = [] }) {
+  const s = (value) => escapeHtml(value);
+  // Inline styles only, and the site's palette/fonts: cream page (#fbfaf7),
+  // warm-white card (#fffefd), Georgia serif headings, Arial body, champagne accents.
+  const bodyFont = 'font-family:Arial,Helvetica,sans-serif';
+  const serif = "font-family:Georgia,'Times New Roman',serif";
+  const paragraphs = clean(body)
+    .split(/\n{2,}/)
+    .filter((p) => p.length > 0)
+    .map((p) => `<p style="margin:0 0 16px;${bodyFont};font-size:16px;line-height:1.65;color:#3f4650">${s(p).replace(/\n/g, '<br>')}</p>`)
+    .join('');
+  const imageHtml = images
+    .filter((img) => clean(img?.url))
+    .map((img) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px"><tr><td><img src="${s(img.url)}" alt="${s(img.caption || '')}" width="100%" style="display:block;width:100%;border-radius:8px"/>${img.caption ? `<div style="${bodyFont};font-size:13px;color:#6f747b;margin-top:6px">${s(img.caption)}</div>` : ''}</td></tr></table>`)
+    .join('');
+  const listingHtml = listings
+    .filter((l) => clean(l?.title) || clean(l?.url))
+    .map((l) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;background:#fffdf9;border:1px solid #e7dfd4;border-radius:8px"><tr><td style="padding:16px">${l.image ? `<img src="${s(l.image)}" alt="${s(l.title || '')}" width="100%" style="display:block;width:100%;border-radius:6px;margin-bottom:12px"/>` : ''}<div style="${serif};font-size:18px;font-weight:bold;color:#121820">${s(l.title || 'Listing')}</div>${l.description ? `<p style="margin:8px 0 12px;${bodyFont};font-size:15px;line-height:1.6;color:#3f4650">${s(l.description)}</p>` : ''}${l.url ? `<a href="${s(l.url)}" style="display:inline-block;${bodyFont};color:#a77931;font-weight:bold;text-decoration:none;font-size:13px;letter-spacing:0.04em;text-transform:uppercase">View listing &rarr;</a>` : ''}</td></tr></table>`)
+    .join('');
+  return `<!doctype html><html><body style="margin:0;padding:0;background:#fbfaf7;${bodyFont}">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fbfaf7"><tr><td align="center" style="padding:28px 16px">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;background:#fffefd;border:1px solid #e7dfd4;border-radius:12px;overflow:hidden">
+      <tr><td style="padding:26px 32px 18px;border-bottom:1px solid #e7dfd4">
+        <div style="${serif};font-size:24px;font-weight:600;letter-spacing:0.05em;color:#121820">Iris &amp; J Holdings</div>
+        <div style="${bodyFont};font-size:11px;font-weight:bold;letter-spacing:0.12em;text-transform:uppercase;color:#a77931;margin-top:4px">Real Estate &middot; Mobile Notary &middot; Orlando Vacation Rentals</div>
+      </td></tr>
+      <tr><td style="padding:28px 32px">
+        ${date ? `<div style="${bodyFont};font-size:12px;font-weight:bold;letter-spacing:0.14em;text-transform:uppercase;color:#a77931;margin:0 0 8px">${s(date)}</div>` : ''}
+        <h1 style="margin:0 0 20px;${serif};font-size:28px;line-height:1.15;font-weight:600;color:#121820">${s(title || 'Iris & J Holdings Newsletter')}</h1>
+        ${paragraphs}${imageHtml}${listingHtml}
+      </td></tr>
+      <tr><td style="padding:20px 32px 26px;border-top:1px solid #e7dfd4;background:#f5efe6">
+        <p style="margin:0 0 8px;${bodyFont};font-size:12px;line-height:1.6;color:#6f747b">Iris &amp; J Holdings &middot; Real estate through All Star Real Estate Agency, a licensed New Jersey real estate brokerage &middot; Mobile notary &amp; Orlando vacation rentals offered independently through Iris &amp; J Holdings.</p>
+        <p style="margin:0;${bodyFont};font-size:12px;color:#6f747b">You are receiving this because you subscribed at irisjholdings.com. <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#a77931">Unsubscribe</a>.</p>
+      </td></tr>
+    </table>
+  </td></tr></table>
+  </body></html>`;
+}
+
+app.post('/api/subscribe', async (req, res) => {
+  try {
+    const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+    if (isRateLimited(ip)) {
+      return res.status(429).json({ message: 'Too many requests. Please try again later.' });
+    }
+    const email = clean(req.body?.email);
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      return res.status(400).json({ message: 'Please enter a valid email address.' });
+    }
+    if (!resendApiKey || !newsletter.audienceId) {
+      return res.status(503).json({ message: 'The newsletter isn’t available yet.' });
+    }
+    const result = await subscribeEmail(email, clean(req.body?.name));
+    return res.status(200).json({ subscribed: true, already: result.already });
+  } catch (error) {
+    console.error('Subscribe failed:', error);
+    return res.status(500).json({ message: 'Could not subscribe right now. Please try again.' });
+  }
+});
+
+app.get('/api/newsletter/config', (_req, res) => {
+  res.json({ enabled: Boolean(resendApiKey && newsletter.audienceId) });
+});
+
+app.post('/api/newsletter/send', async (req, res) => {
+  try {
+    if (!resendApiKey || !newsletter.audienceId) {
+      return res.status(503).json({ message: 'Newsletter is not configured.' });
+    }
+    if (!newsletter.adminToken || req.get('x-admin-token') !== newsletter.adminToken) {
+      return res.status(401).json({ message: 'Not authorized.' });
+    }
+    const title = clean(req.body?.title) || 'Iris & J Holdings Newsletter';
+    const date = clean(req.body?.date);
+    const body = clean(req.body?.body);
+    const subject = clean(req.body?.subject) || title;
+    const images = Array.isArray(req.body?.images) ? req.body.images.slice(0, 12) : [];
+    const listings = Array.isArray(req.body?.listings) ? req.body.listings.slice(0, 20) : [];
+    if (!body && images.length === 0 && listings.length === 0) {
+      return res.status(400).json({ message: 'Add some content before sending.' });
+    }
+    const html = newsletterHtml({ title, date, body, images, listings });
+    const created = await resendRequest('/broadcasts', 'POST', {
+      audience_id: newsletter.audienceId,
+      from: resendFrom,
+      subject,
+      html,
+    });
+    if (!created.ok || !created.data?.id) {
+      throw new Error(`Broadcast create failed: ${created.status} ${JSON.stringify(created.data)}`);
+    }
+    const sent = await resendRequest(`/broadcasts/${created.data.id}/send`, 'POST', {});
+    if (!sent.ok) {
+      throw new Error(`Broadcast send failed: ${sent.status} ${JSON.stringify(sent.data)}`);
+    }
+    return res.status(200).json({ ok: true, broadcastId: created.data.id });
+  } catch (error) {
+    console.error('Newsletter send failed:', error);
+    return res.status(500).json({ message: 'Could not send the newsletter. Check the server logs.' });
   }
 });
 

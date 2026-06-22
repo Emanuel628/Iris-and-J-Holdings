@@ -4,6 +4,7 @@ import PublicLayout from '../../components/layout/PublicLayout';
 import VacationBookingCalendar from '../../components/booking/VacationBookingCalendar';
 import Faq from '../../components/sections/Faq';
 import FormStatus from '../../components/ui/FormStatus';
+import NewsletterOptIn from '../../components/ui/NewsletterOptIn';
 import { vacationHouseRules } from '../../content/vacationHouseRules';
 import { useContactForm } from '../../lib/useContactForm';
 import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
@@ -291,6 +292,7 @@ function VacationRentals() {
                 <div className="input-group"><label htmlFor="vacation-email">Email</label><input id="vacation-email" name="email" type="email" required /></div>
               </div>
               <div className="input-group"><label htmlFor="vacation-question">Your Question</label><textarea id="vacation-question" name="question" required /></div>
+              <NewsletterOptIn />
               <button className="button button-primary" type="submit" disabled={status === 'sending'}>
                 {status === 'sending' ? 'Sending...' : 'Send Question'}
               </button>
