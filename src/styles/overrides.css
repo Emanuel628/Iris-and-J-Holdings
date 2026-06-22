@@ -23,6 +23,24 @@
   gap: clamp(1rem, 2vw, 1.5rem);
 }
 
+.vacation-photo-groups {
+  display: grid;
+  gap: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+.vacation-photo-group {
+  display: grid;
+  gap: 1rem;
+}
+
+.vacation-photo-group h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .vacation-photo-card {
   display: flex;
   min-height: 220px;

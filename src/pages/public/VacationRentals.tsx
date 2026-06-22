@@ -22,6 +22,7 @@ type PublicRental = {
   hero_image_captions: string[];
   gallery_image_urls: string[];
   gallery_image_captions: string[];
+  gallery_image_groups: string[];
   amenities: string[];
 };
 
@@ -101,21 +102,31 @@ function VacationRentals() {
   }, [rentals]);
 
   const selectedRental = rentals[selectedIndex] || null;
-  const selectedRentalHeroImage = selectedRental?.hero_image_url || selectedRental?.gallery_image_urls?.[0] || '';
+  const selectedRentalHeroImage = selectedRental?.hero_image_url || '';
   const rentalAmenities = useMemo(
     () => (selectedRental?.amenities?.length ? selectedRental.amenities : fallbackAmenities),
     [selectedRental],
   );
-  const rentalPhotos = useMemo(() => {
-    const images = [
-      { url: selectedRentalHeroImage, caption: selectedRental?.hero_image_captions?.[0] || '' },
-      ...(selectedRental?.gallery_image_urls || []).filter((url) => url && url !== selectedRentalHeroImage).map((url, index) => ({
+  const rentalPhotoGroups = useMemo(() => {
+    const galleryPhotos = (selectedRental?.gallery_image_urls || [])
+      .map((url, index) => ({
         url,
         caption: selectedRental?.gallery_image_captions?.[index] || '',
-      })),
-    ].filter((entry) => entry.url);
-    return images.length ? images : fallbackPhotoSlots;
-  }, [selectedRental, selectedRentalHeroImage]);
+        group: selectedRental?.gallery_image_groups?.[index] || 'Gallery',
+      }))
+      .filter((entry) => entry.url);
+
+    if (!galleryPhotos.length) return [];
+
+    const grouped = new Map<string, { url: string; caption: string }[]>();
+    galleryPhotos.forEach((photo) => {
+      const key = photo.group.trim() || 'Gallery';
+      const current = grouped.get(key) || [];
+      current.push({ url: photo.url, caption: photo.caption });
+      grouped.set(key, current);
+    });
+    return Array.from(grouped.entries()).map(([group, photos]) => ({ group, photos }));
+  }, [selectedRental]);
 
   function isImageValue(value: string) {
     return value.startsWith('data:') || value.startsWith('http') || value.startsWith('/');
@@ -234,20 +245,33 @@ function VacationRentals() {
                 : 'Replace these placeholders with the rental’s actual photos before promoting the listing.'}
             </p>
           </div>
-          <div className="vacation-photo-grid">
-            {rentalPhotos.map((item, index) => (
-              typeof item === 'string' ? (
+          {rentalPhotoGroups.length ? (
+            <div className="vacation-photo-groups">
+              {rentalPhotoGroups.map((group) => (
+                <section className="vacation-photo-group" key={group.group}>
+                  <h3>{group.group}</h3>
+                  <div className="vacation-photo-grid">
+                    {group.photos.map((item, index) => (
+                      isImageValue(item.url) ? (
+                        <figure className="vacation-photo-card has-photo" key={`${group.group}-${index}`}>
+                          <img src={item.url} alt={item.caption || (selectedRental ? `${selectedRental.title} ${group.group} photo ${index + 1}` : `Vacation rental photo ${index + 1}`)} />
+                          {item.caption ? <figcaption>{item.caption}</figcaption> : null}
+                        </figure>
+                      ) : (
+                        <div className="vacation-photo-card" key={`${group.group}-${index}`}>{item.url}</div>
+                      )
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          ) : (
+            <div className="vacation-photo-grid">
+              {fallbackPhotoSlots.map((item, index) => (
                 <div className="vacation-photo-card" key={`placeholder-${index}`}>{item}</div>
-              ) : isImageValue(item.url) ? (
-                <figure className="vacation-photo-card has-photo" key={`photo-${index}`}>
-                  <img src={item.url} alt={item.caption || (selectedRental ? `${selectedRental.title} photo ${index + 1}` : `Vacation rental photo ${index + 1}`)} />
-                  {item.caption ? <figcaption>{item.caption}</figcaption> : null}
-                </figure>
-              ) : (
-                <div className="vacation-photo-card" key={`placeholder-${index}`}>{item.url}</div>
-              )
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="page-content" id="questions">

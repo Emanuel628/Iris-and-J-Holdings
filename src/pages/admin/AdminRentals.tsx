@@ -17,6 +17,7 @@ type RentalForm = {
   heroImageCaptions: string[];
   galleryImages: string[];
   galleryImageCaptions: string[];
+  galleryImageGroups: string[];
   amenities: string;
   isActive: boolean;
 };
@@ -40,6 +41,7 @@ function emptyRentalForm(): RentalForm {
     heroImageCaptions: [],
     galleryImages: [],
     galleryImageCaptions: [],
+    galleryImageGroups: [],
     amenities: '',
     isActive: true,
   };
@@ -58,6 +60,7 @@ function toRentalForm(rental: RentalRecord): RentalForm {
     heroImageCaptions: rental.hero_image_captions || [],
     galleryImages: rental.gallery_image_urls || [],
     galleryImageCaptions: rental.gallery_image_captions || [],
+    galleryImageGroups: rental.gallery_image_groups || [],
     amenities: (rental.amenities || []).join('\n'),
     isActive: rental.is_active,
   };
@@ -161,6 +164,7 @@ function AdminRentals() {
       const heroImageCaptions = heroImages.map((_, index) => rentalForm.heroImageCaptions[index] || '');
       const galleryImages = rentalForm.galleryImages.filter(Boolean);
       const galleryImageCaptions = galleryImages.map((_, index) => rentalForm.galleryImageCaptions[index] || '');
+      const galleryImageGroups = galleryImages.map((_, index) => rentalForm.galleryImageGroups[index] || '');
       const res = await fetch('/api/admin/rentals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -176,6 +180,7 @@ function AdminRentals() {
           heroImageCaptions,
           galleryImageUrls: galleryImages,
           galleryImageCaptions,
+          galleryImageGroups,
           amenities: rentalForm.amenities,
           isActive: rentalForm.isActive,
         }),
@@ -328,12 +333,17 @@ function AdminRentals() {
               <label className="form-note" htmlFor="admin-rental-active"><input id="admin-rental-active" type="checkbox" checked={rentalForm.isActive} onChange={(event) => setRentalForm({ ...rentalForm, isActive: event.target.checked })} /> Active rental</label>
             </div>
             <AdminImagePicker
-              label="Hero Images"
+              label="Title Image"
               images={rentalForm.heroImages}
-              onChange={(heroImages) => setRentalForm((current) => ({ ...current, heroImages }))}
-              captions={rentalForm.heroImageCaptions}
-              onCaptionsChange={(heroImageCaptions) => setRentalForm((current) => ({ ...current, heroImageCaptions }))}
-              helperText="The first image is used as the active hero image for the rental."
+              onChange={(heroImages) => setRentalForm((current) => ({
+                ...current,
+                heroImages: heroImages.slice(0, 1),
+                heroImageCaptions: current.heroImageCaptions.slice(0, 1),
+              }))}
+              helperText="One title image only. This is the main photo shown at the top of the rental page."
+              minSlots={1}
+              maxSlots={1}
+              showAddButton={false}
             />
             <AdminImagePicker
               label="Gallery Images"
@@ -341,6 +351,10 @@ function AdminRentals() {
               onChange={(galleryImages) => setRentalForm((current) => ({ ...current, galleryImages }))}
               captions={rentalForm.galleryImageCaptions}
               onCaptionsChange={(galleryImageCaptions) => setRentalForm((current) => ({ ...current, galleryImageCaptions }))}
+              groups={rentalForm.galleryImageGroups}
+              onGroupsChange={(galleryImageGroups) => setRentalForm((current) => ({ ...current, galleryImageGroups }))}
+              groupLabel="Gallery Group"
+              helperText="Add as many gallery images as needed. Use group labels like Exterior, Kitchen, Bedrooms, or Amenities."
             />
             <div className="input-group"><label htmlFor="admin-rental-amenities">Amenities</label><textarea id="admin-rental-amenities" value={rentalForm.amenities} onChange={(event) => setRentalForm({ ...rentalForm, amenities: event.target.value })} placeholder="One amenity per line" /></div>
             <div className="admin-inline-actions">

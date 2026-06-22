@@ -6,22 +6,47 @@ type AdminImagePickerProps = {
   onChange: (images: string[]) => void;
   captions?: string[];
   onCaptionsChange?: (captions: string[]) => void;
+  groups?: string[];
+  onGroupsChange?: (groups: string[]) => void;
+  groupLabel?: string;
   helperText?: string;
+  minSlots?: number;
+  maxSlots?: number;
+  showAddButton?: boolean;
 };
 
-function emptySlots(images: string[]) {
-  return Math.max(4, images.length + 1);
+function emptySlots(images: string[], minSlots: number, maxSlots?: number) {
+  const proposed = Math.max(minSlots, images.length + 1);
+  return typeof maxSlots === 'number' ? Math.min(proposed, maxSlots) : proposed;
 }
 
-function AdminImagePicker({ label, images, onChange, captions = [], onCaptionsChange, helperText }: AdminImagePickerProps) {
+function AdminImagePicker({
+  label,
+  images,
+  onChange,
+  captions = [],
+  onCaptionsChange,
+  groups = [],
+  onGroupsChange,
+  groupLabel = 'Group',
+  helperText,
+  minSlots = 4,
+  maxSlots,
+  showAddButton = true,
+}: AdminImagePickerProps) {
   const inputId = useId();
-  const [slotCount, setSlotCount] = useState(emptySlots(images));
+  const [slotCount, setSlotCount] = useState(emptySlots(images, minSlots, maxSlots));
   const [uploading, setUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    setSlotCount((current) => Math.max(current, emptySlots(images)));
-  }, [images]);
+    setSlotCount((current) => {
+      const desired = emptySlots(images, minSlots, maxSlots);
+      return typeof maxSlots === 'number'
+        ? Math.min(Math.max(current, desired), maxSlots)
+        : Math.max(current, desired);
+    });
+  }, [images, minSlots, maxSlots]);
 
   async function uploadFile(file: File) {
     const formData = new FormData();
@@ -72,7 +97,22 @@ function AdminImagePicker({ label, images, onChange, captions = [], onCaptionsCh
         }
         onCaptionsChange(nextCaptions);
       }
-      setSlotCount((current) => Math.max(current, images.length + filtered.length, 4));
+      if (onGroupsChange) {
+        const nextGroups = [...groups];
+        if (isExistingImage) {
+          nextGroups[targetIndex] = nextGroups[targetIndex] || '';
+          if (filtered.length > 1) {
+            nextGroups.push(...filtered.slice(1).map(() => ''));
+          }
+        } else {
+          nextGroups.push(...filtered.map(() => ''));
+        }
+        onGroupsChange(nextGroups);
+      }
+      setSlotCount((current) => {
+        const proposed = Math.max(current, images.length + filtered.length, minSlots);
+        return typeof maxSlots === 'number' ? Math.min(proposed, maxSlots) : proposed;
+      });
     } catch (error) {
       console.error('Admin image upload client failed:', error);
       setErrorMessage(error instanceof Error ? error.message : 'Could not upload image.');
@@ -85,9 +125,19 @@ function AdminImagePicker({ label, images, onChange, captions = [], onCaptionsCh
     <div className="input-group">
       <div className="admin-image-picker-head">
         <p id={`${inputId}-label`}>{label}</p>
-        <button className="button-secondary" type="button" onClick={() => setSlotCount((current) => current + 1)} disabled={uploading}>
-          {uploading ? 'Uploading...' : 'Add Pic'}
-        </button>
+        {showAddButton ? (
+          <button
+            className="button-secondary"
+            type="button"
+            onClick={() => setSlotCount((current) => {
+              const proposed = current + 1;
+              return typeof maxSlots === 'number' ? Math.min(proposed, maxSlots) : proposed;
+            })}
+            disabled={uploading || (typeof maxSlots === 'number' && slotCount >= maxSlots)}
+          >
+            {uploading ? 'Uploading...' : 'Add Pic'}
+          </button>
+        ) : null}
       </div>
       <div className="admin-image-grid" aria-labelledby={`${inputId}-label`}>
         {Array.from({ length: slotCount }).map((_, index) => {
@@ -132,6 +182,21 @@ function AdminImagePicker({ label, images, onChange, captions = [], onCaptionsCh
                       />
                     </div>
                   ) : null}
+                  {onGroupsChange ? (
+                    <div className="input-group admin-image-caption-field">
+                      <label htmlFor={`${inputId}-group-${index}`}>{groupLabel}</label>
+                      <input
+                        id={`${inputId}-group-${index}`}
+                        value={groups[index] || ''}
+                        onChange={(event) => {
+                          const nextGroups = [...groups];
+                          nextGroups[index] = event.target.value;
+                          onGroupsChange(nextGroups);
+                        }}
+                        placeholder="Optional group"
+                      />
+                    </div>
+                  ) : null}
                   <button
                     type="button"
                     className="admin-image-remove"
@@ -139,6 +204,9 @@ function AdminImagePicker({ label, images, onChange, captions = [], onCaptionsCh
                       onChange(images.filter((_, imageIndex) => imageIndex !== index));
                       if (onCaptionsChange) {
                         onCaptionsChange(captions.filter((_, captionIndex) => captionIndex !== index));
+                      }
+                      if (onGroupsChange) {
+                        onGroupsChange(groups.filter((_, groupIndex) => groupIndex !== index));
                       }
                     }}
                     disabled={uploading}

@@ -24,6 +24,7 @@ export type RentalRecord = {
   hero_image_captions: string[];
   gallery_image_urls: string[];
   gallery_image_captions: string[];
+  gallery_image_groups: string[];
   amenities: string[];
   is_active: boolean;
   updated_at: string;
