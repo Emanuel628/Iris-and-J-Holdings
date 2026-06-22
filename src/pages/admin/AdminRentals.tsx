@@ -96,6 +96,18 @@ function AdminRentals() {
     [rentals, rentalForm.id],
   );
 
+  function isBlankRentalForm(form: RentalForm) {
+    return !form.id
+      && !form.title
+      && !form.locationLabel
+      && !form.description
+      && !form.nightlyRate
+      && !form.cleaningFee
+      && !form.heroImages.length
+      && !form.galleryImages.length
+      && !form.amenities;
+  }
+
   async function loadData() {
     const [me, rentalsPayload, blockedPayload] = await Promise.all([
       fetchAdminMe(),
@@ -108,6 +120,18 @@ function AdminRentals() {
     }
     setRentals(rentalsPayload.rentals);
     setBlockedDates(blockedPayload.blockedDates);
+    setRentalForm((current) => {
+      if (current.id) {
+        const matchingRental = rentalsPayload.rentals.find((item) => item.id === current.id);
+        return matchingRental ? toRentalForm(matchingRental) : current;
+      }
+
+      if (isBlankRentalForm(current) && rentalsPayload.rentals[0]) {
+        return toRentalForm(rentalsPayload.rentals[0]);
+      }
+
+      return current;
+    });
     if (!blockForm.rentalId && rentalsPayload.rentals[0]) {
       setBlockForm((current) => ({ ...current, rentalId: String(rentalsPayload.rentals[0].id) }));
     }
@@ -151,7 +175,6 @@ function AdminRentals() {
       if (!res.ok) throw new Error(payload.message || 'Could not save rental.');
       await loadData();
       setStatusMessage('Rental saved.');
-      setRentalForm(emptyRentalForm());
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Could not save rental.');
     } finally {
@@ -255,7 +278,7 @@ function AdminRentals() {
                   setRentalForm(rental ? toRentalForm(rental) : emptyRentalForm());
                 }}
               >
-                <option value="">{selectedRentalLabel}</option>
+                <option value="">{selectedRentalLabel === 'New rental' ? 'New rental' : `${selectedRentalLabel} (current)`}</option>
                 {rentals.map((rental) => (
                   <option key={rental.id} value={rental.id}>{rental.title}</option>
                 ))}
@@ -264,6 +287,11 @@ function AdminRentals() {
             </div>
           </div>
           <div className="form-shell">
+            {!rentalForm.id ? (
+              <p className="form-note">
+                Fill in the title and location before saving a brand new rental.
+              </p>
+            ) : null}
             <div className="form-row">
               <div className="input-group"><label htmlFor="admin-rental-title">Title</label><input id="admin-rental-title" value={rentalForm.title} onChange={(event) => setRentalForm({ ...rentalForm, title: event.target.value })} /></div>
               <div className="input-group"><label htmlFor="admin-rental-location">Location</label><input id="admin-rental-location" value={rentalForm.locationLabel} onChange={(event) => setRentalForm({ ...rentalForm, locationLabel: event.target.value })} /></div>
