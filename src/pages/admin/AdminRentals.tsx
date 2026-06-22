@@ -88,9 +88,12 @@ function AdminRentals() {
   const [blockedDates, setBlockedDates] = useState<BlockedDateRecord[]>([]);
   const [rentalForm, setRentalForm] = useState<RentalForm>(emptyRentalForm());
   const [blockForm, setBlockForm] = useState<BlockForm>({ rentalId: '', startDate: '', endDate: '', reason: '' });
-  const [busy, setBusy] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
+  const [rentalBusy, setRentalBusy] = useState(false);
+  const [holdBusy, setHoldBusy] = useState(false);
+  const [rentalStatusMessage, setRentalStatusMessage] = useState('');
+  const [rentalErrorMessage, setRentalErrorMessage] = useState('');
+  const [holdStatusMessage, setHoldStatusMessage] = useState('');
+  const [holdErrorMessage, setHoldErrorMessage] = useState('');
   const selectedRentalLabel = useMemo(
     () => rentals.find((item) => item.id === rentalForm.id)?.title ?? 'New rental',
     [rentals, rentalForm.id],
@@ -143,10 +146,16 @@ function AdminRentals() {
     });
   }, []);
 
+  function startNewRental() {
+    setRentalForm(emptyRentalForm());
+    setRentalStatusMessage('');
+    setRentalErrorMessage('');
+  }
+
   async function saveRental() {
-    setBusy(true);
-    setErrorMessage('');
-    setStatusMessage('');
+    setRentalBusy(true);
+    setRentalErrorMessage('');
+    setRentalStatusMessage('');
     try {
       const heroImages = rentalForm.heroImages.filter(Boolean);
       const heroImageCaptions = heroImages.map((_, index) => rentalForm.heroImageCaptions[index] || '');
@@ -177,18 +186,18 @@ function AdminRentals() {
         setRentalForm(toRentalForm(payload.rental));
       }
       await loadData();
-      setStatusMessage('Rental saved.');
+      setRentalStatusMessage('Rental saved.');
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Could not save rental.');
+      setRentalErrorMessage(error instanceof Error ? error.message : 'Could not save rental.');
     } finally {
-      setBusy(false);
+      setRentalBusy(false);
     }
   }
 
   async function createBlockedDate() {
-    setBusy(true);
-    setErrorMessage('');
-    setStatusMessage('');
+    setHoldBusy(true);
+    setHoldErrorMessage('');
+    setHoldStatusMessage('');
     try {
       const res = await fetch('/api/admin/blocked-dates', {
         method: 'POST',
@@ -203,19 +212,19 @@ function AdminRentals() {
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(payload.message || 'Could not create blocked date.');
       await loadData();
-      setStatusMessage('Availability hold saved.');
+      setHoldStatusMessage('Availability hold saved.');
       setBlockForm((current) => ({ ...current, startDate: '', endDate: '', reason: '' }));
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Could not create blocked date.');
+      setHoldErrorMessage(error instanceof Error ? error.message : 'Could not create blocked date.');
     } finally {
-      setBusy(false);
+      setHoldBusy(false);
     }
   }
 
   async function deleteBlockedDate(id: number) {
-    setBusy(true);
-    setErrorMessage('');
-    setStatusMessage('');
+    setHoldBusy(true);
+    setHoldErrorMessage('');
+    setHoldStatusMessage('');
     try {
       const res = await fetch('/api/admin/blocked-dates/delete', {
         method: 'POST',
@@ -225,11 +234,11 @@ function AdminRentals() {
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(payload.message || 'Could not delete blocked date.');
       await loadData();
-      setStatusMessage('Availability hold removed.');
+      setHoldStatusMessage('Availability hold removed.');
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Could not delete blocked date.');
+      setHoldErrorMessage(error instanceof Error ? error.message : 'Could not delete blocked date.');
     } finally {
-      setBusy(false);
+      setHoldBusy(false);
     }
   }
 
@@ -238,9 +247,9 @@ function AdminRentals() {
     const confirmation = window.prompt('Type DELETE to permanently remove this rental.');
     if (confirmation === null) return;
 
-    setBusy(true);
-    setErrorMessage('');
-    setStatusMessage('');
+    setRentalBusy(true);
+    setRentalErrorMessage('');
+    setRentalStatusMessage('');
     try {
       const res = await fetch('/api/admin/rentals/delete', {
         method: 'POST',
@@ -251,11 +260,11 @@ function AdminRentals() {
       if (!res.ok) throw new Error(payload.message || 'Could not delete rental.');
       await loadData();
       setRentalForm(emptyRentalForm());
-      setStatusMessage('Rental deleted.');
+      setRentalStatusMessage('Rental deleted.');
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Could not delete rental.');
+      setRentalErrorMessage(error instanceof Error ? error.message : 'Could not delete rental.');
     } finally {
-      setBusy(false);
+      setRentalBusy(false);
     }
   }
 
@@ -271,25 +280,35 @@ function AdminRentals() {
         <section className="admin-section">
           <div className="admin-section-head">
             <h2>Rental Editor</h2>
-            <div className="admin-select-shell">
-              <label className="sr-only" htmlFor="admin-rental-select">Select rental</label>
-              <select
-                id="admin-rental-select"
-                value={rentalForm.id || ''}
-                onChange={(event) => {
-                  const rental = rentals.find((item) => item.id === Number(event.target.value));
-                  setRentalForm(rental ? toRentalForm(rental) : emptyRentalForm());
-                }}
-              >
-                <option value="">{selectedRentalLabel === 'New rental' ? 'New rental' : `${selectedRentalLabel} (current)`}</option>
-                {rentals.map((rental) => (
-                  <option key={rental.id} value={rental.id}>{rental.title}</option>
-                ))}
-              </select>
-              <ChevronsUpDown size={16} aria-hidden="true" />
+            <div className="admin-inline-actions">
+              <div className="admin-select-shell">
+                <label className="sr-only" htmlFor="admin-rental-select">Select rental</label>
+                <select
+                  id="admin-rental-select"
+                  value={rentalForm.id || ''}
+                  onChange={(event) => {
+                    const rental = rentals.find((item) => item.id === Number(event.target.value));
+                    setRentalForm(rental ? toRentalForm(rental) : emptyRentalForm());
+                    setRentalStatusMessage('');
+                    setRentalErrorMessage('');
+                  }}
+                >
+                  <option value="">{selectedRentalLabel === 'New rental' ? 'New rental' : `${selectedRentalLabel} (current)`}</option>
+                  {rentals.map((rental) => (
+                    <option key={rental.id} value={rental.id}>{rental.title}</option>
+                  ))}
+                </select>
+                <ChevronsUpDown size={16} aria-hidden="true" />
+              </div>
+              <button className="button-secondary" type="button" onClick={startNewRental} disabled={rentalBusy}>
+                New rental
+              </button>
             </div>
           </div>
           <div className="form-shell">
+            <p className="form-note">
+              This section only creates or updates rental listings. Availability holds are managed separately below.
+            </p>
             {!rentalForm.id ? (
               <p className="form-note">
                 Fill in the title and location before saving a brand new rental.
@@ -325,9 +344,11 @@ function AdminRentals() {
             />
             <div className="input-group"><label htmlFor="admin-rental-amenities">Amenities</label><textarea id="admin-rental-amenities" value={rentalForm.amenities} onChange={(event) => setRentalForm({ ...rentalForm, amenities: event.target.value })} placeholder="One amenity per line" /></div>
             <div className="admin-inline-actions">
-              <button className="button button-primary" type="button" onClick={saveRental} disabled={busy}>Save rental</button>
-              {rentalForm.id ? <button className="button-secondary" type="button" onClick={deleteRental} disabled={busy}>Delete rental</button> : null}
+              <button className="button button-primary" type="button" onClick={saveRental} disabled={rentalBusy}>Save rental</button>
+              {rentalForm.id ? <button className="button-secondary" type="button" onClick={deleteRental} disabled={rentalBusy}>Delete rental</button> : null}
             </div>
+            {rentalStatusMessage ? <p className="form-status form-status-success">{rentalStatusMessage}</p> : null}
+            {rentalErrorMessage ? <p className="form-status form-status-error" role="alert">{rentalErrorMessage}</p> : null}
           </div>
         </section>
 
@@ -336,6 +357,9 @@ function AdminRentals() {
             <h2>Availability Holds</h2>
           </div>
           <div className="form-shell">
+            <p className="form-note">
+              This section only blocks or opens dates for an existing rental. It does not create or edit the rental itself.
+            </p>
             <div className="input-group">
               <label htmlFor="admin-block-rental">Rental</label>
               <select id="admin-block-rental" value={blockForm.rentalId} onChange={(event) => setBlockForm({ ...blockForm, rentalId: event.target.value })}>
@@ -350,7 +374,9 @@ function AdminRentals() {
               <div className="input-group"><label htmlFor="admin-block-end">End Date</label><input id="admin-block-end" type="date" value={blockForm.endDate} onChange={(event) => setBlockForm({ ...blockForm, endDate: event.target.value })} /></div>
             </div>
             <div className="input-group"><label htmlFor="admin-block-reason">Reason</label><input id="admin-block-reason" value={blockForm.reason} onChange={(event) => setBlockForm({ ...blockForm, reason: event.target.value })} /></div>
-            <button className="button button-primary" type="button" onClick={createBlockedDate} disabled={busy}>Save availability hold</button>
+            <button className="button button-primary" type="button" onClick={createBlockedDate} disabled={holdBusy}>Save availability hold</button>
+            {holdStatusMessage ? <p className="form-status form-status-success">{holdStatusMessage}</p> : null}
+            {holdErrorMessage ? <p className="form-status form-status-error" role="alert">{holdErrorMessage}</p> : null}
           </div>
 
           <div className="admin-list">
@@ -360,14 +386,11 @@ function AdminRentals() {
                   <strong>{entry.rental_title}</strong>
                   <p>{entry.start_date} to {entry.end_date}{entry.reason ? ` • ${entry.reason}` : ''}</p>
                 </div>
-                <button className="button-secondary" type="button" onClick={() => deleteBlockedDate(entry.id)} disabled={busy}>Remove</button>
+                <button className="button-secondary" type="button" onClick={() => deleteBlockedDate(entry.id)} disabled={holdBusy}>Remove</button>
               </div>
             ))}
           </div>
         </section>
-
-        {statusMessage ? <p className="form-status form-status-success">{statusMessage}</p> : null}
-        {errorMessage ? <p className="form-status form-status-error" role="alert">{errorMessage}</p> : null}
       </div>
     </AdminLayout>
   );
