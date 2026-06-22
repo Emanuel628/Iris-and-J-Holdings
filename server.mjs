@@ -159,25 +159,9 @@ const notary = {
   cancelUrl: process.env.NOTARY_CANCEL_URL || '',
 };
 
-const uploadStorage = multer.diskStorage({
-  destination: async (_req, _file, cb) => {
-    try {
-      await fs.mkdir(uploadsDir, { recursive: true });
-      cb(null, uploadsDir);
-    } catch (error) {
-      cb(error);
-    }
-  },
-  filename: (_req, file, cb) => {
-    const extension = extensionFromMime(file.mimetype) || extensionFromFilename(file.originalname) || 'bin';
-    const stem = slugify(file.originalname.replace(/\.[a-z0-9]+$/i, '')) || 'image';
-    cb(null, `${Date.now()}-${randomBytes(6).toString('hex')}-${stem}.${extension === 'jpeg' ? 'jpg' : extension}`);
-  },
-});
-
 const uploadImage = multer({
-  storage: uploadStorage,
-  limits: { fileSize: 40 * 1024 * 1024, files: 1 },
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024, files: 1 },
   fileFilter: (_req, file, cb) => {
     const extension = extensionFromMime(file.mimetype) || extensionFromFilename(file.originalname);
     if ((!file.mimetype.startsWith('image/') && file.mimetype !== 'application/octet-stream') || !allowedUploadExtensions.has(extension)) {
@@ -251,23 +235,23 @@ app.post('/api/admin/upload-image', (req, res, next) => {
   try {
     const admin = await requireAdmin(req, res);
     if (!admin) {
-      const uploadedPath = req.file?.path;
-      if (uploadedPath) {
-        await fs.unlink(uploadedPath).catch(() => undefined);
-      }
       return;
     }
 
-    if (!req.file?.filename) {
+    if (!req.file?.buffer?.length) {
       return res.status(400).json({ message: 'Image file data is missing.' });
     }
 
-    return res.json({ url: `/uploads/${req.file.filename}` });
+    const storageKey = uploadedMediaKey(req.file);
+    await pgPool.query(
+      `INSERT INTO uploaded_media (storage_key, mime_type, original_name, file_size_bytes, file_data)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [storageKey, clean(req.file.mimetype) || 'application/octet-stream', clean(req.file.originalname), Number(req.file.size || req.file.buffer.length || 0), req.file.buffer],
+    );
+
+    return res.json({ url: `/uploads/${storageKey}` });
   } catch (error) {
     console.error('Admin image upload failed:', error);
-    if (req.file?.path) {
-      await fs.unlink(req.file.path).catch(() => undefined);
-    }
     return res.status(500).json({ message: 'Could not upload image.' });
   }
 });
@@ -776,6 +760,17 @@ async function ensureAdminTables() {
   await pgPool.query(`ALTER TABLE rentals ADD COLUMN IF NOT EXISTS hero_image_captions JSONB NOT NULL DEFAULT '[]'::jsonb;`);
   await pgPool.query(`ALTER TABLE rentals ADD COLUMN IF NOT EXISTS gallery_image_captions JSONB NOT NULL DEFAULT '[]'::jsonb;`);
   await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS uploaded_media (
+      id SERIAL PRIMARY KEY,
+      storage_key TEXT NOT NULL UNIQUE,
+      mime_type TEXT NOT NULL,
+      original_name TEXT NOT NULL DEFAULT '',
+      file_size_bytes INTEGER NOT NULL DEFAULT 0,
+      file_data BYTEA NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await pgPool.query(`
     CREATE TABLE IF NOT EXISTS blocked_dates (
       id SERIAL PRIMARY KEY,
       rental_id INTEGER NOT NULL REFERENCES rentals(id) ON DELETE CASCADE,
@@ -1153,6 +1148,13 @@ function extensionFromMime(mimeType) {
 function extensionFromFilename(filename) {
   const match = /\.([a-z0-9]+)$/i.exec(clean(filename));
   return match ? match[1].toLowerCase() : '';
+}
+
+function uploadedMediaKey(file) {
+  const extension = extensionFromMime(file.mimetype) || extensionFromFilename(file.originalname) || 'bin';
+  const stem = slugify(file.originalname.replace(/\.[a-z0-9]+$/i, '')) || 'image';
+  const suffix = extension === 'jpeg' ? 'jpg' : extension;
+  return `${Date.now()}-${randomBytes(6).toString('hex')}-${stem}.${suffix}`;
 }
 
 // Website bookings are stored in Stripe itself: any paid Checkout Session carries
@@ -3752,6 +3754,32 @@ app.get('/sitemap.xml', (_req, res) => {
     '</urlset>',
   ].join('\n');
   res.type('application/xml').send(xml);
+});
+
+app.get('/uploads/:storageKey', async (req, res, next) => {
+  try {
+    if (!pgPool) return next();
+    const storageKey = clean(req.params.storageKey);
+    if (!storageKey) return next();
+    const result = await pgPool.query(
+      `SELECT mime_type, original_name, file_data
+       FROM uploaded_media
+       WHERE storage_key = $1
+       LIMIT 1`,
+      [storageKey],
+    );
+    const media = result.rows[0];
+    if (!media?.file_data) return next();
+    if (media.original_name) {
+      res.setHeader('Content-Disposition', `inline; filename="${media.original_name.replace(/"/g, '')}"`);
+    }
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.type(clean(media.mime_type) || 'application/octet-stream');
+    return res.send(media.file_data);
+  } catch (error) {
+    console.error('Uploaded media fetch failed:', error);
+    return res.status(500).end();
+  }
 });
 
 app.use('/uploads', express.static(uploadsDir));
