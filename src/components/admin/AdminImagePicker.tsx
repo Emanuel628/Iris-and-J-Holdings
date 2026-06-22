@@ -18,6 +18,7 @@ function AdminImagePicker({ label, images, onChange, captions = [], onCaptionsCh
   const [slotCount, setSlotCount] = useState(emptySlots(images));
   const [uploading, setUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [pendingFiles, setPendingFiles] = useState<Record<number, File[]>>({});
 
   useEffect(() => {
     setSlotCount((current) => Math.max(current, emptySlots(images)));
@@ -40,12 +41,12 @@ function AdminImagePicker({ label, images, onChange, captions = [], onCaptionsCh
     return String(payload.url);
   }
 
-  async function handleFiles(targetIndex: number, fileList: FileList | null) {
-    if (!fileList?.length) return;
+  async function handleFiles(targetIndex: number, files: File[]) {
+    if (!files.length) return;
     setUploading(true);
     setErrorMessage('');
     try {
-      const nextImages = await Promise.all(Array.from(fileList).map((file) => uploadFile(file)));
+      const nextImages = await Promise.all(files.map((file) => uploadFile(file)));
       const filtered = nextImages.filter(Boolean);
       const isExistingImage = targetIndex < images.length;
       const next = [...images];
@@ -73,6 +74,11 @@ function AdminImagePicker({ label, images, onChange, captions = [], onCaptionsCh
         onCaptionsChange(nextCaptions);
       }
       setSlotCount((current) => Math.max(current, images.length + filtered.length, 4));
+      setPendingFiles((current) => {
+        const nextPending = { ...current };
+        delete nextPending[targetIndex];
+        return nextPending;
+      });
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Could not upload image.');
     } finally {
@@ -80,18 +86,26 @@ function AdminImagePicker({ label, images, onChange, captions = [], onCaptionsCh
     }
   }
 
+  function storePendingFiles(targetIndex: number, fileList: FileList | null) {
+    const files = fileList ? Array.from(fileList) : [];
+    if (!files.length) return;
+    setErrorMessage('');
+    setPendingFiles((current) => ({ ...current, [targetIndex]: files }));
+  }
+
   return (
     <div className="input-group">
       <div className="admin-image-picker-head">
         <label htmlFor={inputId}>{label}</label>
         <button className="button-secondary" type="button" onClick={() => setSlotCount((current) => current + 1)} disabled={uploading}>
-          {uploading ? 'Uploading...' : 'Add Pic'}
+          Add Slot
         </button>
       </div>
       <div className="admin-image-grid">
         {Array.from({ length: slotCount }).map((_, index) => {
           const image = images[index];
           const tileInputId = `${inputId}-${index}`;
+          const selectedFiles = pendingFiles[index] || [];
           return (
             <div className="admin-image-tile" key={`${label}-${index}`}>
               <input
@@ -101,7 +115,7 @@ function AdminImagePicker({ label, images, onChange, captions = [], onCaptionsCh
                 multiple
                 className="admin-file-input"
                 onChange={(event) => {
-                  handleFiles(index, event.target.files).catch(() => undefined);
+                  storePendingFiles(index, event.target.files);
                   event.currentTarget.value = '';
                 }}
                 disabled={uploading}
@@ -113,6 +127,28 @@ function AdminImagePicker({ label, images, onChange, captions = [], onCaptionsCh
               >
                 {image ? <img src={image} alt="" /> : <span>Add Pic</span>}
               </label>
+              <div className="admin-image-actions">
+                <label className="button-secondary admin-image-upload-trigger" htmlFor={tileInputId}>
+                  {image ? 'Choose New Pic' : 'Choose Pic'}
+                </label>
+                {selectedFiles.length ? (
+                  <button
+                    type="button"
+                    className="button button-primary admin-image-upload-button"
+                    onClick={() => {
+                      handleFiles(index, selectedFiles).catch(() => undefined);
+                    }}
+                    disabled={uploading}
+                  >
+                    {uploading ? 'Uploading...' : 'Upload'}
+                  </button>
+                ) : null}
+              </div>
+              {selectedFiles.length ? (
+                <p className="form-note admin-image-selected-files">
+                  {selectedFiles.map((file) => file.name).join(', ')}
+                </p>
+              ) : null}
               {image ? (
                 <>
                   {onCaptionsChange ? (
