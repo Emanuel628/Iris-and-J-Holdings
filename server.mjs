@@ -25,6 +25,11 @@ const booking = {
   webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
 };
 
+const newsletter = {
+  audienceId: process.env.RESEND_AUDIENCE_ID || '',
+  adminToken: process.env.NEWSLETTER_ADMIN_TOKEN || '',
+};
+
 app.set('trust proxy', 1);
 
 app.use((req, res, next) => {
@@ -326,8 +331,10 @@ app.post('/api/contact', async (req, res) => {
       return res.status(400).json({ message: 'Name and email are required.' });
     }
 
+    const wantsNewsletter = clean(fields?.['Newsletter Opt In'] || fields?.Newsletter || fields?.newsletterOptIn).length > 0;
+
     const rows = Object.entries(fields || {})
-      .filter(([key]) => !key.startsWith('_'))
+      .filter(([key]) => !key.startsWith('_') && key !== 'Newsletter Opt In' && key !== 'Newsletter')
       .map(([key, value]) => [key, clean(value)])
       .filter(([, value]) => value.length > 0);
 
@@ -357,10 +364,129 @@ app.post('/api/contact', async (req, res) => {
       console.error('Confirmation email failed:', confirmError);
     }
 
+    if (wantsNewsletter) {
+      subscribeEmail(email, name).catch((subErr) => console.error('Newsletter subscribe failed:', subErr));
+    }
+
     return res.status(200).json({ message: 'Message sent.' });
   } catch (error) {
     console.error('Contact email failed:', error);
     return res.status(500).json({ message: 'Message could not be sent.' });
+  }
+});
+
+// ---- Newsletter: subscribers via Resend Audiences, sending via Broadcasts ----
+async function resendRequest(apiPath, method, body) {
+  if (!resendApiKey) throw new Error('RESEND_API_KEY is not configured.');
+  const response = await fetch(`https://api.resend.com${apiPath}`, {
+    method,
+    headers: { Authorization: `Bearer ${resendApiKey}`, 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const data = await response.json().catch(() => ({}));
+  return { ok: response.ok, status: response.status, data };
+}
+
+// Resend keeps one contact per email per audience, so re-adding an existing
+// email never creates a duplicate — a subscriber can't be subscribed twice.
+async function subscribeEmail(email, name) {
+  if (!resendApiKey || !newsletter.audienceId) {
+    throw new Error('Newsletter is not configured.');
+  }
+  const firstName = clean(name).split(' ')[0] || undefined;
+  const result = await resendRequest(`/audiences/${newsletter.audienceId}/contacts`, 'POST', {
+    email: clean(email).toLowerCase(),
+    first_name: firstName,
+    unsubscribed: false,
+  });
+  const already = !result.ok && /exist|already/i.test(JSON.stringify(result.data));
+  return { ok: result.ok || already, already };
+}
+
+function newsletterHtml({ title, date, body, images = [], listings = [] }) {
+  const s = (value) => escapeHtml(value);
+  const paragraphs = clean(body)
+    .split(/\n{2,}/)
+    .filter((p) => p.length > 0)
+    .map((p) => `<p style="margin:0 0 16px;line-height:1.65;color:#3f4650">${s(p).replace(/\n/g, '<br>')}</p>`)
+    .join('');
+  const imageHtml = images
+    .filter((img) => clean(img?.url))
+    .map((img) => `<figure style="margin:0 0 18px"><img src="${s(img.url)}" alt="${s(img.caption || '')}" style="width:100%;border-radius:8px"/>${img.caption ? `<figcaption style="font-size:13px;color:#6f747b;margin-top:6px">${s(img.caption)}</figcaption>` : ''}</figure>`)
+    .join('');
+  const listingHtml = listings
+    .filter((l) => clean(l?.title) || clean(l?.url))
+    .map((l) => `<table width="100%" style="margin:0 0 16px;border:1px solid #e7dfd4;border-radius:8px"><tr><td style="padding:14px">${l.image ? `<img src="${s(l.image)}" alt="${s(l.title || '')}" style="width:100%;border-radius:6px;margin-bottom:10px"/>` : ''}<strong style="font-size:16px;color:#121820">${s(l.title || 'Listing')}</strong>${l.description ? `<p style="margin:6px 0 10px;color:#3f4650">${s(l.description)}</p>` : ''}${l.url ? `<a href="${s(l.url)}" style="color:#a77931;font-weight:700">View listing &rarr;</a>` : ''}</td></tr></table>`)
+    .join('');
+  return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#fbfaf7">
+    <h1 style="font-family:Georgia,'Times New Roman',serif;color:#121820;font-size:26px;margin:0 0 4px">${s(title || 'Iris & J Holdings')}</h1>
+    <p style="color:#a77931;font-weight:700;letter-spacing:1px;text-transform:uppercase;font-size:12px;margin:0 0 20px">${s(date || '')}</p>
+    ${paragraphs}${imageHtml}${listingHtml}
+    <hr style="border:none;border-top:1px solid #e7dfd4;margin:24px 0"/>
+    <p style="font-size:12px;color:#6f747b">Iris &amp; J Holdings &middot; Real estate through All Star Real Estate Agency &middot; Mobile notary &amp; Orlando vacation rentals.<br>You are receiving this because you subscribed at irisjholdings.com. <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#6f747b">Unsubscribe</a>.</p>
+  </div>`;
+}
+
+app.post('/api/subscribe', async (req, res) => {
+  try {
+    const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+    if (isRateLimited(ip)) {
+      return res.status(429).json({ message: 'Too many requests. Please try again later.' });
+    }
+    const email = clean(req.body?.email);
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      return res.status(400).json({ message: 'Please enter a valid email address.' });
+    }
+    if (!resendApiKey || !newsletter.audienceId) {
+      return res.status(503).json({ message: 'The newsletter isn’t available yet.' });
+    }
+    const result = await subscribeEmail(email, clean(req.body?.name));
+    return res.status(200).json({ subscribed: true, already: result.already });
+  } catch (error) {
+    console.error('Subscribe failed:', error);
+    return res.status(500).json({ message: 'Could not subscribe right now. Please try again.' });
+  }
+});
+
+app.get('/api/newsletter/config', (_req, res) => {
+  res.json({ enabled: Boolean(resendApiKey && newsletter.audienceId) });
+});
+
+app.post('/api/newsletter/send', async (req, res) => {
+  try {
+    if (!resendApiKey || !newsletter.audienceId) {
+      return res.status(503).json({ message: 'Newsletter is not configured.' });
+    }
+    if (!newsletter.adminToken || req.get('x-admin-token') !== newsletter.adminToken) {
+      return res.status(401).json({ message: 'Not authorized.' });
+    }
+    const title = clean(req.body?.title) || 'Iris & J Holdings Newsletter';
+    const date = clean(req.body?.date);
+    const body = clean(req.body?.body);
+    const subject = clean(req.body?.subject) || title;
+    const images = Array.isArray(req.body?.images) ? req.body.images.slice(0, 12) : [];
+    const listings = Array.isArray(req.body?.listings) ? req.body.listings.slice(0, 20) : [];
+    if (!body && images.length === 0 && listings.length === 0) {
+      return res.status(400).json({ message: 'Add some content before sending.' });
+    }
+    const html = newsletterHtml({ title, date, body, images, listings });
+    const created = await resendRequest('/broadcasts', 'POST', {
+      audience_id: newsletter.audienceId,
+      from: resendFrom,
+      subject,
+      html,
+    });
+    if (!created.ok || !created.data?.id) {
+      throw new Error(`Broadcast create failed: ${created.status} ${JSON.stringify(created.data)}`);
+    }
+    const sent = await resendRequest(`/broadcasts/${created.data.id}/send`, 'POST', {});
+    if (!sent.ok) {
+      throw new Error(`Broadcast send failed: ${sent.status} ${JSON.stringify(sent.data)}`);
+    }
+    return res.status(200).json({ ok: true, broadcastId: created.data.id });
+  } catch (error) {
+    console.error('Newsletter send failed:', error);
+    return res.status(500).json({ message: 'Could not send the newsletter. Check the server logs.' });
   }
 });
 

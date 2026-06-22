@@ -1,4 +1,5 @@
 import FormStatus from '../ui/FormStatus';
+import NewsletterOptIn from '../ui/NewsletterOptIn';
 import { useContactForm } from '../../lib/useContactForm';
 
 /** Mobile notary appointment request: pick a date and time, email goes to Daiana. */
@@ -34,6 +35,7 @@ function NotaryBooking() {
         <label htmlFor="notary-notes">Notes</label>
         <textarea id="notary-notes" name="notes" placeholder="Number of signers, address, anything else" />
       </div>
+      <NewsletterOptIn />
       <button className="button button-primary" type="submit" disabled={status === 'sending'}>
         {status === 'sending' ? 'Sending…' : 'Request Appointment'}
       </button>

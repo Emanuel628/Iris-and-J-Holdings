@@ -1,4 +1,5 @@
 import PublicLayout from '../../components/layout/PublicLayout';
+import SocialLinks from '../../components/ui/SocialLinks';
 import { usePageMeta } from '../../lib/usePageMeta';
 
 function About() {
@@ -60,6 +61,10 @@ function About() {
               <a href="tel:19084996320">(908) 499-6320</a>, or send your details through the booking page and
               Daiana will follow up by email.
             </p>
+            <div className="about-social">
+              <span className="about-social-label">Follow along</span>
+              <SocialLinks />
+            </div>
           </section>
 
           <div className="notice-box">

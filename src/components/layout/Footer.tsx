@@ -1,4 +1,5 @@
 import { Mail, MapPin, Phone } from 'lucide-react';
+import SocialLinks from '../ui/SocialLinks';
 import '../../styles/footer-position-fix.css';
 
 function Footer() {
@@ -33,6 +34,7 @@ function Footer() {
             through Iris &amp; J Holdings.
           </p>
           <a className="footer-about-link" href="/about">About Daiana</a>
+          <SocialLinks className="footer-social" />
         </div>
       </div>
 
