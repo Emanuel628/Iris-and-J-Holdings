@@ -35,7 +35,7 @@ function AdminImagePicker({ label, images, onChange, captions = [], onCaptionsCh
     });
     const payload = await res.json().catch(() => ({}));
     if (!res.ok || !payload.url) {
-      throw new Error(payload.message || 'Could not upload image.');
+      throw new Error(payload.message ? `Upload failed (${res.status}): ${payload.message}` : `Upload failed (${res.status}).`);
     }
     return String(payload.url);
   }
@@ -74,6 +74,7 @@ function AdminImagePicker({ label, images, onChange, captions = [], onCaptionsCh
       }
       setSlotCount((current) => Math.max(current, images.length + filtered.length, 4));
     } catch (error) {
+      console.error('Admin image upload client failed:', error);
       setErrorMessage(error instanceof Error ? error.message : 'Could not upload image.');
     } finally {
       setUploading(false);

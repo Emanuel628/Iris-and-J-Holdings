@@ -259,7 +259,9 @@ app.post('/api/admin/upload-image', (req, res, next) => {
     return res.json({ url: `/uploads/${storageKey}` });
   } catch (error) {
     console.error('Admin image upload failed:', error);
-    return res.status(500).json({ message: 'Could not upload image.' });
+    return res.status(500).json({
+      message: error instanceof Error ? error.message : 'Could not upload image.',
+    });
   }
 });
 
