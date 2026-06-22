@@ -10,7 +10,7 @@ const steps = [
   {
     number: '02',
     title: 'Get a clear plan.',
-    text: 'You’ll get straight answers about your options and the steps that matter — buying, selling, a home value, or a notary visit.',
+    text: 'You’ll get straight answers about your options and the steps that matter — buying, selling, a home value review, or a notary visit.',
     icon: CalendarCheck,
   },
   {

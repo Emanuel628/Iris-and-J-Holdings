@@ -19,8 +19,19 @@ function formatMoney(cents: number, currency: string) {
   }
 }
 
+function formatShortDate(value: string) {
+  if (!value) return value;
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('en-US', {
+    month: '2-digit',
+    day: '2-digit',
+    year: '2-digit',
+  }).format(date);
+}
+
 function BookingSuccess() {
-  usePageMeta('Booking Status', 'Your Orlando vacation rental booking status.');
+  usePageMeta('Booking Status', 'Your Orlando vacation rental booking status.', { robots: 'noindex,nofollow' });
   const [info, setInfo] = useState<SessionInfo | null>(null);
   const [done, setDone] = useState(false);
 
@@ -45,14 +56,15 @@ function BookingSuccess() {
         <section className="page-hero">
           <div className="page-hero-content">
             <p className="eyebrow">Booking {paid ? 'confirmed' : 'received'}</p>
-            <h1>{paid ? 'Thank you — your stay is reserved.' : 'Thank you — your booking is being processed.'}</h1>
+            <h1>{paid ? 'Thank you - your stay is reserved.' : 'Thank you - your booking is being processed.'}</h1>
             {!done ? (
-              <p>Confirming your booking…</p>
+              <p>Confirming your booking...</p>
             ) : paid && info && info.checkIn ? (
               <p>
-                You’re booked from <strong>{info.checkIn}</strong> to <strong>{info.checkOut}</strong>
+                You're booked from <strong>{formatShortDate(info.checkIn)}</strong> to <strong>{formatShortDate(info.checkOut)}</strong>
                 {info.amountTotal ? <> for {formatMoney(info.amountTotal, info.currency)}</> : null}. A receipt is on
-                its way to {info.email || 'your email'}, and Daiana will follow up with the details.
+                its way to {info.email || 'your email'}, and Daiana will follow up with the details. Your confirmation
+                email will include a secure link to request a cancellation or date change.
               </p>
             ) : info && info.checkIn ? (
               <p>

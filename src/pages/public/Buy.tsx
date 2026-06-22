@@ -1,37 +1,34 @@
-import PublicLayout from '../../components/layout/PublicLayout';
+﻿import PublicLayout from '../../components/layout/PublicLayout';
+import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
 import { usePageMeta } from '../../lib/usePageMeta';
 
 function Buy() {
   usePageMeta(
-    'Buy a Home',
-    'Buyer guidance for budget, search strategy, offers, and closing throughout New Jersey.',
+    'Buy a Home in New Jersey',
+    'Buyer consultation and home search guidance in New Jersey, including budget review, pre-approval, offers, inspections, attorney review, and closing next steps.',
   );
+  const template = getSiteContentTemplate('buy');
+  const { content, heroImageUrl } = usePublicSiteContent('buy', template?.defaults || {});
+
   return (
     <PublicLayout>
       <main className="page-main">
         <section className="page-hero">
           <div className="page-hero-content">
-            <p className="eyebrow">Buyer Guidance</p>
-            <h1>Buying a home starts with a clear plan.</h1>
-            <p>
-              Whether this is your first home or your next move, Daiana helps you understand your budget,
-              narrow your search, prepare with confidence, and know what to expect before closing.
-            </p>
+            <p className="eyebrow">{content.heroEyebrow}</p>
+            <h1>{content.heroTitle}</h1>
+            <p>{content.heroDescription}</p>
           </div>
           <div className="page-hero-visual page-hero-image-frame" aria-label="Buyer guidance visual">
-            <img src="/images/site/buy-hero.jpg" alt="Bright modern home interior with a model of new homes" />
+            <img src={heroImageUrl || '/images/site/buy-hero.jpg'} alt="Bright modern home interior with a model of new homes" />
           </div>
         </section>
 
         <section className="page-content">
           <div className="page-intro">
-            <p className="eyebrow">What to expect</p>
-            <h2>Get your bearings before you start touring.</h2>
-            <p>
-              Start with a no-pressure conversation about your budget and pre-approval, the neighborhoods and
-              home types that fit, and how New Jersey’s process works — from making an offer and attorney review
-              to inspections and the closing timeline.
-            </p>
+            <p className="eyebrow">{content.introEyebrow}</p>
+            <h2>{content.introTitle}</h2>
+            <p>{content.introDescription}</p>
           </div>
 
           <div className="notice-box">
@@ -86,3 +83,4 @@ function Buy() {
 }
 
 export default Buy;
+

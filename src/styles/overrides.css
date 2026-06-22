@@ -23,6 +23,24 @@
   gap: clamp(1rem, 2vw, 1.5rem);
 }
 
+.vacation-photo-groups {
+  display: grid;
+  gap: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+.vacation-photo-group {
+  display: grid;
+  gap: 1rem;
+}
+
+.vacation-photo-group h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .vacation-photo-card {
   display: flex;
   min-height: 220px;
@@ -523,6 +541,19 @@ html.desktop-view .service-grid {
   gap: 0.9rem;
 }
 
+.compact-footer .footer-bottom-inner {
+  width: 100%;
+}
+
+.compact-footer .footer-bottom-links {
+  gap: 1rem;
+}
+
+.compact-footer .footer-bottom-inner > div,
+.compact-footer .footer-bottom-inner {
+  align-items: center;
+}
+
 /* ===== roadmap-polish ===== */
 html {
   scroll-behavior: smooth;
@@ -576,6 +607,16 @@ html {
     linear-gradient(135deg, #f8f1ea, #ccb49c);
   border-radius: 24px;
   min-height: 460px;
+  overflow: hidden;
+  position: relative;
+}
+
+.about-hero-visual img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center 22%;
 }
 
 /* No decorative circle or name chip over the real photo. */

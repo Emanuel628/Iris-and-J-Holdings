@@ -7,7 +7,7 @@ const trustPoints = [
   },
   {
     title: 'Local New Jersey focus',
-    text: 'Support for buyers, sellers, and notary clients across Union, Middlesex, and Essex County.',
+    text: 'Support for buyers, sellers, and notary clients across Union, Middlesex, and Essex Counties.',
   },
   {
     title: 'Organized process',

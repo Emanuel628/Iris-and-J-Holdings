@@ -1,6 +1,7 @@
-import PublicLayout from '../../components/layout/PublicLayout';
+﻿import PublicLayout from '../../components/layout/PublicLayout';
 import NotaryBooking from '../../components/booking/NotaryBooking';
 import Faq from '../../components/sections/Faq';
+import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
 import { usePageMeta } from '../../lib/usePageMeta';
 
 const notaryFaqs = [
@@ -17,7 +18,7 @@ const notaryFaqs = [
   {
     question: 'Is a fee required to book?',
     answer:
-      'Yes — a travel or booking fee is confirmed before the appointment. Notary fees are separate and depend on the document type and number of notarizations. Daiana will confirm the details when you book.',
+      'Yes — the travel or booking fee is paid through secure checkout when you submit the request. Notary fees are separate and depend on the document type and number of notarizations. Daiana will confirm the details by email.',
   },
   {
     question: 'What types of documents can you notarize?',
@@ -28,35 +29,32 @@ const notaryFaqs = [
 
 function MobileNotary() {
   usePageMeta(
-    'Mobile Notary',
-    'Mobile notary services by appointment, primarily in Union, Middlesex, and Essex Counties, with additional areas by request.',
+    'Mobile Notary in Union, Middlesex & Essex Counties',
+    'Mobile notary appointments for Union County, Middlesex County, and Essex County, NJ, including general notarizations, real estate documents, affidavits, and consent forms.',
   );
+  const template = getSiteContentTemplate('mobile-notary');
+  const { content, heroImageUrl } = usePublicSiteContent('mobile-notary', template?.defaults || {});
+
   return (
     <PublicLayout>
       <main className="page-main">
-        <section className="page-hero">
+        <section className="page-hero notary-hero">
           <div className="page-hero-content">
-            <p className="eyebrow">Mobile Notary</p>
-            <h1>Mobile notary service, by appointment.</h1>
-            <p>
-              Mobile notary help is available by appointment, primarily in Union, Middlesex, and Essex Counties,
-              with additional areas available by request.
-            </p>
+            <p className="eyebrow">{content.heroEyebrow}</p>
+            <h1>{content.heroTitle}</h1>
+            <p>{content.heroDescription}</p>
           </div>
           <div className="page-hero-visual page-hero-image-frame" aria-label="Mobile notary document signing visual">
-            <img src="/images/site/notary-hero.jpg" alt="Notary portfolio and signing pen" />
+            <img src={heroImageUrl || '/images/site/notary-hero.jpg'} alt="Notary portfolio and signing pen" />
           </div>
         </section>
 
         <section className="page-content" id="appointment">
           <div className="split-section">
             <div className="page-intro">
-              <p className="eyebrow">Request an appointment</p>
-              <h2>Pick a date and time.</h2>
-              <p>
-                Choose when works for you and send the details. Daiana will confirm the appointment, the service
-                area, and any travel or notary fees by email.
-              </p>
+              <p className="eyebrow">{content.bookingEyebrow}</p>
+              <h2>{content.bookingTitle}</h2>
+              <p>{content.bookingDescription}</p>
             </div>
             <NotaryBooking />
           </div>
@@ -74,7 +72,7 @@ function MobileNotary() {
           </div>
           <section className="quiet-band">
             <p className="eyebrow">Travel notice</p>
-            <h2>A travel or booking fee is required before confirmation.</h2>
+            <h2>A travel or booking fee is paid before the request is submitted for confirmation.</h2>
             <p>Notary fees are separate and depend on the document type and number of notarizations.</p>
           </section>
 
@@ -91,3 +89,4 @@ function MobileNotary() {
 }
 
 export default MobileNotary;
+

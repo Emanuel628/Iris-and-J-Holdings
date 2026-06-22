@@ -1,27 +1,30 @@
-import PublicLayout from '../../components/layout/PublicLayout';
+﻿import PublicLayout from '../../components/layout/PublicLayout';
+import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
 import { usePageMeta } from '../../lib/usePageMeta';
 
 function Resources() {
   usePageMeta(
-    'Resources',
-    'Free buyer and seller guides plus local market updates — helpful next steps before you’re ready to schedule a call.',
+    'Real Estate Resources for NJ Buyers & Sellers',
+    'Plain-language New Jersey buyer guides, seller guides, and local market updates for people preparing to buy, sell, or request a home value review.',
   );
+  const template = getSiteContentTemplate('resources');
+  const { content, heroImageUrl } = usePublicSiteContent('resources', template?.defaults || {});
+
   return (
     <PublicLayout>
       <main className="page-main">
         <section className="page-hero">
           <div className="page-hero-content">
-            <p className="eyebrow">Resources</p>
-            <h1>Helpful info before you’re ready to reach out.</h1>
-            <p>
-              Not everyone is ready for a call right away. Start with a buyer guide, seller guide,
-              or local market update and come back when the timing feels right.
-            </p>
+            <p className="eyebrow">{content.heroEyebrow}</p>
+            <h1>{content.heroTitle}</h1>
+            <p>{content.heroDescription}</p>
             <div className="page-actions">
               <a className="button button-primary" href="#resources-list">Browse Resources</a>
             </div>
           </div>
-          <div className="page-hero-visual" aria-label="Resources visual placeholder" />
+          <div className={`page-hero-visual ${heroImageUrl ? 'page-hero-image-frame' : ''}`} aria-label="Resources visual">
+            {heroImageUrl ? <img src={heroImageUrl} alt="Real estate resources and planning visual" /> : null}
+          </div>
         </section>
 
         <section className="page-content" id="resources-list">
@@ -58,3 +61,4 @@ function Resources() {
 }
 
 export default Resources;
+

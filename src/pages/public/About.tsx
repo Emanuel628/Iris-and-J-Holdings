@@ -1,30 +1,33 @@
 import PublicLayout from '../../components/layout/PublicLayout';
 import SocialLinks from '../../components/ui/SocialLinks';
+import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
 import { usePageMeta } from '../../lib/usePageMeta';
 
 function About() {
   usePageMeta(
-    'About Daiana Castro',
-    'Daiana Castro helps New Jersey buyers, sellers, and notary clients with real estate guidance and mobile notary service.',
+    'About Daiana Castro, REALTOR®',
+    'Meet Daiana Castro, REALTOR® and mobile notary serving New Jersey buyers, sellers, and notary clients through Iris & J Holdings and All Star Real Estate Agency.',
   );
+  const template = getSiteContentTemplate('about');
+  const { content, heroImageUrl } = usePublicSiteContent('about', template?.defaults || {});
+  const portraitImageUrl = content.portraitImageUrl || heroImageUrl || '/images/site/daiana-portrait.jpg';
+
   return (
     <PublicLayout>
       <main className="page-main">
         <section className="page-hero page-hero-about">
           <div className="page-hero-content">
-            <p className="eyebrow">About Daiana</p>
-            <h1>Real estate and notary help that keeps things simple.</h1>
-            <p>
-              Daiana Castro, REALTOR®, provides real estate services throughout New Jersey through All Star Real
-              Estate Agency. She also offers mobile notary services and independently manages Orlando vacation
-              rental accommodations through Iris &amp; J Holdings.
-            </p>
+            <p className="eyebrow">{content.heroEyebrow}</p>
+            <h1>{content.heroTitle}</h1>
+            <p>{content.heroDescription}</p>
             <div className="page-actions">
               <a className="button button-primary" href="/book?service=General%20Question#contact-form">Meet With Daiana</a>
             </div>
           </div>
           <figure className="about-portrait">
-            <div className="page-hero-visual about-hero-visual" role="img" aria-label="Portrait of Daiana Castro" />
+            <div className="page-hero-visual about-hero-visual" aria-label="Portrait of Daiana Castro">
+              <img src={portraitImageUrl} alt="Portrait of Daiana Castro" />
+            </div>
             <figcaption>Daiana Castro, REALTOR®</figcaption>
           </figure>
         </section>
@@ -57,7 +60,7 @@ function About() {
             <h2>Serving New Jersey.</h2>
             <p>
               Real estate runs through All Star Real Estate Agency, available throughout New Jersey with a focus
-              on Union, Middlesex, and Essex County; mobile notary visits are booked directly. Call or text{' '}
+              on Union, Middlesex, and Essex Counties; mobile notary visits are booked directly. Call or text{' '}
               <a href="tel:19084996320">(908) 499-6320</a>, or send your details through the booking page and
               Daiana will follow up by email.
             </p>
