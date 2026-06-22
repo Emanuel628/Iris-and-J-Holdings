@@ -101,20 +101,21 @@ function VacationRentals() {
   }, [rentals]);
 
   const selectedRental = rentals[selectedIndex] || null;
+  const selectedRentalHeroImage = selectedRental?.hero_image_url || selectedRental?.gallery_image_urls?.[0] || '';
   const rentalAmenities = useMemo(
     () => (selectedRental?.amenities?.length ? selectedRental.amenities : fallbackAmenities),
     [selectedRental],
   );
   const rentalPhotos = useMemo(() => {
     const images = [
-      { url: selectedRental?.hero_image_url || '', caption: selectedRental?.hero_image_captions?.[0] || '' },
-      ...(selectedRental?.gallery_image_urls || []).map((url, index) => ({
+      { url: selectedRentalHeroImage, caption: selectedRental?.hero_image_captions?.[0] || '' },
+      ...(selectedRental?.gallery_image_urls || []).filter((url) => url && url !== selectedRentalHeroImage).map((url, index) => ({
         url,
         caption: selectedRental?.gallery_image_captions?.[index] || '',
       })),
     ].filter((entry) => entry.url);
     return images.length ? images : fallbackPhotoSlots;
-  }, [selectedRental]);
+  }, [selectedRental, selectedRentalHeroImage]);
 
   function isImageValue(value: string) {
     return value.startsWith('data:') || value.startsWith('http') || value.startsWith('/');
@@ -147,7 +148,7 @@ function VacationRentals() {
             ) : null}
           </div>
           <div className="page-hero-visual page-hero-image-frame vacation-hero-visual" aria-label="Orlando vacation rental visual">
-            <img src={selectedRental?.hero_image_url || heroImageUrl || '/images/site/vacation-hero.jpg'} alt="Sunlit Orlando vacation rental interior and patio" />
+            <img src={selectedRentalHeroImage || heroImageUrl || '/images/site/vacation-hero.jpg'} alt="Sunlit Orlando vacation rental interior and patio" />
           </div>
         </section>
 

@@ -2196,19 +2196,23 @@ app.post('/api/admin/rentals', async (req, res) => {
       return res.status(400).json({ message: 'Title and location are required.' });
     }
 
+    let savedRentalResult;
     if (id > 0) {
-      await pgPool.query(
+      savedRentalResult = await pgPool.query(
         `UPDATE rentals
          SET slug = $2, title = $3, location_label = $4, description = $5,
              nightly_rate_cents = $6, cleaning_fee_cents = $7, max_guests = $8,
              hero_image_url = $9, hero_image_captions = $10::jsonb, gallery_image_urls = $11::jsonb,
              gallery_image_captions = $12::jsonb, amenities = $13::jsonb,
              is_active = $14, updated_at = NOW()
-         WHERE id = $1`,
+         WHERE id = $1
+         RETURNING id, slug, title, location_label, description, nightly_rate_cents, cleaning_fee_cents,
+                   max_guests, hero_image_url, hero_image_captions, gallery_image_urls, gallery_image_captions,
+                   amenities, is_active, updated_at`,
         [id, slug, title, locationLabel, description, nightlyRateCents, cleaningFeeCents, maxGuests, heroImageUrl, JSON.stringify(heroImageCaptions), JSON.stringify(galleryImageUrls), JSON.stringify(galleryImageCaptions), JSON.stringify(amenities), isActive],
       );
     } else {
-      await pgPool.query(
+      savedRentalResult = await pgPool.query(
         `INSERT INTO rentals (
           slug, title, location_label, description, nightly_rate_cents, cleaning_fee_cents,
           max_guests, hero_image_url, hero_image_captions, gallery_image_urls, gallery_image_captions, amenities, is_active
@@ -2228,12 +2232,15 @@ app.post('/api/admin/rentals', async (req, res) => {
           amenities = EXCLUDED.amenities,
           is_active = EXCLUDED.is_active,
           deleted_at = NULL,
-          updated_at = NOW()`,
+          updated_at = NOW()
+        RETURNING id, slug, title, location_label, description, nightly_rate_cents, cleaning_fee_cents,
+                  max_guests, hero_image_url, hero_image_captions, gallery_image_urls, gallery_image_captions,
+                  amenities, is_active, updated_at`,
         [slug, title, locationLabel, description, nightlyRateCents, cleaningFeeCents, maxGuests, heroImageUrl, JSON.stringify(heroImageCaptions), JSON.stringify(galleryImageUrls), JSON.stringify(galleryImageCaptions), JSON.stringify(amenities), isActive],
       );
     }
 
-    return res.json({ ok: true });
+    return res.json({ ok: true, rental: savedRentalResult?.rows?.[0] || null });
   } catch (error) {
     console.error('Admin rental save failed:', error);
     return res.status(500).json({ message: 'Could not save rental.' });

@@ -171,8 +171,11 @@ function AdminRentals() {
           isActive: rentalForm.isActive,
         }),
       });
-      const payload = await res.json().catch(() => ({}));
+      const payload = await res.json().catch(() => ({} as { message?: string; rental?: RentalRecord | null }));
       if (!res.ok) throw new Error(payload.message || 'Could not save rental.');
+      if (payload.rental) {
+        setRentalForm(toRentalForm(payload.rental));
+      }
       await loadData();
       setStatusMessage('Rental saved.');
     } catch (error) {
