@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 
 type AdminImagePickerProps = {
   label: string;
@@ -14,10 +14,8 @@ function emptySlots(images: string[]) {
 }
 
 function AdminImagePicker({ label, images, onChange, captions = [], onCaptionsChange, helperText }: AdminImagePickerProps) {
-  const inputRef = useRef<HTMLInputElement | null>(null);
   const inputId = useId();
   const [slotCount, setSlotCount] = useState(emptySlots(images));
-  const [targetIndex, setTargetIndex] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -42,54 +40,43 @@ function AdminImagePicker({ label, images, onChange, captions = [], onCaptionsCh
     return String(payload.url);
   }
 
-  async function handleFiles(fileList: FileList | null) {
+  async function handleFiles(targetIndex: number, fileList: FileList | null) {
     if (!fileList?.length) return;
     setUploading(true);
     setErrorMessage('');
     try {
       const nextImages = await Promise.all(Array.from(fileList).map((file) => uploadFile(file)));
       const filtered = nextImages.filter(Boolean);
-      if (targetIndex !== null) {
-        const isExistingImage = targetIndex < images.length;
-        const next = [...images];
+      const isExistingImage = targetIndex < images.length;
+      const next = [...images];
+      if (isExistingImage) {
+        if (filtered[0]) {
+          next[targetIndex] = filtered[0];
+        }
+        if (filtered.length > 1) {
+          next.push(...filtered.slice(1));
+        }
+      } else {
+        next.push(...filtered);
+      }
+      onChange(next);
+      if (onCaptionsChange) {
+        const nextCaptions = [...captions];
         if (isExistingImage) {
-          if (filtered[0]) {
-            next[targetIndex] = filtered[0];
-          }
+          nextCaptions[targetIndex] = nextCaptions[targetIndex] || '';
           if (filtered.length > 1) {
-            next.push(...filtered.slice(1));
+            nextCaptions.push(...filtered.slice(1).map(() => ''));
           }
         } else {
-          next.push(...filtered);
+          nextCaptions.push(...filtered.map(() => ''));
         }
-        onChange(next);
-        if (onCaptionsChange) {
-          const nextCaptions = [...captions];
-          if (isExistingImage) {
-            nextCaptions[targetIndex] = nextCaptions[targetIndex] || '';
-            if (filtered.length > 1) {
-              nextCaptions.push(...filtered.slice(1).map(() => ''));
-            }
-          } else {
-            nextCaptions.push(...filtered.map(() => ''));
-          }
-          onCaptionsChange(nextCaptions);
-        }
-        setTargetIndex(null);
-      } else {
-        onChange([...images, ...filtered]);
-        if (onCaptionsChange) {
-          onCaptionsChange([...captions, ...filtered.map(() => '')]);
-        }
+        onCaptionsChange(nextCaptions);
       }
       setSlotCount((current) => Math.max(current, images.length + filtered.length, 4));
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Could not upload image.');
     } finally {
       setUploading(false);
-      if (inputRef.current) {
-        inputRef.current.value = '';
-      }
     }
   }
 
@@ -101,34 +88,31 @@ function AdminImagePicker({ label, images, onChange, captions = [], onCaptionsCh
           {uploading ? 'Uploading...' : 'Add Pic'}
         </button>
       </div>
-      <input
-        id={inputId}
-        ref={inputRef}
-        type="file"
-        accept=".png,.jpg,.jpeg,.webp,.gif,.svg,.avif,.heic,.heif,image/*"
-        multiple
-        className="admin-file-input"
-        onChange={(event) => {
-          handleFiles(event.target.files).catch(() => undefined);
-        }}
-      />
       <div className="admin-image-grid">
         {Array.from({ length: slotCount }).map((_, index) => {
           const image = images[index];
+          const tileInputId = `${inputId}-${index}`;
           return (
             <div className="admin-image-tile" key={`${label}-${index}`}>
-              <button
-                type="button"
-                className={`admin-image-frame${image ? ' has-image' : ''}`}
-                onClick={() => {
-                  setTargetIndex(image ? index : null);
-                  inputRef.current?.click();
+              <input
+                id={tileInputId}
+                type="file"
+                accept=".png,.jpg,.jpeg,.webp,.gif,.svg,.avif,.heic,.heif,image/*"
+                multiple
+                className="admin-file-input"
+                onChange={(event) => {
+                  handleFiles(index, event.target.files).catch(() => undefined);
+                  event.currentTarget.value = '';
                 }}
-                aria-label={image ? `Replace image ${index + 1}` : `Add image ${index + 1}`}
                 disabled={uploading}
+              />
+              <label
+                htmlFor={tileInputId}
+                className={`admin-image-frame${image ? ' has-image' : ''}`}
+                aria-label={image ? `Replace image ${index + 1}` : `Add image ${index + 1}`}
               >
                 {image ? <img src={image} alt="" /> : <span>Add Pic</span>}
-              </button>
+              </label>
               {image ? (
                 <>
                   {onCaptionsChange ? (
