@@ -40,12 +40,12 @@ function AdminImagePicker({ label, images, onChange, captions = [], onCaptionsCh
     return String(payload.url);
   }
 
-  async function handleFiles(targetIndex: number, fileList: FileList | null) {
-    if (!fileList?.length) return;
+  async function handleFiles(targetIndex: number, files: File[]) {
+    if (!files.length) return;
     setUploading(true);
     setErrorMessage('');
     try {
-      const nextImages = await Promise.all(Array.from(fileList).map((file) => uploadFile(file)));
+      const nextImages = await Promise.all(files.map((file) => uploadFile(file)));
       const filtered = nextImages.filter(Boolean);
       const isExistingImage = targetIndex < images.length;
       const next = [...images];
@@ -101,8 +101,9 @@ function AdminImagePicker({ label, images, onChange, captions = [], onCaptionsCh
                 multiple
                 className="admin-file-input"
                 onChange={(event) => {
-                  handleFiles(index, event.target.files).catch(() => undefined);
+                  const files = event.currentTarget.files ? Array.from(event.currentTarget.files) : [];
                   event.currentTarget.value = '';
+                  handleFiles(index, files).catch(() => undefined);
                 }}
                 disabled={uploading}
               />
