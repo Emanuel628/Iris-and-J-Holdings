@@ -793,6 +793,13 @@ summary:focus-visible,
   border-top: 1px solid #ddd3c7;
 }
 
+/* ---- Accessibility widget ---- */
+.a11y-toggle {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 60;
+  display: inline-flex;
 .admin-content {
   width: 100%;
   max-width: none;
@@ -814,7 +821,18 @@ summary:focus-visible,
   display: block;
 }
 
-.admin-topbar strong {
+.a11y-panel {
+  position: fixed;
+  right: 1rem;
+  bottom: 4.6rem;
+  z-index: 61;
+  width: 240px;
+  padding: 1rem;
+  background: var(--color-warm-white);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  box-shadow: 0 18px 45px rgba(18, 24, 32, 0.22);
+  .admin-topbar strong {
   color: var(--color-ink);
   font-size: 0.95rem;
 }
@@ -1881,7 +1899,9 @@ button.text-link {
   background: var(--color-soft-cream);
   border: 1px solid var(--color-border);
   border-radius: 10px;
+
 }
+
 
 .admin-select-shell {
   position: relative;

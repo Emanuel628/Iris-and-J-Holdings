@@ -1,5 +1,13 @@
+
 import { Mail, MapPin, Phone } from 'lucide-react';
 import SocialLinks from '../ui/SocialLinks';
+
+
+import { Mail, MapPin, Phone } from 'lucide-react';
+import SocialLinks from '../ui/SocialLinks';
+﻿import { Mail, MapPin, Phone } from 'lucide-react';
+
+
 import '../../styles/footer-position-fix.css';
 import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
 
@@ -29,6 +37,13 @@ function Footer() {
         </div>
 
         <div className="footer-column footer-daiana">
+          <h3>About</h3>
+          <p>
+            Real estate through All Star Real Estate Agency. Mobile notary and vacation rental services
+            through Iris &amp; J Holdings.
+          </p>
+          <a className="footer-about-link" href="/about">About Daiana</a>
+          <SocialLinks className="footer-social" />
           <h3>{content.aboutTitle || 'About'}</h3>
           <p>{content.aboutBody || 'Real estate through All Star Real Estate Agency. Mobile notary and vacation rental services through Iris & J Holdings.'}</p>
           <a className="footer-about-link" href="/about">{content.aboutLinkLabel || 'About Daiana'}</a>
