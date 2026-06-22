@@ -161,10 +161,13 @@ const notary = {
 
 const uploadImage = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024, files: 1 },
+  limits: { fileSize: 50 * 1024 * 1024, files: 1 },
   fileFilter: (_req, file, cb) => {
-    const extension = extensionFromMime(file.mimetype) || extensionFromFilename(file.originalname);
-    if ((!file.mimetype.startsWith('image/') && file.mimetype !== 'application/octet-stream') || !allowedUploadExtensions.has(extension)) {
+    const mimeType = clean(file.mimetype).toLowerCase();
+    const extension = extensionFromMime(mimeType) || extensionFromFilename(file.originalname);
+    const hasAllowedExtension = allowedUploadExtensions.has(extension);
+    const hasImageLikeMime = !mimeType || mimeType.startsWith('image/') || mimeType === 'application/octet-stream';
+    if (!hasAllowedExtension || !hasImageLikeMime) {
       cb(new Error('Supported image types include PNG, JPG, JPEG, WebP, GIF, SVG, AVIF, HEIC, and HEIF.'));
       return;
     }
@@ -225,6 +228,9 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
 app.post('/api/admin/upload-image', (req, res, next) => {
   uploadImage.single('image')(req, res, (error) => {
     if (error) {
+      if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ message: 'Image exceeds the 50 MB upload limit.' });
+      }
       const message = error instanceof Error ? error.message : 'Could not upload image.';
       const status = message.includes('Supported image types') || message.includes('File too large') ? 400 : 500;
       return res.status(status).json({ message });
@@ -237,6 +243,7 @@ app.post('/api/admin/upload-image', (req, res, next) => {
     if (!admin) {
       return;
     }
+    await ensureAdminTables();
 
     if (!req.file?.buffer?.length) {
       return res.status(400).json({ message: 'Image file data is missing.' });
@@ -3759,6 +3766,7 @@ app.get('/sitemap.xml', (_req, res) => {
 app.get('/uploads/:storageKey', async (req, res, next) => {
   try {
     if (!pgPool) return next();
+    await ensureAdminTables();
     const storageKey = clean(req.params.storageKey);
     if (!storageKey) return next();
     const result = await pgPool.query(
