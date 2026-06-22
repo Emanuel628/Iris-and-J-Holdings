@@ -232,3 +232,4 @@ function NotaryBooking() {
 }
 
 export default NotaryBooking;
+}
