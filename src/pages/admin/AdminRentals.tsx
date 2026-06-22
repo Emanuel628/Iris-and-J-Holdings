@@ -280,17 +280,17 @@ function AdminRentals() {
             <AdminImagePicker
               label="Hero Images"
               images={rentalForm.heroImages}
-              onChange={(heroImages) => setRentalForm({ ...rentalForm, heroImages })}
+              onChange={(heroImages) => setRentalForm((current) => ({ ...current, heroImages }))}
               captions={rentalForm.heroImageCaptions}
-              onCaptionsChange={(heroImageCaptions) => setRentalForm({ ...rentalForm, heroImageCaptions })}
+              onCaptionsChange={(heroImageCaptions) => setRentalForm((current) => ({ ...current, heroImageCaptions }))}
               helperText="The first image is used as the active hero image for the rental."
             />
             <AdminImagePicker
               label="Gallery Images"
               images={rentalForm.galleryImages}
-              onChange={(galleryImages) => setRentalForm({ ...rentalForm, galleryImages })}
+              onChange={(galleryImages) => setRentalForm((current) => ({ ...current, galleryImages }))}
               captions={rentalForm.galleryImageCaptions}
-              onCaptionsChange={(galleryImageCaptions) => setRentalForm({ ...rentalForm, galleryImageCaptions })}
+              onCaptionsChange={(galleryImageCaptions) => setRentalForm((current) => ({ ...current, galleryImageCaptions }))}
             />
             <div className="input-group"><label htmlFor="admin-rental-amenities">Amenities</label><textarea id="admin-rental-amenities" value={rentalForm.amenities} onChange={(event) => setRentalForm({ ...rentalForm, amenities: event.target.value })} placeholder="One amenity per line" /></div>
             <div className="admin-inline-actions">

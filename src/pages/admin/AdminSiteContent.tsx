@@ -152,7 +152,7 @@ function AdminSiteContent() {
                 <AdminImagePicker
                   label="Hero Images"
                   images={contentForm.heroImages}
-                  onChange={(heroImages) => setContentForm({ ...contentForm, heroImages })}
+                  onChange={(heroImages) => setContentForm((current) => ({ ...current, heroImages }))}
                   helperText="The first image is used as the active hero image for this page."
                 />
               ) : null}
@@ -161,7 +161,10 @@ function AdminSiteContent() {
                   <AdminImagePicker
                     label={field.label}
                     images={contentForm.values[field.key] ? [contentForm.values[field.key]] : []}
-                    onChange={(images) => setContentForm({ ...contentForm, values: { ...contentForm.values, [field.key]: images[0] || '' } })}
+                    onChange={(images) => setContentForm((current) => ({
+                      ...current,
+                      values: { ...current.values, [field.key]: images[0] || '' },
+                    }))}
                   />
                 </div>
               ))}
