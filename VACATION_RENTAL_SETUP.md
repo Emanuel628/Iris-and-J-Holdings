@@ -48,17 +48,3 @@ server emails the booking details to `CONTACT_TO_EMAIL` (see `EMAIL_SETUP.md`).
 3. `POST /api/stripe/webhook` — verifies the Stripe signature and emails Daiana on
    `checkout.session.completed`.
 4. `/booking-success` — confirmation page shown after a successful payment.
-
-## Mobile notary checkout (Stripe)
-
-The Mobile Notary appointment form can also take payment through Stripe — the
-same `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` already configured for vacation
-rentals are reused. Add one variable for the notary booking fee:
-
-```txt
-NOTARY_FEE_CENTS=5000   # the mobile notary booking fee, in cents ($50.00)
-```
-
-- With `NOTARY_FEE_CENTS` set, the notary form goes to Stripe Checkout and the
-  paid appointment emails Daiana (and the client a receipt) via the webhook.
-- Until it's set, the notary form falls back to emailing the request (no payment).

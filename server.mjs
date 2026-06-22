@@ -30,8 +30,6 @@ const newsletter = {
   adminToken: process.env.NEWSLETTER_ADMIN_TOKEN || '',
 };
 
-const notaryFeeCents = Number(process.env.NOTARY_FEE_CENTS || 0);
-
 app.set('trust proxy', 1);
 
 app.use((req, res, next) => {
@@ -61,14 +59,9 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
   }
 
   if (event.type === 'checkout.session.completed') {
-    const session = event.data.object;
+    bookedCache = { at: 0, ranges: [] }; // a new paid booking — refresh availability
     try {
-      if (session.metadata?.type === 'notary') {
-        await notifyNotary(session);
-      } else {
-        bookedCache = { at: 0, ranges: [] }; // a new paid vacation booking — refresh availability
-        await notifyBooking(session);
-      }
+      await notifyBooking(event.data.object);
     } catch (notifyError) {
       console.error('Booking notification failed:', notifyError);
     }
@@ -219,108 +212,8 @@ async function notifyBooking(session) {
   });
 }
 
-async function notifyNotary(session) {
-  const m = session.metadata || {};
-  const guestEmail = session.customer_details?.email || session.customer_email || m.email || 'unknown';
-  const rows = [
-    ['Name', m.name],
-    ['Email', guestEmail],
-    ['Phone', m.phone],
-    ['City / Town', m.city],
-    ['Date', m.appointmentDate],
-    ['Time', m.appointmentTime],
-    ['Document type', m.documentType],
-    ['Notes', m.notes],
-    ['Amount paid', money(session.amount_total ?? 0, session.currency || 'usd')],
-    ['Stripe session', session.id],
-  ].filter(([, value]) => clean(value).length > 0);
-
-  await sendResendEmail({
-    to: contactTo,
-    replyTo: guestEmail !== 'unknown' ? guestEmail : undefined,
-    subject: `New mobile notary appointment — ${clean(m.appointmentDate)} ${clean(m.appointmentTime)}`,
-    text: `A mobile notary appointment was paid through Stripe.\n\n${rows.map(([k, v]) => `${k}: ${clean(v)}`).join('\n')}`,
-    html: `<h2>New mobile notary appointment</h2><table cellpadding="6" cellspacing="0">${rows.map(([k, v]) => `<tr><th align="left">${escapeHtml(k)}</th><td>${escapeHtml(v)}</td></tr>`).join('')}</table>`,
-  });
-
-  if (guestEmail && guestEmail !== 'unknown') {
-    try {
-      await sendResendEmail({
-        to: guestEmail,
-        replyTo: contactTo,
-        subject: 'Your mobile notary appointment — Iris & J Holdings',
-        text: `Hi ${clean(m.name) || 'there'},\n\nThanks — your mobile notary appointment for ${clean(m.appointmentDate)} at ${clean(m.appointmentTime)} is paid and received. Daiana will confirm the final details by email.\n\n— Iris & J Holdings`,
-        html: `<p>Hi ${escapeHtml(m.name) || 'there'},</p><p>Thanks — your mobile notary appointment for <strong>${escapeHtml(m.appointmentDate)} at ${escapeHtml(m.appointmentTime)}</strong> is paid and received. Daiana will confirm the final details by email.</p><p>— Iris &amp; J Holdings</p>`,
-      });
-    } catch (confirmError) {
-      console.error('Notary confirmation email failed:', confirmError);
-    }
-  }
-}
-
 app.get('/health', (_req, res) => {
   res.json({ ok: true });
-});
-
-app.get('/api/notary-config', (_req, res) => {
-  res.json({
-    bookingEnabled: Boolean(stripe && notaryFeeCents > 0),
-    feeCents: notaryFeeCents,
-    currency: booking.currency,
-  });
-});
-
-app.post('/api/notary-checkout', async (req, res) => {
-  try {
-    if (!stripe || !(notaryFeeCents > 0)) {
-      return res.status(503).json({ message: 'Online notary booking isn’t available yet.' });
-    }
-    const b = req.body || {};
-    const name = clean(b.name);
-    const email = clean(b.email);
-    const appointmentDate = clean(b.appointmentDate);
-    const appointmentTime = clean(b.appointmentTime);
-    if (!name || !email || !appointmentDate || !appointmentTime) {
-      return res.status(400).json({ message: 'Name, email, date, and time are required.' });
-    }
-
-    const origin = `${req.protocol}://${req.get('host')}`;
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: booking.currency,
-            unit_amount: notaryFeeCents,
-            product_data: {
-              name: 'Mobile notary appointment',
-              description: `${appointmentDate} at ${appointmentTime}`,
-            },
-          },
-        },
-      ],
-      success_url: booking.successUrl || `${origin}/booking-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/mobile-notary`,
-      customer_email: email,
-      metadata: {
-        type: 'notary',
-        name,
-        email,
-        phone: clean(b.phone),
-        city: clean(b.city),
-        appointmentDate,
-        appointmentTime,
-        documentType: clean(b.documentType).slice(0, 200),
-        notes: clean(b.notes).slice(0, 450),
-      },
-    });
-
-    return res.json({ url: session.url });
-  } catch (error) {
-    console.error('Notary checkout failed:', error);
-    return res.status(500).json({ message: 'Could not start checkout. Please try again.' });
-  }
 });
 
 app.get('/api/availability', async (_req, res) => {
@@ -410,13 +303,10 @@ app.get('/api/checkout-session', async (req, res) => {
     const session = await stripe.checkout.sessions.retrieve(id);
     return res.json({
       status: session.payment_status,
-      type: session.metadata?.type || 'vacation',
       amountTotal: session.amount_total,
       currency: session.currency,
       checkIn: session.metadata?.checkIn || '',
       checkOut: session.metadata?.checkOut || '',
-      appointmentDate: session.metadata?.appointmentDate || '',
-      appointmentTime: session.metadata?.appointmentTime || '',
       email: session.customer_details?.email || session.customer_email || '',
     });
   } catch (error) {
