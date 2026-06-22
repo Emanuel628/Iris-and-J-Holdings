@@ -59,55 +59,60 @@ function BookingSuccess() {
     <PublicLayout>
       <main className="page-main">
         <section className="page-hero">
-          <div className="page-hero-content">
-            <p className="eyebrow">{isNotary ? 'Appointment' : 'Booking'} {paid ? 'confirmed' : 'received'}</p>
-            <h1>
-              {isNotary
-                ? paid ? 'Thank you — your appointment is booked.' : 'Thank you — your appointment is being processed.'
-                : paid ? 'Thank you — your stay is reserved.' : 'Thank you — your booking is being processed.'}
-            </h1>
+        <div className="page-hero-content">
+  <p className="eyebrow">
+    {isNotary ? 'Appointment' : 'Booking'} {paid ? 'confirmed' : 'received'}
+  </p>
 
-            {!done ? (
-              <p>Confirming your {isNotary ? 'appointment' : 'booking'}…</p>
-            ) : isNotary && info && info.appointmentDate ? (
-              <p>
-                {paid ? 'You’re booked for' : 'We received your request for'}{' '}
-                <strong>{info.appointmentDate}{info.appointmentTime ? ` at ${info.appointmentTime}` : ''}</strong>
-                {paid && amount ? <> ({amount} paid)</> : null}. A receipt is on its way to {info.email || 'your email'},
-                and Daiana will confirm the final details by email.
-              </p>
-            ) : paid && info && info.checkIn ? (
-              <p>
-                You’re booked from <strong>{info.checkIn}</strong> to <strong>{info.checkOut}</strong>
-                {amount ? <> for {amount}</> : null}. A receipt is on its way to {info.email || 'your email'}, and
-                Daiana will follow up with the details.
-            <p className="eyebrow">Booking {paid ? 'confirmed' : 'received'}</p>
-            <h1>{paid ? 'Thank you - your stay is reserved.' : 'Thank you - your booking is being processed.'}</h1>
-            {!done ? (
-              <p>Confirming your booking...</p>
-            ) : paid && info && info.checkIn ? (
-              <p>
-                You're booked from <strong>{formatShortDate(info.checkIn)}</strong> to <strong>{formatShortDate(info.checkOut)}</strong>
-                {info.amountTotal ? <> for {formatMoney(info.amountTotal, info.currency)}</> : null}. A receipt is on
-                its way to {info.email || 'your email'}, and Daiana will follow up with the details. Your confirmation
-                email will include a secure link to request a cancellation or date change.
-              </p>
-            ) : info && info.checkIn ? (
-              <p>
-                Your dates were received, but the booking has not been marked paid yet. Daiana will follow up by
-                email, and the stay is not confirmed until payment is completed and a booking confirmation is issued.
-              </p>
-            ) : (
-              <p>Your {isNotary ? 'appointment' : 'booking'} is being processed. Daiana will follow up by email with the details.</p>
-            )}
+  <h1>
+    {isNotary
+      ? paid
+        ? 'Thank you — your appointment is booked.'
+        : 'Thank you — your appointment is being processed.'
+      : paid
+        ? 'Thank you — your stay is reserved.'
+        : 'Thank you — your booking is being processed.'}
+  </h1>
 
-            <div className="page-actions">
-              <a className="button button-primary" href="/">Back to Home</a>
-              <a className="text-link" href={isNotary ? '/mobile-notary' : '/vacation-rentals'}>
-                {isNotary ? 'View mobile notary' : 'View vacation rentals'}
-              </a>
-            </div>
-          </div>
+  {!done ? (
+    <p>Confirming your {isNotary ? 'appointment' : 'booking'}…</p>
+  ) : isNotary && info && info.appointmentDate ? (
+    <p>
+      {paid ? 'You’re booked for' : 'We received your request for'}{' '}
+      <strong>
+        {formatShortDate(info.appointmentDate)}
+        {info.appointmentTime ? ` at ${info.appointmentTime}` : ''}
+      </strong>
+      {info.amountTotal ? <> for {formatMoney(info.amountTotal, info.currency)}</> : null}. A receipt is on
+      its way to {info.email || 'your email'}, and Daiana will confirm the final details by email.
+    </p>
+  ) : paid && info && info.checkIn ? (
+    <p>
+      You’re booked from <strong>{formatShortDate(info.checkIn)}</strong> to{' '}
+      <strong>{formatShortDate(info.checkOut)}</strong>
+      {info.amountTotal ? <> for {formatMoney(info.amountTotal, info.currency)}</> : null}. A receipt is on
+      its way to {info.email || 'your email'}, and Daiana will follow up with the details. Your confirmation
+      email will include a secure link to request a cancellation or date change.
+    </p>
+  ) : info && info.checkIn ? (
+    <p>
+      Your dates were received, but the booking has not been marked paid yet. Daiana will follow up by
+      email, and the stay is not confirmed until payment is completed and a booking confirmation is issued.
+    </p>
+  ) : (
+    <p>
+      Your {isNotary ? 'appointment' : 'booking'} is being processed. Daiana will follow up by email with the
+      details.
+    </p>
+  )}
+
+  <div className="page-actions">
+    <a className="button button-primary" href="/">Back to Home</a>
+    <a className="text-link" href={isNotary ? '/mobile-notary' : '/vacation-rentals'}>
+      {isNotary ? 'View mobile notary' : 'View vacation rentals'}
+    </a>
+  </div>
+</div>
           <div className="page-hero-visual vacation-hero-visual" aria-hidden="true" />
         </section>
       </main>
