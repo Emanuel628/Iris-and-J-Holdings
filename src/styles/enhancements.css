@@ -882,12 +882,6 @@ summary:focus-visible,
   gap: 0.45rem;
 }
 
-.admin-image-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-}
-
 .admin-image-frame {
   aspect-ratio: 1 / 1;
   display: flex;
@@ -900,16 +894,6 @@ summary:focus-visible,
   border: 1px solid #ddd3c7;
   border-radius: 8px;
   cursor: pointer;
-}
-
-.admin-image-upload-trigger,
-.admin-image-upload-button {
-  min-width: 0;
-}
-
-.admin-image-selected-files {
-  margin-top: 0;
-  word-break: break-word;
 }
 
 .admin-image-frame.has-image {
