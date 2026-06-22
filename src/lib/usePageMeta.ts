@@ -1,6 +1,192 @@
 import { useEffect } from 'react';
 
 const BASE_TITLE = 'Iris & J Holdings';
+const DEFAULT_TITLE = 'Iris & J Holdings | New Jersey Real Estate, Mobile Notary & Orlando Rentals';
+const SITE_URL = 'https://www.irisjholdings.com';
+const DEFAULT_IMAGE = `${SITE_URL}/images/site/contact-hero.jpg`;
+
+const ROUTE_META: Record<string, { title?: string; description?: string; robots?: string }> = {
+  '/': {
+    description:
+      'Iris & J Holdings helps New Jersey buyers and sellers, offers mobile notary appointments in Union, Middlesex, and Essex Counties, and provides Orlando vacation rental booking.',
+  },
+  '/admin': {
+    title: 'Control Center',
+    description: 'Admin control center for Iris & J Holdings.',
+    robots: 'noindex,nofollow',
+  },
+  '/admin/confirm-email-change': {
+    title: 'Confirm Email Change',
+    description: 'Confirm the admin email change for Iris & J Holdings.',
+    robots: 'noindex,nofollow',
+  },
+  '/admin/login': {
+    title: 'Admin Login',
+    description: 'Secure admin login for Iris & J Holdings.',
+    robots: 'noindex,nofollow',
+  },
+  '/admin/media': {
+    title: 'Admin Media Library',
+    description: 'Manage site and rental media routes for Iris & J Holdings.',
+    robots: 'noindex,nofollow',
+  },
+  '/admin/notary-requests': {
+    title: 'Notary Queue',
+    description: 'Review paid notary booking requests.',
+    robots: 'noindex,nofollow',
+  },
+  '/admin/realtor-tools': {
+    title: 'Admin Realtor Tools',
+    description: 'Manage buyer and seller intake records.',
+    robots: 'noindex,nofollow',
+  },
+  '/admin/forgot-password': {
+    title: 'Forgot Password',
+    description: 'Reset the Iris & J Holdings admin password.',
+    robots: 'noindex,nofollow',
+  },
+  '/admin/invoices': {
+    title: 'Admin Invoices',
+    description: 'Create and manage invoices for vacation rentals and notary appointments.',
+    robots: 'noindex,nofollow',
+  },
+  '/admin/register': {
+    title: 'Admin Register',
+    description: 'Create the first admin user for Iris & J Holdings.',
+    robots: 'noindex,nofollow',
+  },
+  '/admin/rentals': {
+    title: 'Admin Rentals',
+    description: 'Manage rental listings and availability controls.',
+    robots: 'noindex,nofollow',
+  },
+  '/admin/reset-password': {
+    title: 'Reset Password',
+    description: 'Set a new Iris & J Holdings admin password.',
+    robots: 'noindex,nofollow',
+  },
+  '/admin/settings': {
+    title: 'Admin Settings',
+    description: 'Manage admin and site settings routes.',
+    robots: 'noindex,nofollow',
+  },
+  '/admin/site-content': {
+    title: 'Admin Site Content',
+    description: 'Edit public site copy and image references.',
+    robots: 'noindex,nofollow',
+  },
+  '/admin/vacation-bookings': {
+    title: 'Vacation Queue',
+    description: 'Review vacation rental bookings and guest details.',
+    robots: 'noindex,nofollow',
+  },
+  '/admin/home-value-lab': {
+    title: 'Admin Home Value Lab',
+    description: 'Plan the data-backed home value estimator workflow.',
+    robots: 'noindex,nofollow',
+  },
+  '/buy': {
+    title: 'Buy a Home in New Jersey',
+    description:
+      'Buyer consultation and home search guidance in New Jersey, including budget review, pre-approval, offers, inspections, attorney review, and closing next steps.',
+  },
+  '/sell': {
+    title: 'Sell Your Home in New Jersey',
+    description:
+      'Seller strategy guidance in New Jersey for pricing, preparation, marketing, negotiation, attorney review, and closing through All Star Real Estate Agency.',
+  },
+  '/home-value': {
+    title: 'New Jersey Home Value Review',
+    description:
+      'Request a New Jersey home value review using recent comparable sales, nearby listings, condition, updates, and local market activity. Not a formal appraisal.',
+  },
+  '/mobile-notary': {
+    title: 'Mobile Notary in Union, Middlesex & Essex Counties',
+    description:
+      'Mobile notary appointments for Union County, Middlesex County, and Essex County, NJ, including general notarizations, real estate documents, affidavits, and consent forms.',
+  },
+  '/resources': {
+    title: 'Real Estate Resources for NJ Buyers & Sellers',
+    description:
+      'Plain-language New Jersey buyer guides, seller guides, and local market updates for people preparing to buy, sell, or request a home value review.',
+  },
+  '/about': {
+    title: 'About Daiana Castro, REALTOR',
+    description:
+      'Meet Daiana Castro, REALTOR and mobile notary serving New Jersey buyers, sellers, and notary clients through Iris & J Holdings and All Star Real Estate Agency.',
+  },
+  '/book': {
+    title: 'Book a Consultation or Notary Appointment',
+    description:
+      'Contact Daiana Castro to schedule a New Jersey buyer consultation, seller strategy call, home value review, mobile notary appointment, or general question.',
+  },
+  '/contact': {
+    title: 'Book a Consultation or Notary Appointment',
+    description:
+      'Contact Daiana Castro to schedule a New Jersey buyer consultation, seller strategy call, home value review, mobile notary appointment, or general question.',
+  },
+  '/invoice-success': {
+    title: 'Invoice Payment Received',
+    description: 'Your Iris & J Holdings invoice payment status.',
+    robots: 'noindex,nofollow',
+  },
+  '/vacation-rentals': {
+    title: 'Orlando Vacation Rental Near Theme Parks',
+    description:
+      'Check availability and book an Orlando vacation rental in Central Florida near major theme parks with secure checkout, amenities, FAQs, and booking questions.',
+  },
+  '/booking-success': {
+    title: 'Booking Status',
+    description: 'Your Orlando vacation rental booking status.',
+    robots: 'noindex,nofollow',
+  },
+  '/notary-success': {
+    title: 'Notary Booking Fee Received',
+    description: 'Your mobile notary booking fee was received.',
+    robots: 'noindex,nofollow',
+  },
+  '/manage-booking': {
+    title: 'Manage Booking',
+    description: 'Request a cancellation or scheduling change for an Iris & J Holdings booking.',
+    robots: 'noindex,nofollow',
+  },
+  '/house-rules': {
+    title: 'Vacation Rental House Rules',
+    description:
+      'House rules for Orlando vacation rental bookings through Iris & J Holdings, including occupancy, parking, quiet hours, and guest list requirements.',
+  },
+  '/vacation-rental-intake': {
+    title: 'Vacation Rental Intake',
+    description: 'Complete guest intake details and review house rules before Orlando vacation rental checkout.',
+    robots: 'noindex,nofollow',
+  },
+  '/refund-cancellation-policy': {
+    title: 'Refund & Cancellation Policy',
+    description:
+      'Refund, cancellation, rescheduling, and no-show policy for Iris & J Holdings mobile notary booking fees and Orlando vacation rental bookings.',
+  },
+  '/privacy': {
+    title: 'Privacy Policy',
+    description:
+      'Privacy Policy for Iris & J Holdings, including website forms, contact requests, mobile notary appointment requests, home value requests, and vacation rental inquiries.',
+  },
+  '/terms': {
+    title: 'Terms of Use',
+    description:
+      'Terms of Use for Iris & J Holdings, including real estate service disclosures, mobile notary notices, vacation rental terms, and website use rules.',
+  },
+  '/accessibility': {
+    title: 'Accessibility & Fair Housing',
+    description:
+      'Accessibility statement and fair housing commitment for Iris & J Holdings and real estate services provided through All Star Real Estate Agency in New Jersey.',
+  },
+};
+
+type PageMetaOptions = {
+  robots?: string;
+  image?: string;
+  type?: string;
+};
 
 function setMeta(selector: string, attr: 'name' | 'property', key: string, content: string) {
   let tag = document.head.querySelector<HTMLMetaElement>(selector);
@@ -12,18 +198,60 @@ function setMeta(selector: string, attr: 'name' | 'property', key: string, conte
   tag.setAttribute('content', content);
 }
 
-/**
- * Sets a per-page <title> and description. This is a single-page app, so each
- * route updates the document head on mount for better SEO and link previews.
- */
-export function usePageMeta(title: string, description?: string) {
-  useEffect(() => {
-    document.title = title ? `${title} | ${BASE_TITLE}` : `${BASE_TITLE} | Real Estate Guidance & Mobile Notary Services`;
+function setCanonical(href: string) {
+  let tag = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+  if (!tag) {
+    tag = document.createElement('link');
+    tag.setAttribute('rel', 'canonical');
+    document.head.appendChild(tag);
+  }
+  tag.setAttribute('href', href);
+}
 
-    if (description) {
-      setMeta('meta[name="description"]', 'name', 'description', description);
-      setMeta('meta[property="og:description"]', 'property', 'og:description', description);
+function normalizedCurrentPath() {
+  if (window.location.pathname === '/') return '/';
+  return window.location.pathname.replace(/\/$/, '');
+}
+
+function canonicalUrlForCurrentPath(pathname: string) {
+  if (pathname === '/contact') {
+    return `${SITE_URL}/book`;
+  }
+  return `${SITE_URL}${pathname}`;
+}
+
+/**
+ * Sets per-page title, description, canonical URL, robots, and social preview tags.
+ * This is a single-page app, so each route updates the document head on mount.
+ */
+export function usePageMeta(title: string, description?: string, options: PageMetaOptions = {}) {
+  const image = options.image ?? DEFAULT_IMAGE;
+  const type = options.type ?? 'website';
+
+  useEffect(() => {
+    const pathname = normalizedCurrentPath();
+    const routeMeta = ROUTE_META[pathname] ?? {};
+    const effectiveTitle = routeMeta.title ?? title;
+    const effectiveDescription = routeMeta.description ?? description;
+    const robots = options.robots ?? routeMeta.robots ?? 'index,follow';
+    const fullTitle = effectiveTitle ? `${effectiveTitle} | ${BASE_TITLE}` : DEFAULT_TITLE;
+    const canonicalUrl = canonicalUrlForCurrentPath(pathname);
+
+    document.title = fullTitle;
+    setCanonical(canonicalUrl);
+    setMeta('meta[name="robots"]', 'name', 'robots', robots);
+    setMeta('meta[property="og:title"]', 'property', 'og:title', fullTitle);
+    setMeta('meta[property="og:type"]', 'property', 'og:type', type);
+    setMeta('meta[property="og:url"]', 'property', 'og:url', canonicalUrl);
+    setMeta('meta[property="og:image"]', 'property', 'og:image', image);
+    setMeta('meta[name="twitter:card"]', 'name', 'twitter:card', 'summary_large_image');
+    setMeta('meta[name="twitter:title"]', 'name', 'twitter:title', fullTitle);
+    setMeta('meta[name="twitter:image"]', 'name', 'twitter:image', image);
+
+    if (effectiveDescription) {
+      setMeta('meta[name="description"]', 'name', 'description', effectiveDescription);
+      setMeta('meta[property="og:description"]', 'property', 'og:description', effectiveDescription);
+      setMeta('meta[name="twitter:description"]', 'name', 'twitter:description', effectiveDescription);
     }
-    setMeta('meta[property="og:title"]', 'property', 'og:title', document.title);
-  }, [title, description]);
+  }, [title, description, options.robots, image, type]);
 }

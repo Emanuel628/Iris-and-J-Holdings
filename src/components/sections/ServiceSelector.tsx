@@ -1,4 +1,5 @@
 import { ArrowRight, BarChart3, HomeIcon, MapPin, PenLine, Tag } from 'lucide-react';
+import { useRef } from 'react';
 
 const services = [
   {
@@ -20,20 +21,46 @@ const services = [
     icon: BarChart3,
   },
   {
-    title: 'Mobile Notary',
-    text: 'Book a convenient mobile notary appointment.',
-    href: '/mobile-notary',
-    icon: PenLine,
-  },
-  {
     title: 'Vacation Rentals',
     text: 'Check availability and book an Orlando vacation stay through Iris & J Holdings.',
     href: '/vacation-rentals',
     icon: MapPin,
   },
+  {
+    title: 'Mobile Notary',
+    text: 'Book a convenient mobile notary appointment.',
+    href: '/mobile-notary',
+    icon: PenLine,
+  },
 ];
 
 function ServiceSelector() {
+  const railRef = useRef<HTMLDivElement | null>(null);
+
+  function handlePointerMove(event: React.PointerEvent<HTMLDivElement>) {
+    const rail = railRef.current;
+    if (!rail) return;
+    if (window.matchMedia('(max-width: 980px)').matches) return;
+
+    const rect = rail.getBoundingClientRect();
+    const edgeSize = Math.min(140, rect.width * 0.2);
+    const maxScroll = rail.scrollWidth - rail.clientWidth;
+    if (maxScroll <= 0) return;
+
+    let nextScrollLeft = rail.scrollLeft;
+    if (event.clientX < rect.left + edgeSize) {
+      const ratio = 1 - (event.clientX - rect.left) / edgeSize;
+      nextScrollLeft = Math.max(0, rail.scrollLeft - ratio * 22);
+    } else if (event.clientX > rect.right - edgeSize) {
+      const ratio = 1 - (rect.right - event.clientX) / edgeSize;
+      nextScrollLeft = Math.min(maxScroll, rail.scrollLeft + ratio * 22);
+    }
+
+    if (nextScrollLeft !== rail.scrollLeft) {
+      rail.scrollLeft = nextScrollLeft;
+    }
+  }
+
   return (
     <section className="service-section section" id="services" aria-labelledby="service-heading">
       <div className="section-heading centered">
@@ -42,7 +69,7 @@ function ServiceSelector() {
         <span className="gold-line short" aria-hidden="true" />
       </div>
 
-      <div className="service-grid">
+      <div className="service-grid service-grid-scroll" ref={railRef} onPointerMove={handlePointerMove}>
         {services.map((service) => {
           const Icon = service.icon;
           return (

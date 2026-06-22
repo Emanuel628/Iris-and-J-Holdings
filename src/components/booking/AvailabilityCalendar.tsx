@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowRight, ChevronLeft, ChevronRight, Minus, Plus } from 'lucide-react';
+import { vacationHouseRules } from '../../content/vacationHouseRules';
 
 type BlockedRange = { start: string; end: string };
 
@@ -11,11 +12,20 @@ type Availability = {
   bookingEnabled: boolean;
 };
 
+type Guest = {
+  id: number;
+  fullName: string;
+  email: string;
+  phone: string;
+};
+
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
+
+let nextGuestId = 2;
 
 function iso(year: number, month: number, day: number) {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -53,6 +63,12 @@ function formatMoney(cents: number, currency: string) {
   }
 }
 
+function createGuest(): Guest {
+  const guest = { id: nextGuestId, fullName: '', email: '', phone: '' };
+  nextGuestId += 1;
+  return guest;
+}
+
 function AvailabilityCalendar() {
   const [data, setData] = useState<Availability | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -61,8 +77,14 @@ function AvailabilityCalendar() {
   const [view, setView] = useState({ year: now.getFullYear(), month: now.getMonth() });
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
+  const [email, setEmail] = useState('');
+  const [primaryGuest, setPrimaryGuest] = useState<Guest>({ id: 1, fullName: '', email: '', phone: '' });
+  const [additionalGuests, setAdditionalGuests] = useState<Guest[]>([]);
+  const [policyAgreed, setPolicyAgreed] = useState(false);
+  const [rulesScrolled, setRulesScrolled] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState('');
+  const rulesRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -96,6 +118,26 @@ function AvailabilityCalendar() {
   const cleaning = data?.cleaningFeeCents ?? 0;
   const total = nights > 0 ? nightlyTotal + cleaning : 0;
   const currency = data?.currency ?? 'usd';
+  const guestCount = additionalGuests.length + 1;
+
+  function updatePrimaryGuest<K extends keyof Guest>(key: K, value: Guest[K]) {
+    setPrimaryGuest((current) => ({ ...current, [key]: value }));
+  }
+
+  function updateAdditionalGuest(id: number, key: keyof Guest, value: string) {
+    setAdditionalGuests((current) => current.map((guest) => (
+      guest.id === id ? { ...guest, [key]: value } : guest
+    )));
+  }
+
+  function addGuest() {
+    if (guestCount >= 10) return;
+    setAdditionalGuests((current) => [...current, createGuest()]);
+  }
+
+  function removeGuest(id: number) {
+    setAdditionalGuests((current) => current.filter((guest) => guest.id !== id));
+  }
 
   function rangeHasBlockedNight(from: string, toExclusive: string) {
     let cursor = from;
@@ -121,14 +163,59 @@ function AvailabilityCalendar() {
     setCheckOut(date);
   }
 
+  function handleRulesScroll() {
+    const element = rulesRef.current;
+    if (!element || rulesScrolled) return;
+
+    if (element.scrollTop + element.clientHeight >= element.scrollHeight - 8) {
+      setRulesScrolled(true);
+    }
+  }
+
   async function startCheckout() {
-    setSubmitting(true);
     setBookingError('');
+
+    if (!primaryGuest.fullName.trim() || !primaryGuest.email.trim() || !primaryGuest.phone.trim()) {
+      setBookingError('Primary Guest #1 must include full name, email, and phone number.');
+      return;
+    }
+
+    if (additionalGuests.some((guest) => !guest.fullName.trim())) {
+      setBookingError('Each added guest must include a full name.');
+      return;
+    }
+
+    if (!rulesScrolled) {
+      setBookingError('Please scroll through the house rules and terms before checkout.');
+      return;
+    }
+
+    if (!policyAgreed) {
+      setBookingError('Please agree to the terms, house rules, and cancellation policy before checkout.');
+      return;
+    }
+
+    setSubmitting(true);
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ checkIn, checkOut }),
+        body: JSON.stringify({
+          checkIn,
+          checkOut,
+          primaryGuest: {
+            fullName: primaryGuest.fullName.trim(),
+            email: primaryGuest.email.trim(),
+            phone: primaryGuest.phone.trim(),
+          },
+          additionalGuests: additionalGuests.map((guest) => ({
+            fullName: guest.fullName.trim(),
+            email: guest.email.trim(),
+            phone: guest.phone.trim(),
+          })),
+          houseRulesAgreed: true,
+          termsAgreed: true,
+        }),
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok || !payload.url) {
@@ -238,9 +325,36 @@ function AvailabilityCalendar() {
                   </div>
                 </dl>
                 {data.bookingEnabled ? (
-                  <button className="button button-primary" type="button" onClick={startCheckout} disabled={submitting}>
-                    {submitting ? 'Starting checkout…' : 'Check out & book'} <ArrowRight size={16} />
-                  </button>
+                  <>
+                    <div className="input-group">
+                      <label htmlFor="vacation-booking-email">Email for confirmation and receipt</label>
+                      <input
+                        id="vacation-booking-email"
+                        name="email"
+                        type="email"
+                        autoComplete="email"
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                        required
+                      />
+                    </div>
+                    <label className="form-note" htmlFor="vacation-policy-agree">
+                      <input
+                        id="vacation-policy-agree"
+                        name="policyAgreement"
+                        type="checkbox"
+                        checked={policyAgreed}
+                        onChange={(event) => setPolicyAgreed(event.target.checked)}
+                      />{' '}
+                      I agree to the{' '}
+                      <a href="/refund-cancellation-policy#vacation-rentals" target="_blank" rel="noreferrer">
+                        Vacation Rental Refund &amp; Cancellation Policy
+                      </a>.
+                    </label>
+                    <button className="button button-primary" type="button" onClick={startCheckout} disabled={submitting}>
+                      {submitting ? 'Starting checkout…' : 'Check out & book'} <ArrowRight size={16} />
+                    </button>
+                  </>
                 ) : (
                   <p className="cal-note">
                     Online checkout is coming soon. <a className="text-link" href="#interest-list">Send Daiana a question</a> and she’ll confirm these dates.
