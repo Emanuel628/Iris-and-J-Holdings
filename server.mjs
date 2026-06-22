@@ -158,7 +158,9 @@ const newsletter = {
   adminToken: process.env.NEWSLETTER_ADMIN_TOKEN || '',
 };
 
+
 const notaryFeeCents = Number(process.env.NOTARY_FEE_CENTS || 0);
+
 const notary = {
   currency: (process.env.NOTARY_CURRENCY || process.env.STRIPE_CURRENCY || 'usd').toLowerCase(),
   bookingFeeCents: Number(process.env.NOTARY_BOOKING_FEE_CENTS || 0),

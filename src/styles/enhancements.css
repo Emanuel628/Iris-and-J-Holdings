@@ -1638,7 +1638,7 @@ html.a11y-contrast .brand-mark {
 /* ---- Accessibility widget ---- */
 .a11y-toggle {
   position: fixed;
-  left: 1rem;
+  right: 1rem;
   bottom: 1rem;
   z-index: 60;
   display: inline-flex;
@@ -1660,7 +1660,7 @@ html.a11y-contrast .brand-mark {
 
 .a11y-panel {
   position: fixed;
-  left: 1rem;
+  right: 1rem;
   bottom: 4.6rem;
   z-index: 61;
   width: 240px;
@@ -1899,6 +1899,9 @@ button.text-link {
   background: var(--color-soft-cream);
   border: 1px solid var(--color-border);
   border-radius: 10px;
+
+}
+
 
 .admin-select-shell {
   position: relative;

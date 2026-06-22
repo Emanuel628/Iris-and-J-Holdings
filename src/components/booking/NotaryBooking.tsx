@@ -1,7 +1,12 @@
+
+import { useMemo, useState, type FormEvent } from 'react';
+import NewsletterOptIn from '../ui/NewsletterOptIn';
+
 import { useMemo, useEffect, useState, type FormEvent } from 'react';
 import FormStatus from '../ui/FormStatus';
 import NewsletterOptIn from '../ui/NewsletterOptIn';
 import { useContactForm } from '../../lib/useContactForm';
+
 
 type NotaryConfig = { bookingEnabled: boolean; feeCents: number; currency: string };
 type CheckoutStatus = 'idle' | 'sending' | 'error';
@@ -173,6 +178,7 @@ function NotaryBooking() {
           Notary Refund &amp; Cancellation Policy
         </a>.
       </label>
+      <NewsletterOptIn />
       <button className="button button-primary" type="submit" disabled={status === 'sending'}>
         {status === 'sending' ? 'Starting checkout…' : 'Pay Booking Fee & Request Appointment'}
       </button>

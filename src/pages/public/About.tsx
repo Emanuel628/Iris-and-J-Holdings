@@ -1,6 +1,8 @@
 import PublicLayout from '../../components/layout/PublicLayout';
 import SocialLinks from '../../components/ui/SocialLinks';
+
 ﻿import PublicLayout from '../../components/layout/PublicLayout';
+
 import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
 
 import { usePageMeta } from '../../lib/usePageMeta';
@@ -84,4 +86,3 @@ function About() {
 }
 
 export default About;
-
