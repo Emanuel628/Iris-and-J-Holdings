@@ -1,23 +1,7 @@
-
 import { useMemo, useState, type FormEvent } from 'react';
 import NewsletterOptIn from '../ui/NewsletterOptIn';
 
-import { useMemo, useEffect, useState, type FormEvent } from 'react';
-import FormStatus from '../ui/FormStatus';
-import NewsletterOptIn from '../ui/NewsletterOptIn';
-import { useContactForm } from '../../lib/useContactForm';
-
-
-type NotaryConfig = { bookingEnabled: boolean; feeCents: number; currency: string };
 type CheckoutStatus = 'idle' | 'sending' | 'error';
-
-function formatMoney(cents: number, currency: string) {
-  try {
-    return new Intl.NumberFormat(undefined, { style: 'currency', currency: currency.toUpperCase() }).format(cents / 100);
-  } catch {
-    return `$${(cents / 100).toFixed(2)}`;
-  }
-}
 
 function formatTimeLabel(value: string) {
   const [hourText = '0', minuteText = '00'] = value.split(':');
@@ -33,17 +17,9 @@ function formatTimeLabel(value: string) {
   return `${hour12}:${String(minute).padStart(2, '0')} ${suffix}`;
 }
 
-/**
- * Mobile notary appointment request. When a notary fee is configured, the form
- * goes to Stripe Checkout (same flow as vacation rentals); otherwise it falls
- * back to emailing the request to Daiana.
- */
 function NotaryBooking() {
-  const { status: emailStatus } = useContactForm('Mobile Notary Appointment Request');
-  const [config, setConfig] = useState<NotaryConfig | null>(null);
   const [status, setStatus] = useState<CheckoutStatus>('idle');
   const [errorMessage, setErrorMessage] = useState('');
-
   const timeOptions = useMemo(() => {
     const options: { value: string; label: string }[] = [];
 
@@ -58,25 +34,16 @@ function NotaryBooking() {
     return options;
   }, []);
 
-  useEffect(() => {
-    fetch('/api/notary-config')
-      .then((res) => res.json())
-      .then((data: NotaryConfig) => setConfig(data))
-      .catch(() => setConfig({ bookingEnabled: false, feeCents: 0, currency: 'usd' }));
-  }, []);
-
   function openNativePicker(event: { currentTarget: HTMLInputElement }) {
     event.currentTarget.showPicker?.();
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus('sending');
     setErrorMessage('');
 
     const form = new FormData(event.currentTarget);
-    
-    if (String(form.get('_gotcha') ?? '').trim().length > 0) return; // honeypot
 
     if (String(form.get('newsletterOptIn') ?? '')) {
       fetch('/api/subscribe', {
@@ -120,12 +87,8 @@ function NotaryBooking() {
     }
   }
 
-  const paid = Boolean(config?.bookingEnabled);
-  const feeLabel = config && config.feeCents > 0 ? formatMoney(config.feeCents, config.currency) : '';
-  const sending = status === 'sending' || emailStatus === 'sending';
-
   return (
-    <form className="info-panel form-shell" id="notary-booking" onSubmit={handleSubmit}>
+    <form className="info-panel form-shell" id="notary-booking" onSubmit={submit}>
       <input className="hp-field" type="text" name="_gotcha" tabIndex={-1} autoComplete="off" aria-hidden="true" />
       <div className="form-row">
         <div className="input-group"><label htmlFor="notary-name">Full Name</label><input id="notary-name" name="name" required /></div>
@@ -158,19 +121,6 @@ function NotaryBooking() {
         <label htmlFor="notary-notes">Notes</label>
         <textarea id="notary-notes" name="notes" placeholder="Number of signers, address, anything else" />
       </div>
-
-      <NewsletterOptIn />
-      <button className="button button-primary" type="submit" disabled={sending}>
-        {sending ? 'Starting…' : paid ? `Book & pay${feeLabel ? ` ${feeLabel}` : ''}` : 'Request Appointment'}
-      </button>
-      {!paid && <FormStatus status={emailStatus} />}
-      {status === 'error' && <p className="form-status form-status-error" role="alert">{errorMessage}</p>}
-      <p className="form-note">
-        {paid
-          ? 'Secure checkout reserves your time. The booking fee is shown above; any additional notary fees are confirmed by email.'
-          : 'This sends a request. Daiana will confirm the time and any travel or notary fees by email.'}
-      </p>
-
       <label className="form-note" htmlFor="notary-policy-agree">
         <input id="notary-policy-agree" name="policyAgreement" type="checkbox" required /> I agree to the{' '}
         <a href="/terms" target="_blank" rel="noreferrer">Terms &amp; Conditions</a>, including the{' '}
