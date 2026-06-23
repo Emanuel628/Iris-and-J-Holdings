@@ -33,7 +33,6 @@ import RefundCancellationPolicy from './pages/public/RefundCancellationPolicy';
 import PrivacyPolicy from './pages/public/PrivacyPolicy';
 import TermsOfUse from './pages/public/TermsOfUse';
 import Accessibility from './pages/public/Accessibility';
-import NewsletterAdmin from './pages/admin/NewsletterAdmin';
 import NotFound from './pages/public/NotFound';
 import ViewportModeToggle from './components/ui/ViewportModeToggle';
 import AccessibilityWidget from './components/ui/AccessibilityWidget';
@@ -75,7 +74,6 @@ const routes = {
   '/privacy': PrivacyPolicy,
   '/terms': TermsOfUse,
   '/accessibility': Accessibility,
-  '/admin/newsletter': NewsletterAdmin,
 };
 
 function normalizePath(pathname: string) {
