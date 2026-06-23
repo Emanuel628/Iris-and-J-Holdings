@@ -139,6 +139,16 @@ export type SellerLeadRecord = {
   created_at: string;
 };
 
+export type NewsletterSubscriberRecord = {
+  id: number;
+  full_name: string;
+  email: string;
+  source: string;
+  status: 'active' | 'unsubscribed';
+  created_at: string;
+  updated_at: string;
+};
+
 export type AdminNotificationRecord = {
   newCount: number;
   latestCreatedAt: string;
@@ -244,6 +254,10 @@ export function fetchAdminBuyerLeads() {
 
 export function fetchAdminSellerLeads() {
   return fetchJson<{ leads: SellerLeadRecord[] }>('/api/admin/seller-leads');
+}
+
+export function fetchAdminNewsletterSubscribers() {
+  return fetchJson<{ subscribers: NewsletterSubscriberRecord[] }>('/api/admin/newsletter-subscribers');
 }
 
 export function fetchAdminNotifications() {

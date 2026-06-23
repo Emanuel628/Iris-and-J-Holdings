@@ -14,6 +14,7 @@ const adminLinks = [
   { href: '/admin/realtor-tools', label: 'Realtor Tools' },
   { href: '/admin/invoices', label: 'Invoices' },
   { href: '/admin/home-value-lab', label: 'Home Value Lab' },
+  { href: '/admin/newsletter', label: 'Newsletter' },
   { href: '/admin/site-content', label: 'Site Content' },
   { href: '/admin/media', label: 'Media' },
   { href: '/admin/settings', label: 'Settings' },
@@ -80,7 +81,7 @@ function AdminLayout({ children, showNav = true }: AdminLayoutProps) {
 
   return (
     <main className="page-main admin-shell">
-      <section className="admin-workspace">
+      <section className={`admin-workspace${showNav ? '' : ' admin-workspace-no-nav'}`}>
         {showNav ? (
           <aside className="admin-sidebar">
             <div className="admin-sidebar-head">

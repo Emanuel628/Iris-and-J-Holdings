@@ -1,4 +1,5 @@
-﻿import PublicLayout from '../../components/layout/PublicLayout';
+import PublicLayout from '../../components/layout/PublicLayout';
+import NewsletterSignup from '../../components/ui/NewsletterSignup';
 import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
 import { usePageMeta } from '../../lib/usePageMeta';
 
@@ -46,14 +47,18 @@ function Resources() {
           <div className="content-grid">
             <article className="content-card"><h3>Buyer Guide</h3><p>What to do before you tour homes: setting a budget, getting pre-approved, and the New Jersey timeline from offer to closing.</p><a className="card-link" href="/book?service=Buyer%20Guide%20Request&message=I%20would%20like%20to%20request%20the%20buyer%20guide.#contact-form">Request Guide</a></article>
             <article className="content-card"><h3>Seller Guide</h3><p>How to prepare, price, and time your sale, plus what to expect through offers, attorney review, and closing.</p><a className="card-link" href="/book?service=Seller%20Guide%20Request&message=I%20would%20like%20to%20request%20the%20seller%20guide.#contact-form">Request Guide</a></article>
-            <article className="content-card"><h3>Market Updates</h3><p>Occasional, plain-language notes on local prices and inventory — and what they mean if you’re thinking about buying or selling.</p><a className="card-link" href="/book?service=Market%20Updates%20Request&message=I%20would%20like%20to%20request%20local%20market%20updates.#contact-form">Request Updates</a></article>
+            <article className="content-card"><h3>Market Updates</h3><p>Occasional, plain-language notes on local prices and inventory and what they mean if you’re thinking about buying or selling.</p><a className="card-link" href="/book?service=Market%20Updates%20Request&message=I%20would%20like%20to%20request%20local%20market%20updates.#contact-form">Request Updates</a></article>
           </div>
 
           <section className="quiet-band">
             <p className="eyebrow">Stay informed</p>
             <h2>Useful info, whenever you’re ready.</h2>
-            <p>Good information should make your next step easier — not add to the pile.</p>
+            <p>Good information should make your next step easier, not add to the pile.</p>
           </section>
+
+          <div className="newsletter-signup-wrap" id="newsletter-signup">
+            <NewsletterSignup source="resources-page" />
+          </div>
         </section>
       </main>
     </PublicLayout>
@@ -61,4 +66,3 @@ function Resources() {
 }
 
 export default Resources;
-

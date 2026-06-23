@@ -251,6 +251,10 @@ function AdminControlCenter() {
               <strong>Media Library</strong>
               <span>Review the active hero images, rental galleries, and direct media links already in use across the site.</span>
             </a>
+            <a href="/admin/newsletter">
+              <strong>Newsletter</strong>
+              <span>Review newsletter signups from the public resources page and archive or reactivate subscribers.</span>
+            </a>
             <a href="/admin/settings">
               <strong>Settings</strong>
               <span>Account security, admin email verification, and password controls.</span>

@@ -346,6 +346,14 @@ function clean(value) {
   return String(value ?? '').trim();
 }
 
+function normalizeEmail(value) {
+  return clean(value).toLowerCase();
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(value));
+}
+
 function slugify(value) {
   return clean(value)
     .toLowerCase()
@@ -910,6 +918,17 @@ async function ensureAdminTables() {
       occupancy_status TEXT NOT NULL DEFAULT '',
       notes TEXT NOT NULL DEFAULT '',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+      id SERIAL PRIMARY KEY,
+      full_name TEXT NOT NULL DEFAULT '',
+      email TEXT NOT NULL UNIQUE,
+      source TEXT NOT NULL DEFAULT 'website',
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
   await pgPool.query(`
@@ -2812,6 +2831,48 @@ app.post('/api/admin/seller-leads/delete', async (req, res) => {
   }
 });
 
+app.get('/api/admin/newsletter-subscribers', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const result = await pgPool.query(
+      `SELECT id, full_name, email, source, status, created_at, updated_at
+       FROM newsletter_subscribers
+       ORDER BY updated_at DESC, created_at DESC
+       LIMIT 500`,
+    );
+    return res.json({ subscribers: result.rows });
+  } catch (error) {
+    console.error('Admin newsletter subscribers load failed:', error);
+    return res.status(500).json({ message: 'Could not load newsletter subscribers.' });
+  }
+});
+
+app.post('/api/admin/newsletter-subscribers/status', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const id = Number(req.body?.id || 0);
+    const status = clean(req.body?.status).toLowerCase();
+    if (!id) {
+      return res.status(400).json({ message: 'Subscriber id is required.' });
+    }
+    if (!['active', 'unsubscribed'].includes(status)) {
+      return res.status(400).json({ message: 'Subscriber status must be active or unsubscribed.' });
+    }
+    await pgPool.query(
+      `UPDATE newsletter_subscribers
+       SET status = $2, updated_at = NOW()
+       WHERE id = $1`,
+      [id, status],
+    );
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin newsletter subscriber update failed:', error);
+    return res.status(500).json({ message: 'Could not update newsletter subscriber.' });
+  }
+});
+
 app.get('/api/admin/invoices', async (req, res) => {
   try {
     const admin = await requireAdmin(req, res);
@@ -3648,6 +3709,88 @@ app.post('/api/manage-booking-request', async (req, res) => {
   } catch (error) {
     console.error('Manage booking request failed:', error);
     return res.status(500).json({ message: 'Could not send the request.' });
+  }
+});
+
+app.post('/api/newsletter/subscribe', async (req, res) => {
+  try {
+    const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+    if (isRateLimited(ip)) {
+      return res.status(429).json({ message: 'Too many requests. Please try again in a little while.' });
+    }
+    if (!pgPool) {
+      return res.status(503).json({ message: 'Newsletter signup is not available yet.' });
+    }
+
+    const fullName = clean(req.body?.name);
+    const email = normalizeEmail(req.body?.email);
+    const source = clean(req.body?.source) || 'website';
+
+    if (!email || !isValidEmail(email)) {
+      return res.status(400).json({ message: 'A valid email address is required.' });
+    }
+
+    await ensureAdminTables();
+    await pgPool.query(
+      `INSERT INTO newsletter_subscribers (full_name, email, source, status, updated_at)
+       VALUES ($1, $2, $3, 'active', NOW())
+       ON CONFLICT (email) DO UPDATE
+       SET full_name = CASE
+             WHEN EXCLUDED.full_name <> '' THEN EXCLUDED.full_name
+             ELSE newsletter_subscribers.full_name
+           END,
+           source = EXCLUDED.source,
+           status = 'active',
+           updated_at = NOW()`,
+      [fullName, email, source],
+    );
+
+    if (resendApiKey) {
+      try {
+        await sendResendEmail({
+          to: contactTo,
+          replyTo: email,
+          subject: 'New newsletter subscriber',
+          text:
+            `A new newsletter signup was received.\n\n` +
+            `Name: ${fullName || 'Not provided'}\n` +
+            `Email: ${email}\n` +
+            `Source: ${source}`,
+          html:
+            `<h2>New newsletter subscriber</h2>` +
+            `<p><strong>Name:</strong> ${escapeHtml(fullName || 'Not provided')}<br>` +
+            `<strong>Email:</strong> ${escapeHtml(email)}<br>` +
+            `<strong>Source:</strong> ${escapeHtml(source)}</p>`,
+        });
+      } catch (notifyError) {
+        console.error('Newsletter admin notification failed:', notifyError);
+      }
+
+      try {
+        await sendResendEmail({
+          to: email,
+          replyTo: contactTo,
+          subject: 'You are subscribed - Iris & J Holdings',
+          text:
+            `Hi ${fullName || 'there'},\n\n` +
+            `You are now subscribed to Iris & J Holdings updates.\n` +
+            `You will receive occasional market notes, listing highlights, and practical real estate guidance.\n\n` +
+            `- Iris & J Holdings`,
+          html:
+            `<p>Hi ${escapeHtml(fullName || 'there')},</p>` +
+            `<p>You are now subscribed to Iris &amp; J Holdings updates.</p>` +
+            `<p>You will receive occasional market notes, listing highlights, and practical real estate guidance.</p>` +
+            `<p>- Iris &amp; J Holdings</p>`,
+        });
+      } catch (confirmError) {
+        console.error('Newsletter confirmation email failed:', confirmError);
+      }
+    }
+
+    return res.status(200).json({ message: 'Subscribed.' });
+  } catch (error) {
+    console.error('Newsletter subscribe failed:', error);
+    return res.status(500).json({ message: 'Could not subscribe right now.' });
   }
 });
 

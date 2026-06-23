@@ -31,24 +31,29 @@ function AdminForgotPassword() {
 
   return (
     <AdminLayout showNav={false}>
-      <div className="admin-auth-page-shell admin-auth-page-shell-single">
+      <div className="admin-auth-page-shell">
         <AdminAuthHeader />
-        <div className="admin-auth-shell info-panel">
-          <h1>Forgot password</h1>
-          <form className="form-shell" onSubmit={submit}>
-            <div className="input-group">
-              <label htmlFor="admin-forgot-email">Email</label>
-              <input id="admin-forgot-email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+        <div className="admin-auth-page">
+          <section className="admin-auth-shell info-panel">
+            <h1>Forgot password</h1>
+            <form className="form-shell" onSubmit={submit}>
+              <div className="input-group">
+                <label htmlFor="admin-forgot-email">Email</label>
+                <input id="admin-forgot-email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+              </div>
+              <button className="button button-primary" type="submit" disabled={status === 'sending'}>
+                {status === 'sending' ? 'Sending...' : 'Send reset link'}
+              </button>
+              {status === 'sent' ? <p className="form-status form-status-success">If the account exists, a reset link has been sent.</p> : null}
+              {status === 'error' ? <p className="form-status form-status-error" role="alert">{errorMessage}</p> : null}
+            </form>
+            <div className="page-actions">
+              <a className="text-link" href="/admin/login">Back to sign in</a>
             </div>
-            <button className="button button-primary" type="submit" disabled={status === 'sending'}>
-              {status === 'sending' ? 'Sending...' : 'Send reset link'}
-            </button>
-            {status === 'sent' ? <p className="form-status form-status-success">If the account exists, a reset link has been sent.</p> : null}
-            {status === 'error' ? <p className="form-status form-status-error" role="alert">{errorMessage}</p> : null}
-          </form>
-          <div className="page-actions">
-            <a className="text-link" href="/admin/login">Back to sign in</a>
-          </div>
+          </section>
+          <aside className="admin-auth-visual page-hero-image-frame" aria-label="Iris and J Holdings password reset">
+            <img src="/images/site/contact-hero.jpg" alt="Elegant consultation setting for Iris and J Holdings admin access" />
+          </aside>
         </div>
       </div>
     </AdminLayout>

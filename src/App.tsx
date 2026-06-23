@@ -5,6 +5,7 @@ import AdminForgotPassword from './pages/admin/AdminForgotPassword';
 import AdminInvoices from './pages/admin/AdminInvoices';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminMediaLibrary from './pages/admin/AdminMediaLibrary';
+import AdminNewsletter from './pages/admin/AdminNewsletter';
 import AdminNotaryRequests from './pages/admin/AdminNotaryRequests';
 import AdminRealtorTools from './pages/admin/AdminRealtorTools';
 import AdminRegister from './pages/admin/AdminRegister';
@@ -45,6 +46,7 @@ const routes = {
   '/admin/invoices': AdminInvoices,
   '/admin/login': AdminLogin,
   '/admin/media': AdminMediaLibrary,
+  '/admin/newsletter': AdminNewsletter,
   '/admin/notary-requests': AdminNotaryRequests,
   '/admin/realtor-tools': AdminRealtorTools,
   '/admin/register': AdminRegister,
