@@ -99,6 +99,28 @@ function AdminNewsletter() {
   const activeCount = useMemo(() => subscribers.filter((subscriber) => subscriber.status === 'active').length, [subscribers]);
   const previewParagraphs = useMemo(() => newsletterParagraphs(body), [body]);
 
+  async function deleteSubscriber(id: number) {
+    setBusyId(id);
+    setStatusMessage('');
+    setErrorMessage('');
+    try {
+      const response = await fetch(`/api/admin/newsletter-subscribers/${id}`, {
+        method: 'DELETE',
+        headers: { Accept: 'application/json' },
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.message || 'Could not delete subscriber.');
+      }
+      setSubscribers((prev) => prev.filter((s) => s.id !== id));
+      setStatusMessage('Subscriber permanently deleted.');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Could not delete subscriber.');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function updateStatus(subscriber: NewsletterSubscriberRecord, status: 'active' | 'unsubscribed') {
     setBusyId(subscriber.id);
     setStatusMessage('');
@@ -286,14 +308,25 @@ function AdminNewsletter() {
                   <p>{formatDateTime(subscriber.updated_at || subscriber.created_at)}</p>
                 </div>
                 <div>
-                  <button
-                    className="button-secondary"
-                    type="button"
-                    onClick={() => updateStatus(subscriber, subscriber.status === 'active' ? 'unsubscribed' : 'active')}
-                    disabled={busyId === subscriber.id}
-                  >
-                    {subscriber.status === 'active' ? 'Archive' : 'Reactivate'}
-                  </button>
+                  {subscriber.status === 'active' ? (
+                    <button
+                      className="button-secondary"
+                      type="button"
+                      onClick={() => updateStatus(subscriber, 'unsubscribed')}
+                      disabled={busyId === subscriber.id}
+                    >
+                      Archive
+                    </button>
+                  ) : (
+                    <button
+                      className="button-secondary button-danger"
+                      type="button"
+                      onClick={() => deleteSubscriber(subscriber.id)}
+                      disabled={busyId === subscriber.id}
+                    >
+                      {busyId === subscriber.id ? 'Deleting…' : 'Delete'}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

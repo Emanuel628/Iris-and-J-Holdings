@@ -2490,6 +2490,22 @@ app.post('/api/admin/newsletter-subscribers/status', async (req, res) => {
   }
 });
 
+app.delete('/api/admin/newsletter-subscribers/:id', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const id = Number(req.params.id || 0);
+    if (!id) {
+      return res.status(400).json({ message: 'Subscriber id is required.' });
+    }
+    await pgPool.query('DELETE FROM newsletter_subscribers WHERE id = $1', [id]);
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin newsletter subscriber delete failed:', error);
+    return res.status(500).json({ message: 'Could not delete subscriber.' });
+  }
+});
+
 app.get('/api/admin/invoices', async (req, res) => {
   try {
     const admin = await requireAdmin(req, res);

@@ -145,6 +145,11 @@ p {
   background: var(--color-champagne);
 }
 
+.button-danger {
+  background: #b33 !important;
+  color: #fff !important;
+}
+
 .button:hover {
   transform: translateY(-3px);
   box-shadow: 0 20px 42px rgba(167, 121, 49, 0.22);
