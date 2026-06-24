@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import {
   fetchAdminMe,
+  fetchAdminNewsletterCampaigns,
   fetchAdminNewsletterConfig,
   fetchAdminNewsletterSubscribers,
   type AdminNewsletterConfigPayload,
+  type NewsletterCampaignRecord,
   type NewsletterSubscriberRecord,
 } from '../../lib/adminAuth';
 import { usePageMeta } from '../../lib/usePageMeta';
@@ -38,6 +40,8 @@ function AdminNewsletter() {
   usePageMeta('Admin Newsletter', 'Compose and send the Iris & J Holdings newsletter.', { robots: 'noindex,nofollow' });
   const [config, setConfig] = useState<AdminNewsletterConfigPayload | null>(null);
   const [subscribers, setSubscribers] = useState<NewsletterSubscriberRecord[]>([]);
+  const [campaigns, setCampaigns] = useState<NewsletterCampaignRecord[]>([]);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [title, setTitle] = useState('Iris & J Holdings Newsletter');
   const [date, setDate] = useState(todayLabel());
   const [body, setBody] = useState('');
@@ -48,10 +52,11 @@ function AdminNewsletter() {
   const [errorMessage, setErrorMessage] = useState('');
 
   async function loadData() {
-    const [me, configPayload, subscribersPayload] = await Promise.all([
+    const [me, configPayload, subscribersPayload, campaignsPayload] = await Promise.all([
       fetchAdminMe(),
       fetchAdminNewsletterConfig(),
       fetchAdminNewsletterSubscribers(),
+      fetchAdminNewsletterCampaigns().catch(() => ({ campaigns: [] as NewsletterCampaignRecord[] })),
     ]);
     if (!me?.user) {
       window.location.href = '/admin/login';
@@ -59,6 +64,29 @@ function AdminNewsletter() {
     }
     setConfig(configPayload);
     setSubscribers(subscribersPayload.subscribers);
+    setCampaigns(campaignsPayload.campaigns);
+  }
+
+  async function deleteCampaign(id: number) {
+    setDeletingId(id);
+    setStatusMessage('');
+    setErrorMessage('');
+    try {
+      const response = await fetch(`/api/admin/newsletter/campaigns/${id}`, {
+        method: 'DELETE',
+        headers: { Accept: 'application/json' },
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.message || 'Could not delete campaign.');
+      }
+      setCampaigns((prev) => prev.filter((c) => c.id !== id));
+      setStatusMessage('Campaign deleted.');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Could not delete campaign.');
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   useEffect(() => {
@@ -269,6 +297,48 @@ function AdminNewsletter() {
               </div>
             ))}
             {!subscribers.length ? <p className="admin-empty-note">No newsletter subscribers yet.</p> : null}
+          </div>
+        </section>
+
+        <section className="admin-section">
+          <div className="admin-section-head">
+            <h2>Sent history</h2>
+          </div>
+          <div className="admin-data-table admin-newsletter-table">
+            <div className="admin-data-head admin-newsletter-history-head">
+              <span>Title</span>
+              <span>Recipients</span>
+              <span>Status</span>
+              <span>Sent</span>
+              <span>Action</span>
+            </div>
+            {campaigns.map((campaign) => (
+              <div className="admin-data-row admin-newsletter-history-row" key={campaign.id}>
+                <div>
+                  <strong>{campaign.title || campaign.subject || '(Untitled)'}</strong>
+                </div>
+                <div>
+                  <p>{campaign.recipient_count ?? '—'}</p>
+                </div>
+                <div>
+                  <p>{campaign.status}</p>
+                </div>
+                <div>
+                  <p>{campaign.sent_at ? formatDateTime(campaign.sent_at) : formatDateTime(campaign.created_at)}</p>
+                </div>
+                <div>
+                  <button
+                    className="button-secondary"
+                    type="button"
+                    onClick={() => deleteCampaign(campaign.id)}
+                    disabled={deletingId === campaign.id}
+                  >
+                    {deletingId === campaign.id ? 'Deleting…' : 'Delete'}
+                  </button>
+                </div>
+              </div>
+            ))}
+            {!campaigns.length ? <p className="admin-empty-note">No newsletters sent yet.</p> : null}
           </div>
         </section>
 

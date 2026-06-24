@@ -1270,6 +1270,11 @@ summary:focus-visible,
   grid-template-columns: 1fr 1.2fr 0.9fr 0.8fr 1fr auto;
 }
 
+.admin-newsletter-history-head,
+.admin-newsletter-history-row {
+  grid-template-columns: 2fr 0.7fr 0.7fr 1.2fr auto;
+}
+
 .newsletter-signup-wrap {
   margin-top: clamp(2rem, 5vw, 3rem);
 }

@@ -245,5 +245,40 @@ export function registerNewsletterRoutes(app, deps) {
     }
   });
 
+  app.get('/api/admin/newsletter/campaigns', async (req, res) => {
+    try {
+      const admin = await requireAdmin(req, res);
+      if (!admin) return;
+      if (!pgPool) return res.status(503).json({ message: 'Database not configured.' });
+      await ensureAdminTables();
+      const result = await pgPool.query(
+        `SELECT id, title, subject, recipient_count, status, sent_at, created_at
+         FROM newsletter_campaigns
+         ORDER BY COALESCE(sent_at, created_at) DESC
+         LIMIT 200`,
+      );
+      return res.json({ campaigns: result.rows });
+    } catch (error) {
+      console.error('Admin newsletter campaigns load failed:', error);
+      return res.status(500).json({ message: 'Could not load campaign history.' });
+    }
+  });
+
+  app.delete('/api/admin/newsletter/campaigns/:id', async (req, res) => {
+    try {
+      const admin = await requireAdmin(req, res);
+      if (!admin) return;
+      if (!pgPool) return res.status(503).json({ message: 'Database not configured.' });
+      const id = parseInt(req.params.id, 10);
+      if (!id) return res.status(400).json({ message: 'Campaign id is required.' });
+      await ensureAdminTables();
+      await pgPool.query('DELETE FROM newsletter_campaigns WHERE id = $1', [id]);
+      return res.json({ ok: true });
+    } catch (error) {
+      console.error('Admin newsletter campaign delete failed:', error);
+      return res.status(500).json({ message: 'Could not delete campaign.' });
+    }
+  });
+
   return { subscribeEmail };
 }

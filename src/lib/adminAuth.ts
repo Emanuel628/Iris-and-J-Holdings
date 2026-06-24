@@ -184,6 +184,16 @@ export type AdminNewsletterConfigPayload = {
   totalCount: number;
 };
 
+export type NewsletterCampaignRecord = {
+  id: number;
+  title: string;
+  subject: string;
+  recipient_count: number;
+  status: string;
+  sent_at: string | null;
+  created_at: string;
+};
+
 export type HomeValueEstimateRecord = {
   id: number;
   client_name: string;
@@ -280,5 +290,9 @@ export function fetchAdminSettings() {
 
 export function fetchAdminHomeValueEstimates() {
   return fetchJson<{ estimates: HomeValueEstimateRecord[] }>('/api/admin/home-value-estimates');
+}
+
+export function fetchAdminNewsletterCampaigns() {
+  return fetchJson<{ campaigns: NewsletterCampaignRecord[] }>('/api/admin/newsletter/campaigns');
 }
 

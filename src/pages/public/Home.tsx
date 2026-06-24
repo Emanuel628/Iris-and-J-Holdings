@@ -1,6 +1,7 @@
 import PublicLayout from '../../components/layout/PublicLayout';
 import FinalCTA from '../../components/sections/FinalCTA';
 import Hero from '../../components/sections/Hero';
+import HomeNewsletterBar from '../../components/sections/HomeNewsletterBar';
 import ProcessSteps from '../../components/sections/ProcessSteps';
 import ServiceSelector from '../../components/sections/ServiceSelector';
 import Testimonials from '../../components/sections/Testimonials';
@@ -20,6 +21,7 @@ function Home() {
         <TrustSection />
         <ProcessSteps />
         <Testimonials />
+        <HomeNewsletterBar />
         <FinalCTA />
       </main>
     </PublicLayout>
