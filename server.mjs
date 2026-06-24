@@ -2,16 +2,33 @@ import express from 'express';
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import Stripe from 'stripe';
 import crypto from 'node:crypto';
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import multer from 'multer';
 import { getBlockedRanges, overlapsBlocked } from './server/airbnb.mjs';
+import {
+  buildOrigin,
+  clean,
+  clearCookie,
+  escapeHtml,
+  formatTimeLabel,
+  isIsoDate,
+  isValidEmail,
+  metadataValue,
+  money,
+  normalizeEmail,
+  parseCookies,
+  setCookie,
+  slugify,
+  summarizeGuestList,
+  validateStay,
+} from './server/lib/common.mjs';
+import { registerNewsletterRoutes } from './server/newsletter.mjs';
+import { registerSeoRoutes } from './server/seo.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const uploadsDir = path.join(__dirname, 'uploads');
 const app = express();
 const port = Number(process.env.PORT || 8080);
 const contactTo = process.env.CONTACT_TO_EMAIL || 'listingsbyd@gmail.com';
@@ -30,114 +47,6 @@ const RENTCAST_INITIAL_USED_THIS_MONTH = 3;
 const allowedUploadExtensions = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'avif', 'heic', 'heif']);
 const siteUrl = 'https://www.irisjholdings.com';
 const defaultSeoImage = `${siteUrl}/images/site/contact-hero.jpg`;
-
-const notaryFaqSeo = [
-  ['Which areas do you serve?', 'Primarily Union, Middlesex, and Essex Counties, with additional areas available by request based on distance and scheduling.'],
-  ['What should I have ready before the appointment?', 'Share the city, document type, number of signers, your preferred time, and any notes. Bring a valid, unexpired government-issued photo ID for every signer, and leave documents unsigned until we meet.'],
-  ['Is a fee required to book?', 'Yes. The travel or booking fee is paid through secure checkout when you submit the request. Notary fees are separate and depend on the document type and number of notarizations. Daiana confirms the details by email.'],
-  ['What types of documents can you notarize?', 'General notarizations, real estate documents, affidavits, and consent forms, among others. Share the document type when booking so Daiana can confirm.'],
-];
-
-const vacationFaqSeo = [
-  ['Where is the rental located?', 'In the Orlando and Central Florida area, close to the major theme parks. The exact address is shared after booking.'],
-  ['How do I book?', 'Pick your dates on the availability calendar, continue to the guest intake page, review the house rules, and check out securely. A stay is confirmed after payment is completed and a booking confirmation is issued by email.'],
-  ['What is included in the price?', 'The nightly rate plus a one-time cleaning fee is shown on the calendar before checkout. Any additional property-specific terms, fees, or house rules are confirmed before booking.'],
-  ['Have a question before booking?', 'Use the question form on the page and Daiana will get back to you by email about dates, the property, or anything else.'],
-];
-
-const publicSeoRoutes = {
-  '/': {
-    title: 'Iris & J Holdings | New Jersey Real Estate, Mobile Notary & Orlando Rentals',
-    description: 'Iris & J Holdings helps New Jersey buyers and sellers, offers mobile notary appointments in Union, Middlesex, and Essex Counties, and provides Orlando vacation rental booking.',
-    image: `${siteUrl}/images/site/contact-hero.jpg`,
-    breadcrumb: 'Home',
-  },
-  '/buy': {
-    title: 'Buy a Home in New Jersey | Iris & J Holdings',
-    description: 'Buyer consultation and home search guidance in New Jersey, including budget review, pre-approval, offers, inspections, attorney review, and closing next steps.',
-    image: `${siteUrl}/images/site/buy-hero.jpg`,
-    breadcrumb: 'Buy',
-  },
-  '/sell': {
-    title: 'Sell Your Home in New Jersey | Iris & J Holdings',
-    description: 'Seller strategy guidance in New Jersey for pricing, preparation, marketing, negotiation, attorney review, and closing through All Star Real Estate Agency.',
-    image: `${siteUrl}/images/site/sell-hero.jpg`,
-    breadcrumb: 'Sell',
-  },
-  '/home-value': {
-    title: 'New Jersey Home Value Review | Iris & J Holdings',
-    description: 'Request a New Jersey home value review using recent comparable sales, nearby listings, condition, updates, and local market activity. Not a formal appraisal.',
-    image: `${siteUrl}/images/site/home-value-hero.jpg`,
-    breadcrumb: 'Home Value',
-  },
-  '/mobile-notary': {
-    title: 'Mobile Notary in Union, Middlesex and Essex Counties | Iris & J Holdings',
-    description: 'Mobile notary appointments for Union County, Middlesex County, and Essex County, NJ, including general notarizations, real estate documents, affidavits, and consent forms.',
-    image: `${siteUrl}/images/site/notary-hero.jpg`,
-    breadcrumb: 'Mobile Notary',
-  },
-  '/resources': {
-    title: 'Real Estate Resources for NJ Buyers and Sellers | Iris & J Holdings',
-    description: 'Plain-language New Jersey buyer guides, seller guides, and local market updates for people preparing to buy, sell, or request a home value review.',
-    image: `${siteUrl}/images/site/contact-hero.jpg`,
-    breadcrumb: 'Resources',
-  },
-  '/about': {
-    title: 'About Daiana Castro, REALTOR | Iris & J Holdings',
-    description: 'Meet Daiana Castro, REALTOR and mobile notary serving New Jersey buyers, sellers, and notary clients through Iris & J Holdings and All Star Real Estate Agency.',
-    image: `${siteUrl}/images/site/daiana-portrait.jpg`,
-    breadcrumb: 'About',
-  },
-  '/book': {
-    title: 'Book a Consultation or Notary Appointment | Iris & J Holdings',
-    description: 'Contact Daiana Castro to schedule a New Jersey buyer consultation, seller strategy call, home value review, mobile notary appointment, or general question.',
-    image: `${siteUrl}/images/site/contact-hero.jpg`,
-    breadcrumb: 'Book',
-  },
-  '/contact': {
-    title: 'Book a Consultation or Notary Appointment | Iris & J Holdings',
-    description: 'Contact Daiana Castro to schedule a New Jersey buyer consultation, seller strategy call, home value review, mobile notary appointment, or general question.',
-    image: `${siteUrl}/images/site/contact-hero.jpg`,
-    breadcrumb: 'Book',
-    canonicalPath: '/book',
-  },
-  '/vacation-rentals': {
-    title: 'Orlando Vacation Rental Near Theme Parks | Iris & J Holdings',
-    description: 'Check availability and book an Orlando vacation rental in Central Florida near major theme parks with secure checkout, amenities, FAQs, and booking questions.',
-    image: `${siteUrl}/images/site/vacation-hero.jpg`,
-    breadcrumb: 'Vacation Rentals',
-  },
-  '/refund-cancellation-policy': {
-    title: 'Refund and Cancellation Policy | Iris & J Holdings',
-    description: 'Refund, cancellation, rescheduling, and no-show policy for Iris & J Holdings mobile notary booking fees and Orlando vacation rental bookings.',
-    image: defaultSeoImage,
-    breadcrumb: 'Refund and Cancellation Policy',
-  },
-  '/privacy': {
-    title: 'Privacy Policy | Iris & J Holdings',
-    description: 'Privacy Policy for Iris & J Holdings, including website forms, contact requests, mobile notary appointment requests, home value requests, and vacation rental inquiries.',
-    image: defaultSeoImage,
-    breadcrumb: 'Privacy Policy',
-  },
-  '/terms': {
-    title: 'Terms of Use | Iris & J Holdings',
-    description: 'Terms of Use for Iris & J Holdings, including real estate service disclosures, mobile notary notices, vacation rental terms, and website use rules.',
-    image: defaultSeoImage,
-    breadcrumb: 'Terms of Use',
-  },
-  '/accessibility': {
-    title: 'Accessibility and Fair Housing | Iris & J Holdings',
-    description: 'Accessibility statement and fair housing commitment for Iris & J Holdings and real estate services provided through All Star Real Estate Agency in New Jersey.',
-    image: defaultSeoImage,
-    breadcrumb: 'Accessibility and Fair Housing',
-  },
-  '/house-rules': {
-    title: 'Vacation Rental House Rules | Iris & J Holdings',
-    description: 'House rules for Orlando vacation rental bookings through Iris & J Holdings, including occupancy, parking, quiet hours, and guest list requirements.',
-    image: `${siteUrl}/images/site/vacation-hero.jpg`,
-    breadcrumb: 'House Rules',
-  },
-};
 
 const pgPool = databaseUrl ? new pg.Pool({ connectionString: databaseUrl, ssl: databaseUrl.includes('localhost') ? false : { rejectUnauthorized: false } }) : null;
 
@@ -341,255 +250,6 @@ function clearAdminLoginFailures(ip, email) {
   adminLoginHits.delete(adminLoginKey(ip, email));
 }
 
-function clean(value) {
-  return String(value ?? '').trim();
-}
-
-function normalizeEmail(value) {
-  return clean(value).toLowerCase();
-}
-
-function isValidEmail(value) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(value));
-}
-
-function slugify(value) {
-  return clean(value)
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-function parseCookies(req) {
-  const header = String(req.headers.cookie || '');
-  const cookies = {};
-  for (const pair of header.split(';')) {
-    const [key, ...rest] = pair.trim().split('=');
-    if (!key) continue;
-    cookies[key] = decodeURIComponent(rest.join('='));
-  }
-  return cookies;
-}
-
-function setCookie(res, name, value, options = {}) {
-  const parts = [`${name}=${encodeURIComponent(value)}`];
-  if (options.httpOnly !== false) parts.push('HttpOnly');
-  parts.push('Path=/');
-  parts.push(`SameSite=${options.sameSite || 'Lax'}`);
-  if (options.maxAge !== undefined) parts.push(`Max-Age=${options.maxAge}`);
-  if (options.secure) parts.push('Secure');
-  res.append('Set-Cookie', parts.join('; '));
-}
-
-function clearCookie(res, name) {
-  setCookie(res, name, '', { maxAge: 0, secure: secureCookies });
-}
-
-function metadataValue(value) {
-  return clean(value).slice(0, 500);
-}
-
-function escapeHtml(value) {
-  return clean(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-function escapeJsonForHtml(value) {
-  return JSON.stringify(value).replace(/</g, '\\u003c');
-}
-
-function normalizedSeoPath(pathname) {
-  const cleaned = clean(pathname || '/');
-  if (!cleaned || cleaned === '/') return '/';
-  return cleaned.replace(/\/+$/, '') || '/';
-}
-
-function pageTypeForPath(pathname) {
-  if (pathname === '/about') return 'AboutPage';
-  if (pathname === '/book' || pathname === '/contact') return 'ContactPage';
-  if (pathname === '/resources') return 'CollectionPage';
-  return 'WebPage';
-}
-
-function canonicalPathForSeo(pathname) {
-  const route = publicSeoRoutes[pathname];
-  return route?.canonicalPath || pathname;
-}
-
-function breadcrumbSchema(pathname, label) {
-  if (pathname === '/') return null;
-  return {
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      {
-        '@type': 'ListItem',
-        position: 1,
-        name: 'Home',
-        item: `${siteUrl}/`,
-      },
-      {
-        '@type': 'ListItem',
-        position: 2,
-        name: label,
-        item: `${siteUrl}${canonicalPathForSeo(pathname)}`,
-      },
-    ],
-  };
-}
-
-function faqSchema(items) {
-  return {
-    '@type': 'FAQPage',
-    mainEntity: items.map(([question, answer]) => ({
-      '@type': 'Question',
-      name: question,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: answer,
-      },
-    })),
-  };
-}
-
-function serviceSchema(pathname) {
-  if (pathname === '/buy') {
-    return {
-      '@type': 'Service',
-      name: 'New Jersey Buyer Consultation',
-      serviceType: 'Real estate buyer consultation',
-      areaServed: 'New Jersey',
-      provider: { '@id': `${siteUrl}/#organization` },
-    };
-  }
-  if (pathname === '/sell') {
-    return {
-      '@type': 'Service',
-      name: 'New Jersey Seller Strategy',
-      serviceType: 'Real estate seller consultation',
-      areaServed: 'New Jersey',
-      provider: { '@id': `${siteUrl}/#organization` },
-    };
-  }
-  if (pathname === '/home-value') {
-    return {
-      '@type': 'Service',
-      name: 'New Jersey Home Value Review',
-      serviceType: 'Home value estimate and comparative market review',
-      areaServed: 'New Jersey',
-      provider: { '@id': `${siteUrl}/#organization` },
-    };
-  }
-  if (pathname === '/mobile-notary') {
-    return {
-      '@type': 'Service',
-      name: 'Mobile Notary Service',
-      serviceType: 'Mobile notary',
-      areaServed: ['Union County, NJ', 'Middlesex County, NJ', 'Essex County, NJ'],
-      provider: { '@id': `${siteUrl}/#organization` },
-    };
-  }
-  if (pathname === '/vacation-rentals') {
-    return {
-      '@type': 'Service',
-      name: 'Orlando Vacation Rental Booking',
-      serviceType: 'Vacation rental accommodations',
-      areaServed: 'Orlando, FL',
-      provider: { '@id': `${siteUrl}/#organization` },
-    };
-  }
-  return null;
-}
-
-function baseStructuredData() {
-  return [
-    {
-      '@type': 'WebSite',
-      '@id': `${siteUrl}/#website`,
-      name: 'Iris & J Holdings',
-      url: `${siteUrl}/`,
-      description: 'New Jersey real estate guidance, mobile notary appointments, and Orlando vacation rental booking.',
-    },
-    {
-      '@type': 'Organization',
-      '@id': `${siteUrl}/#organization`,
-      name: 'Iris & J Holdings',
-      url: `${siteUrl}/`,
-      telephone: '+1-908-499-6320',
-      email: 'listingsbyd@gmail.com',
-      image: `${siteUrl}/images/site/daiana-portrait.jpg`,
-      description: 'Marketing site for New Jersey real estate services provided by Daiana Castro through All Star Real Estate Agency, plus mobile notary services and Orlando vacation rentals through Iris & J Holdings.',
-      address: {
-        '@type': 'PostalAddress',
-        streetAddress: '1416B Morris Ave',
-        addressLocality: 'Union',
-        addressRegion: 'NJ',
-        postalCode: '07083',
-        addressCountry: 'US',
-      },
-      areaServed: ['New Jersey', 'Union County, NJ', 'Middlesex County, NJ', 'Essex County, NJ', 'Orlando, FL'],
-    },
-    {
-      '@type': 'Person',
-      '@id': `${siteUrl}/#daiana-castro`,
-      name: 'Daiana Castro',
-      jobTitle: 'REALTOR and Mobile Notary',
-      telephone: '+1-908-499-6320',
-      email: 'listingsbyd@gmail.com',
-      image: `${siteUrl}/images/site/daiana-portrait.jpg`,
-      worksFor: {
-        '@type': 'RealEstateAgent',
-        name: 'All Star Real Estate Agency',
-        address: {
-          '@type': 'PostalAddress',
-          streetAddress: '1416B Morris Ave',
-          addressLocality: 'Union',
-          addressRegion: 'NJ',
-          postalCode: '07083',
-          addressCountry: 'US',
-        },
-        telephone: '+1-908-964-5005',
-      },
-    },
-  ];
-}
-
-function structuredDataForPath(pathname, seo) {
-  const graph = baseStructuredData();
-  graph.push({
-    '@type': pageTypeForPath(pathname),
-    '@id': `${siteUrl}${canonicalPathForSeo(pathname)}#webpage`,
-    url: `${siteUrl}${canonicalPathForSeo(pathname)}`,
-    name: seo.title,
-    description: seo.description,
-    isPartOf: { '@id': `${siteUrl}/#website` },
-    about: { '@id': `${siteUrl}/#organization` },
-    primaryImageOfPage: seo.image,
-  });
-
-  const breadcrumb = breadcrumbSchema(pathname, seo.breadcrumb || 'Page');
-  if (breadcrumb) graph.push(breadcrumb);
-
-  const service = serviceSchema(pathname);
-  if (service) graph.push(service);
-
-  if (pathname === '/mobile-notary') {
-    graph.push(faqSchema(notaryFaqSeo));
-  } else if (pathname === '/vacation-rentals') {
-    graph.push(faqSchema(vacationFaqSeo));
-  } else if (pathname === '/about') {
-    graph.push({
-      '@type': 'ProfilePage',
-      mainEntity: { '@id': `${siteUrl}/#daiana-castro` },
-    });
-  }
-
-  return { '@context': 'https://schema.org', '@graph': graph };
-}
-
 function hashPassword(password, salt = randomBytes(16).toString('hex')) {
   const derived = scryptSync(password, salt, 64).toString('hex');
   return `${salt}:${derived}`;
@@ -637,37 +297,6 @@ async function sendResendEmail({ to, replyTo, subject, text, html }) {
   }
 }
 
-function isIsoDate(value) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`));
-}
-
-function nightsBetween(checkIn, checkOut) {
-  return Math.round((Date.parse(`${checkOut}T00:00:00Z`) - Date.parse(`${checkIn}T00:00:00Z`)) / 86400000);
-}
-
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function validateStay(checkIn, checkOut) {
-  if (!isIsoDate(checkIn) || !isIsoDate(checkOut)) {
-    return { ok: false, message: 'Please choose valid check-in and check-out dates.' };
-  }
-  const nights = nightsBetween(checkIn, checkOut);
-  if (nights < 1) return { ok: false, message: 'Check-out must be after check-in.' };
-  if (nights > 30) return { ok: false, message: 'Please choose a stay of 30 nights or fewer.' };
-  if (checkIn < todayIso()) return { ok: false, message: 'Check-in cannot be in the past.' };
-  return { ok: true, nights };
-}
-
-function money(cents, currency) {
-  return `${(cents / 100).toFixed(2)} ${String(currency).toUpperCase()}`;
-}
-
-function buildOrigin(req) {
-  return `${req.protocol}://${req.get('host')}`;
-}
-
 function managementSecret() {
   return booking.webhookSecret || process.env.MANAGE_BOOKING_SECRET || process.env.STRIPE_SECRET_KEY || 'iris-j-manage-booking';
 }
@@ -688,31 +317,6 @@ function verifyManageToken(sessionId, token) {
 function manageUrl(origin, sessionId) {
   const params = new URLSearchParams({ session_id: sessionId, token: createManageToken(sessionId) });
   return `${origin}/manage-booking?${params.toString()}`;
-}
-
-function formatTimeLabel(value) {
-  const match = /^(\d{2}):(\d{2})$/.exec(clean(value));
-  if (!match) return clean(value);
-  const hour = Number(match[1]);
-  const minute = Number(match[2]);
-  const suffix = hour >= 12 ? 'PM' : 'AM';
-  const hour12 = hour % 12 || 12;
-  return `${hour12}:${String(minute).padStart(2, '0')} ${suffix}`;
-}
-
-function summarizeGuestList(primaryGuest, additionalGuests) {
-  const lines = [];
-  const allGuests = [primaryGuest, ...additionalGuests].filter(Boolean);
-
-  for (const [index, guest] of allGuests.entries()) {
-    const label = index === 0 ? 'Primary Guest #1' : `Guest #${index + 1}`;
-    const parts = [clean(guest.fullName)];
-    if (clean(guest.email)) parts.push(`email: ${clean(guest.email)}`);
-    if (clean(guest.phone)) parts.push(`phone: ${clean(guest.phone)}`);
-    lines.push(`${label}: ${parts.filter(Boolean).join(' | ')}`);
-  }
-
-  return lines.join('\n');
 }
 
 async function ensureAdminTables() {
@@ -1151,7 +755,7 @@ async function destroyAdminSession(req, res) {
       await pgPool.query('DELETE FROM admin_sessions WHERE token_hash = $1', [hashSessionToken(token)]).catch(() => undefined);
     }
   }
-  clearCookie(res, sessionCookieName);
+  clearCookie(res, sessionCookieName, { secure: secureCookies });
 }
 
 async function requireAdmin(req, res) {
@@ -3743,20 +3347,7 @@ app.post('/api/newsletter/subscribe', async (req, res) => {
       return res.status(400).json({ message: 'A valid email address is required.' });
     }
 
-    await ensureAdminTables();
-    await pgPool.query(
-      `INSERT INTO newsletter_subscribers (full_name, email, source, status, updated_at)
-       VALUES ($1, $2, $3, 'active', NOW())
-       ON CONFLICT (email) DO UPDATE
-       SET full_name = CASE
-             WHEN EXCLUDED.full_name <> '' THEN EXCLUDED.full_name
-             ELSE newsletter_subscribers.full_name
-           END,
-           source = EXCLUDED.source,
-           status = 'active',
-           updated_at = NOW()`,
-      [fullName, email, source],
-    );
+    await subscribeEmail(email, fullName, source);
 
     if (resendApiKey) {
       try {
@@ -3867,350 +3458,27 @@ app.post('/api/contact', async (req, res) => {
   }
 });
 
-// ---- Newsletter: database-backed subscribers and direct sends ----
-function newsletterUnsubscribeToken(email) {
-  return crypto.createHmac('sha256', newsletter.unsubscribeSecret).update(normalizeEmail(email)).digest('hex');
-}
-
-function verifyNewsletterUnsubscribeToken(email, token) {
-  const expected = newsletterUnsubscribeToken(email);
-  const expectedBuffer = Buffer.from(expected);
-  const actualBuffer = Buffer.from(clean(token));
-  if (expectedBuffer.length !== actualBuffer.length) return false;
-  return crypto.timingSafeEqual(expectedBuffer, actualBuffer);
-}
-
-function newsletterUnsubscribeUrl(email) {
-  const params = new URLSearchParams({
-    email: normalizeEmail(email),
-    token: newsletterUnsubscribeToken(email),
-  });
-  return `${siteUrl}/newsletter/unsubscribe?${params.toString()}`;
-}
-
 // Resend keeps one contact per email per audience, so re-adding an existing
 // email never creates a duplicate — a subscriber can't be subscribed twice.
-async function subscribeEmail(email, name, source = 'website') {
-  if (!pgPool) {
-    throw new Error('Newsletter signup is not available yet.');
-  }
-  const normalizedEmail = normalizeEmail(email);
-  if (!isValidEmail(normalizedEmail)) {
-    throw new Error('A valid email address is required.');
-  }
-  await ensureAdminTables();
-  const result = await pgPool.query(
-    `INSERT INTO newsletter_subscribers (full_name, email, source, status, updated_at)
-     VALUES ($1, $2, $3, 'active', NOW())
-     ON CONFLICT (email) DO UPDATE
-     SET full_name = CASE
-           WHEN EXCLUDED.full_name <> '' THEN EXCLUDED.full_name
-           ELSE newsletter_subscribers.full_name
-         END,
-         source = EXCLUDED.source,
-         status = 'active',
-         updated_at = NOW()
-     RETURNING id`,
-    [clean(name), normalizedEmail, clean(source) || 'website'],
-  );
-  return { ok: true, id: result.rows[0]?.id || 0 };
-}
-
-function newsletterHtml({ title, date, body, unsubscribeUrl }) {
-  const s = (value) => escapeHtml(value);
-  const bodyFont = 'font-family:Arial,Helvetica,sans-serif';
-  const serif = "font-family:Georgia,'Times New Roman',serif";
-  const paragraphs = clean(body)
-    .split(/\n{2,}/)
-    .filter((p) => p.length > 0)
-    .map((p) => `<p style="margin:0 0 16px;${bodyFont};font-size:16px;line-height:1.65;color:#3f4650">${s(p).replace(/\n/g, '<br>')}</p>`)
-    .join('');
-  return `<!doctype html><html><body style="margin:0;padding:0;background:#fbfaf7;${bodyFont}">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fbfaf7"><tr><td align="center" style="padding:28px 16px">
-    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;background:#fffefd;border:1px solid #e7dfd4;border-radius:12px;overflow:hidden">
-      <tr><td style="padding:26px 32px 18px;border-bottom:1px solid #e7dfd4">
-        <div style="${serif};font-size:24px;font-weight:600;letter-spacing:0.05em;color:#121820">Iris &amp; J Holdings</div>
-        <div style="${bodyFont};font-size:11px;font-weight:bold;letter-spacing:0.12em;text-transform:uppercase;color:#a77931;margin-top:4px">Real Estate &middot; Mobile Notary &middot; Orlando Vacation Rentals</div>
-      </td></tr>
-      <tr><td style="padding:28px 32px">
-        ${date ? `<div style="${bodyFont};font-size:12px;font-weight:bold;letter-spacing:0.14em;text-transform:uppercase;color:#a77931;margin:0 0 8px">${s(date)}</div>` : ''}
-        <h1 style="margin:0 0 20px;${serif};font-size:28px;line-height:1.15;font-weight:600;color:#121820">${s(title || 'Iris & J Holdings Newsletter')}</h1>
-        ${paragraphs || `<p style="margin:0;${bodyFont};font-size:16px;line-height:1.65;color:#3f4650">No newsletter copy was provided.</p>`}
-      </td></tr>
-      <tr><td style="padding:20px 32px 26px;border-top:1px solid #e7dfd4;background:#f5efe6">
-        <p style="margin:0 0 8px;${bodyFont};font-size:12px;line-height:1.6;color:#6f747b">Iris &amp; J Holdings &middot; Real estate through All Star Real Estate Agency, a licensed New Jersey real estate brokerage &middot; Mobile notary &amp; Orlando vacation rentals offered independently through Iris &amp; J Holdings.</p>
-        <p style="margin:0;${bodyFont};font-size:12px;color:#6f747b">You are receiving this because you subscribed at irisjholdings.com. <a href="${s(unsubscribeUrl)}" style="color:#a77931">Unsubscribe immediately</a>.</p>
-      </td></tr>
-    </table>
-  </td></tr></table>
-  </body></html>`;
-}
-
-app.post('/api/subscribe', async (req, res) => {
-  try {
-    const ip = req.ip || req.socket?.remoteAddress || 'unknown';
-    if (isRateLimited(ip)) {
-      return res.status(429).json({ message: 'Too many requests. Please try again later.' });
-    }
-    const email = clean(req.body?.email);
-    if (!isValidEmail(email)) {
-      return res.status(400).json({ message: 'Please enter a valid email address.' });
-    }
-    if (!pgPool) {
-      return res.status(503).json({ message: 'The newsletter is not available yet.' });
-    }
-    const result = await subscribeEmail(email, clean(req.body?.name), 'website');
-    return res.status(200).json({ subscribed: true, already: result.already });
-  } catch (error) {
-    console.error('Subscribe failed:', error);
-    return res.status(500).json({ message: 'Could not subscribe right now. Please try again.' });
-  }
+const { subscribeEmail } = registerNewsletterRoutes(app, {
+  contactTo,
+  ensureAdminTables,
+  isRateLimited,
+  pgPool,
+  requireAdmin,
+  resendApiKey,
+  sendResendEmail,
+  siteUrl,
+  unsubscribeSecret: newsletter.unsubscribeSecret,
 });
 
-app.get('/api/newsletter/config', (_req, res) => {
-  res.json({ enabled: Boolean(pgPool && resendApiKey) });
-});
-
-app.get('/api/admin/newsletter/config', async (req, res) => {
-  try {
-    const admin = await requireAdmin(req, res);
-    if (!admin) return;
-    await ensureAdminTables();
-    const result = await pgPool.query(
-      `SELECT COUNT(*) FILTER (WHERE status = 'active')::int AS active_count,
-              COUNT(*)::int AS total_count
-       FROM newsletter_subscribers`,
-    );
-    return res.json({
-      enabled: Boolean(pgPool && resendApiKey),
-      activeCount: result.rows[0]?.active_count || 0,
-      totalCount: result.rows[0]?.total_count || 0,
-    });
-  } catch (error) {
-    console.error('Admin newsletter config load failed:', error);
-    return res.status(500).json({ message: 'Could not load newsletter settings.' });
-  }
-});
-
-app.post('/api/admin/newsletter/send', async (req, res) => {
-  try {
-    const admin = await requireAdmin(req, res);
-    if (!admin) return;
-    if (!pgPool || !resendApiKey) {
-      return res.status(503).json({ message: 'Newsletter sending is not configured.' });
-    }
-
-    const title = clean(req.body?.title) || 'Iris & J Holdings Newsletter';
-    const date = clean(req.body?.date);
-    const body = clean(req.body?.body);
-    if (!body) {
-      return res.status(400).json({ message: 'Newsletter text is required.' });
-    }
-
-    await ensureAdminTables();
-    const subscribersResult = await pgPool.query(
-      `SELECT email
-       FROM newsletter_subscribers
-       WHERE status = 'active'
-       ORDER BY created_at ASC`,
-    );
-    const recipients = subscribersResult.rows.map((row) => normalizeEmail(row.email)).filter(Boolean);
-    if (!recipients.length) {
-      return res.status(400).json({ message: 'There are no active subscribers yet.' });
-    }
-
-    const campaignInsert = await pgPool.query(
-      `INSERT INTO newsletter_campaigns (title, subject, body, sent_by_email, recipient_count, status)
-       VALUES ($1, $2, $3, $4, $5, 'sending')
-       RETURNING id`,
-      [title, title, body, normalizeEmail(admin.email), recipients.length],
-    );
-    const campaignId = campaignInsert.rows[0]?.id || 0;
-
-    let sentCount = 0;
-    for (const email of recipients) {
-      await sendResendEmail({
-        to: email,
-        replyTo: contactTo,
-        subject: title,
-        text:
-          `${title}\n` +
-          `${date ? `${date}\n\n` : '\n'}` +
-          `${body}\n\n` +
-          `Unsubscribe immediately: ${newsletterUnsubscribeUrl(email)}`,
-        html: newsletterHtml({ title, date, body, unsubscribeUrl: newsletterUnsubscribeUrl(email) }),
-      });
-      sentCount += 1;
-    }
-
-    await pgPool.query(
-      `UPDATE newsletter_campaigns
-       SET recipient_count = $2, status = 'sent', sent_at = NOW(), updated_at = NOW()
-       WHERE id = $1`,
-      [campaignId, sentCount],
-    );
-
-    return res.json({ ok: true, campaignId, sentCount });
-  } catch (error) {
-    console.error('Admin newsletter send failed:', error);
-    return res.status(500).json({ message: error instanceof Error ? error.message : 'Could not send the newsletter.' });
-  }
-});
-
-function newsletterResultPage({ title, message }) {
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)}</title></head><body style="margin:0;background:#fbfaf7;font-family:Arial,Helvetica,sans-serif;color:#121820"><main style="max-width:720px;margin:0 auto;padding:48px 20px"><section style="background:#fffefd;border:1px solid #e7dfd4;border-radius:14px;padding:32px;box-shadow:0 18px 45px rgba(18,24,32,0.08)"><p style="margin:0 0 10px;font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#a77931">Newsletter</p><h1 style="margin:0 0 16px;font-family:Georgia,'Times New Roman',serif;font-size:38px;line-height:1.05">${escapeHtml(title)}</h1><p style="margin:0;font-size:16px;line-height:1.7;color:#3f4650">${escapeHtml(message)}</p><p style="margin:24px 0 0"><a href="${siteUrl}" style="display:inline-block;padding:14px 20px;background:#a77931;color:#fffefd;text-decoration:none;font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;border-radius:999px">Return to site</a></p></section></main></body></html>`;
-}
-
-app.get('/newsletter/unsubscribe', async (req, res) => {
-  try {
-    const email = normalizeEmail(req.query?.email);
-    const token = clean(req.query?.token);
-    if (!email || !token || !verifyNewsletterUnsubscribeToken(email, token)) {
-      return res.status(400).type('html').send(newsletterResultPage({
-        title: 'Unsubscribe link invalid',
-        message: 'This unsubscribe link is invalid or has expired.',
-      }));
-    }
-    if (!pgPool) {
-      return res.status(503).type('html').send(newsletterResultPage({
-        title: 'Newsletter unavailable',
-        message: 'Newsletter preferences are not available right now.',
-      }));
-    }
-    await ensureAdminTables();
-    await pgPool.query(
-      `UPDATE newsletter_subscribers
-       SET status = 'unsubscribed', updated_at = NOW()
-       WHERE email = $1`,
-      [email],
-    );
-    return res.status(200).type('html').send(newsletterResultPage({
-      title: 'You are unsubscribed',
-      message: 'You will no longer receive Iris & J Holdings newsletter emails at this address.',
-    }));
-  } catch (error) {
-    console.error('Newsletter unsubscribe failed:', error);
-    return res.status(500).type('html').send(newsletterResultPage({
-      title: 'Could not unsubscribe',
-      message: 'There was a problem updating your newsletter preference. Please try again later.',
-    }));
-  }
-});
-
-let cachedSeoShell = null;
-
-async function readSeoShell() {
-  if (cachedSeoShell) return cachedSeoShell;
-  cachedSeoShell = await fs.readFile(path.join(__dirname, 'dist', 'index.html'), 'utf8');
-  return cachedSeoShell;
-}
-
-function serverSeoForPath(pathname) {
-  const normalized = normalizedSeoPath(pathname);
-  if (normalized.startsWith('/admin') || normalized === '/booking-success' || normalized === '/notary-success' || normalized === '/invoice-success' || normalized === '/manage-booking' || normalized === '/vacation-rental-intake') {
-    return {
-      title: 'Iris & J Holdings',
-      description: 'Iris & J Holdings',
-      image: defaultSeoImage,
-      robots: 'noindex,nofollow',
-      canonicalPath: normalized,
-      breadcrumb: 'Page',
-    };
-  }
-
-  if (!publicSeoRoutes[normalized]) {
-    return {
-      title: 'Page Not Found | Iris & J Holdings',
-      description: 'The requested page could not be found on Iris & J Holdings.',
-      image: defaultSeoImage,
-      robots: 'noindex,nofollow',
-      canonicalPath: normalized,
-      breadcrumb: 'Page Not Found',
-    };
-  }
-
-  return {
-    ...publicSeoRoutes[normalized],
-    robots: 'index,follow',
-    canonicalPath: canonicalPathForSeo(normalized),
-  };
-}
-
-async function renderSeoShell(pathname) {
-  const template = await readSeoShell();
-  const seo = serverSeoForPath(pathname);
-  const structuredData = structuredDataForPath(normalizedSeoPath(pathname), seo);
-  const canonicalUrl = `${siteUrl}${seo.canonicalPath || '/'}`;
-
-  return template
-    .replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeHtml(seo.title)}</title>`)
-    .replace(/<meta(?=[^>]*name="description")[^>]*>/i, `<meta name="description" content="${escapeHtml(seo.description)}" />`)
-    .replace(/<meta(?=[^>]*name="robots")[^>]*>/i, `<meta name="robots" content="${escapeHtml(seo.robots)}" />`)
-    .replace(/<link(?=[^>]*rel="canonical")[^>]*>/i, `<link rel="canonical" href="${escapeHtml(canonicalUrl)}" />`)
-    .replace(/<meta(?=[^>]*property="og:title")[^>]*>/i, `<meta property="og:title" content="${escapeHtml(seo.title)}" />`)
-    .replace(/<meta(?=[^>]*property="og:description")[^>]*>/i, `<meta property="og:description" content="${escapeHtml(seo.description)}" />`)
-    .replace(/<meta(?=[^>]*property="og:url")[^>]*>/i, `<meta property="og:url" content="${escapeHtml(canonicalUrl)}" />`)
-    .replace(/<meta(?=[^>]*property="og:image")[^>]*>/i, `<meta property="og:image" content="${escapeHtml(seo.image || defaultSeoImage)}" />`)
-    .replace(/<meta(?=[^>]*name="twitter:title")[^>]*>/i, `<meta name="twitter:title" content="${escapeHtml(seo.title)}" />`)
-    .replace(/<meta(?=[^>]*name="twitter:description")[^>]*>/i, `<meta name="twitter:description" content="${escapeHtml(seo.description)}" />`)
-    .replace(/<meta(?=[^>]*name="twitter:image")[^>]*>/i, `<meta name="twitter:image" content="${escapeHtml(seo.image || defaultSeoImage)}" />`)
-    .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/i, `<script type="application/ld+json">${escapeJsonForHtml(structuredData)}</script>`);
-}
-
-app.get('/robots.txt', (_req, res) => {
-  res.type('text/plain').send('User-agent: *\nAllow: /\n\nSitemap: https://www.irisjholdings.com/sitemap.xml\n');
-});
-
-app.get('/sitemap.xml', (_req, res) => {
-  const lastmod = new Date().toISOString().slice(0, 10);
-  const indexedRoutes = Object.keys(publicSeoRoutes).filter((route) => route !== '/contact');
-  const xml = [
-    '<?xml version="1.0" encoding="UTF-8"?>',
-    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-    ...indexedRoutes.map((route) => `  <url><loc>${siteUrl}${route === '/' ? '/' : route}</loc><lastmod>${lastmod}</lastmod></url>`),
-    '</urlset>',
-  ].join('\n');
-  res.type('application/xml').send(xml);
-});
-
-app.get('/uploads/:storageKey', async (req, res, next) => {
-  try {
-    if (!pgPool) return next();
-    await ensureAdminTables();
-    const storageKey = clean(req.params.storageKey);
-    if (!storageKey) return next();
-    const result = await pgPool.query(
-      `SELECT mime_type, original_name, file_data
-       FROM uploaded_media
-       WHERE storage_key = $1
-       LIMIT 1`,
-      [storageKey],
-    );
-    const media = result.rows[0];
-    if (!media?.file_data) return next();
-    if (media.original_name) {
-      res.setHeader('Content-Disposition', `inline; filename="${media.original_name.replace(/"/g, '')}"`);
-    }
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-    res.type(clean(media.mime_type) || 'application/octet-stream');
-    return res.send(media.file_data);
-  } catch (error) {
-    console.error('Uploaded media fetch failed:', error);
-    return res.status(500).end();
-  }
-});
-
-app.use('/uploads', express.static(uploadsDir));
-app.use(express.static(path.join(__dirname, 'dist')));
-
-app.get('*', async (req, res) => {
-  try {
-    const html = await renderSeoShell(req.path);
-    res.type('html').send(html);
-  } catch (error) {
-    console.error('SEO shell render failed:', error);
-    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-  }
+registerSeoRoutes(app, {
+  __dirname,
+  defaultSeoImage,
+  distDir: 'dist',
+  ensureAdminTables,
+  pgPool,
+  siteUrl,
 });
 
 async function startServer() {
