@@ -252,7 +252,7 @@ export function registerNewsletterRoutes(app, deps) {
       if (!pgPool) return res.status(503).json({ message: 'Database not configured.' });
       await ensureAdminTables();
       const result = await pgPool.query(
-        `SELECT id, title, subject, recipient_count, status, sent_at, created_at
+        `SELECT id, title, subject, body, recipient_count, status, sent_at, created_at
          FROM newsletter_campaigns
          ORDER BY COALESCE(sent_at, created_at) DESC
          LIMIT 200`,

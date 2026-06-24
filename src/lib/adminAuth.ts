@@ -188,6 +188,7 @@ export type NewsletterCampaignRecord = {
   id: number;
   title: string;
   subject: string;
+  body: string;
   recipient_count: number;
   status: string;
   sent_at: string | null;

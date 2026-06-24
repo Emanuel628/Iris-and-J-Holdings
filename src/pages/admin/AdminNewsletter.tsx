@@ -42,6 +42,7 @@ function AdminNewsletter() {
   const [subscribers, setSubscribers] = useState<NewsletterSubscriberRecord[]>([]);
   const [campaigns, setCampaigns] = useState<NewsletterCampaignRecord[]>([]);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [viewingCampaign, setViewingCampaign] = useState<NewsletterCampaignRecord | null>(null);
   const [title, setTitle] = useState('Iris & J Holdings Newsletter');
   const [date, setDate] = useState(todayLabel());
   const [body, setBody] = useState('');
@@ -310,12 +311,18 @@ function AdminNewsletter() {
               <span>Recipients</span>
               <span>Status</span>
               <span>Sent</span>
-              <span>Action</span>
+              <span>Actions</span>
             </div>
             {campaigns.map((campaign) => (
               <div className="admin-data-row admin-newsletter-history-row" key={campaign.id}>
                 <div>
-                  <strong>{campaign.title || campaign.subject || '(Untitled)'}</strong>
+                  <button
+                    className="admin-campaign-title-link"
+                    type="button"
+                    onClick={() => setViewingCampaign((prev) => prev?.id === campaign.id ? null : campaign)}
+                  >
+                    {campaign.title || campaign.subject || '(Untitled)'}
+                  </button>
                 </div>
                 <div>
                   <p>{campaign.recipient_count ?? '—'}</p>
@@ -326,7 +333,14 @@ function AdminNewsletter() {
                 <div>
                   <p>{campaign.sent_at ? formatDateTime(campaign.sent_at) : formatDateTime(campaign.created_at)}</p>
                 </div>
-                <div>
+                <div className="admin-campaign-actions">
+                  <button
+                    className="button-secondary"
+                    type="button"
+                    onClick={() => setViewingCampaign((prev) => prev?.id === campaign.id ? null : campaign)}
+                  >
+                    {viewingCampaign?.id === campaign.id ? 'Close' : 'View'}
+                  </button>
                   <button
                     className="button-secondary"
                     type="button"
@@ -340,6 +354,40 @@ function AdminNewsletter() {
             ))}
             {!campaigns.length ? <p className="admin-empty-note">No newsletters sent yet.</p> : null}
           </div>
+
+          {viewingCampaign ? (
+            <section className="admin-panel newsletter-email-preview-shell" style={{ marginTop: '1.5rem' }}>
+              <div className="admin-section-head">
+                <h2>
+                  {viewingCampaign.title || viewingCampaign.subject || '(Untitled)'}
+                  {viewingCampaign.sent_at ? <span className="admin-campaign-sent-label"> — sent {formatDateTime(viewingCampaign.sent_at)}</span> : null}
+                </h2>
+                <button className="button-secondary" type="button" onClick={() => setViewingCampaign(null)}>Close</button>
+              </div>
+              <article className="newsletter-email-preview">
+                <header className="newsletter-email-preview-head">
+                  <strong>Iris &amp; J Holdings</strong>
+                  <span>Real Estate · Mobile Notary · Orlando Vacation Rentals</span>
+                </header>
+                <div className="newsletter-email-preview-body">
+                  <p className="newsletter-email-preview-date">
+                    {viewingCampaign.sent_at
+                      ? new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date(viewingCampaign.sent_at))
+                      : ''}
+                  </p>
+                  <h3>{viewingCampaign.title || viewingCampaign.subject || 'Iris & J Holdings Newsletter'}</h3>
+                  {newsletterParagraphs(viewingCampaign.body || '').map((paragraph) => (
+                    <p key={paragraph}>{paragraph}</p>
+                  ))}
+                  {!viewingCampaign.body ? <p className="admin-empty-note">No body text was stored for this campaign.</p> : null}
+                </div>
+                <footer className="newsletter-email-preview-foot">
+                  <p>Iris &amp; J Holdings · Real estate through All Star Real Estate Agency · Mobile notary and Orlando vacation rentals offered independently through Iris &amp; J Holdings.</p>
+                  <p>Every recipient email included an immediate unsubscribe link.</p>
+                </footer>
+              </article>
+            </section>
+          ) : null}
         </section>
 
         {statusMessage ? <p className="form-status form-status-success">{statusMessage}</p> : null}

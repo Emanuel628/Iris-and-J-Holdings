@@ -3371,20 +3371,38 @@ app.post('/api/newsletter/subscribe', async (req, res) => {
       }
 
       try {
+        const unsubToken = crypto.createHmac('sha256', newsletter.unsubscribeSecret).update(normalizeEmail(email)).digest('hex');
+        const unsubParams = new URLSearchParams({ email: normalizeEmail(email), token: unsubToken });
+        const unsubUrl = `${siteUrl}/newsletter/unsubscribe?${unsubParams.toString()}`;
+        const bodyFont = 'font-family:Arial,Helvetica,sans-serif';
+        const serif = "font-family:Georgia,'Times New Roman',serif";
         await sendResendEmail({
           to: email,
           replyTo: contactTo,
-          subject: 'You are subscribed - Iris & J Holdings',
+          subject: 'You are subscribed — Iris & J Holdings',
           text:
             `Hi ${fullName || 'there'},\n\n` +
-            `You are now subscribed to Iris & J Holdings updates.\n` +
-            `You will receive occasional market notes, listing highlights, and practical real estate guidance.\n\n` +
-            `- Iris & J Holdings`,
+            `You are now subscribed to Iris & J Holdings updates. You will receive occasional market notes, listing highlights, and practical real estate guidance.\n\n` +
+            `To unsubscribe at any time, visit: ${unsubUrl}\n\n` +
+            `— Iris & J Holdings`,
           html:
-            `<p>Hi ${escapeHtml(fullName || 'there')},</p>` +
-            `<p>You are now subscribed to Iris &amp; J Holdings updates.</p>` +
-            `<p>You will receive occasional market notes, listing highlights, and practical real estate guidance.</p>` +
-            `<p>- Iris &amp; J Holdings</p>`,
+            `<!doctype html><html><body style="margin:0;padding:0;background:#fbfaf7;${bodyFont}">` +
+            `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fbfaf7"><tr><td align="center" style="padding:28px 16px">` +
+            `<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;background:#fffefd;border:1px solid #e7dfd4;border-radius:12px;overflow:hidden">` +
+            `<tr><td style="padding:26px 32px 18px;border-bottom:1px solid #e7dfd4">` +
+            `<div style="${serif};font-size:24px;font-weight:600;letter-spacing:0.05em;color:#121820">Iris &amp; J Holdings</div>` +
+            `<div style="${bodyFont};font-size:11px;font-weight:bold;letter-spacing:0.12em;text-transform:uppercase;color:#a77931;margin-top:4px">Real Estate &middot; Mobile Notary &middot; Orlando Vacation Rentals</div>` +
+            `</td></tr>` +
+            `<tr><td style="padding:28px 32px">` +
+            `<h1 style="margin:0 0 16px;${serif};font-size:26px;line-height:1.2;font-weight:600;color:#121820">You&rsquo;re subscribed.</h1>` +
+            `<p style="margin:0 0 14px;${bodyFont};font-size:16px;line-height:1.65;color:#3f4650">Hi ${escapeHtml(fullName || 'there')},</p>` +
+            `<p style="margin:0;${bodyFont};font-size:16px;line-height:1.65;color:#3f4650">You are now subscribed to Iris &amp; J Holdings updates. You will receive occasional market notes, listing highlights, and practical real estate guidance.</p>` +
+            `</td></tr>` +
+            `<tr><td style="padding:20px 32px 26px;border-top:1px solid #e7dfd4;background:#f5efe6">` +
+            `<p style="margin:0 0 8px;${bodyFont};font-size:12px;line-height:1.6;color:#6f747b">Iris &amp; J Holdings &middot; Real estate through All Star Real Estate Agency, a licensed New Jersey real estate brokerage &middot; Mobile notary &amp; Orlando vacation rentals offered independently through Iris &amp; J Holdings.</p>` +
+            `<p style="margin:0;${bodyFont};font-size:12px;color:#6f747b">You received this because you subscribed at irisjholdings.com. <a href="${escapeHtml(unsubUrl)}" style="color:#a77931">Unsubscribe immediately</a>.</p>` +
+            `</td></tr>` +
+            `</table></td></tr></table></body></html>`,
         });
       } catch (confirmError) {
         console.error('Newsletter confirmation email failed:', confirmError);
