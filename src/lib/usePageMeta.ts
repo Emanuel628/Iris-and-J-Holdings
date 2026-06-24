@@ -1,14 +1,15 @@
 import { useEffect } from 'react';
 
 const BASE_TITLE = 'Iris & J Holdings';
-const DEFAULT_TITLE = 'Iris & J Holdings | New Jersey Real Estate, Mobile Notary & Orlando Rentals';
+const DEFAULT_TITLE = 'Iris & J Holdings | NJ Real Estate, Mobile Notary & Orlando Rentals';
 const SITE_URL = 'https://www.irisjholdings.com';
 const DEFAULT_IMAGE = `${SITE_URL}/images/site/contact-hero.jpg`;
 
-const ROUTE_META: Record<string, { title?: string; description?: string; robots?: string }> = {
+const ROUTE_META: Record<string, { title?: string; description?: string; robots?: string; image?: string }> = {
   '/': {
     description:
-      'Iris & J Holdings helps New Jersey buyers and sellers, offers mobile notary appointments in Union, Middlesex, and Essex Counties, and provides Orlando vacation rental booking.',
+      'NJ REALTOR® Daiana Castro helps New Jersey buyers and sellers, offers mobile notary appointments in Union, Middlesex & Essex Counties, and provides Orlando vacation rental booking. Call (908) 499-6320.',
+    image: `${SITE_URL}/images/site/contact-hero.jpg`,
   },
   '/admin': {
     title: 'Control Center',
@@ -88,42 +89,46 @@ const ROUTE_META: Record<string, { title?: string; description?: string; robots?
   '/buy': {
     title: 'Buy a Home in New Jersey',
     description:
-      'Buyer consultation and home search guidance in New Jersey, including budget review, pre-approval, offers, inspections, attorney review, and closing next steps.',
+      'Looking to buy a home in NJ? REALTOR® Daiana Castro guides buyers through budget review, pre-approval, home search, offers, inspections, and closing. Book a free consultation.',
+    image: `${SITE_URL}/images/site/buy-hero.jpg`,
   },
   '/sell': {
     title: 'Sell Your Home in New Jersey',
     description:
-      'Seller strategy guidance in New Jersey for pricing, preparation, marketing, negotiation, attorney review, and closing through All Star Real Estate Agency.',
+      'Ready to sell your NJ home? Get pricing strategy, preparation guidance, and representation through All Star Real Estate Agency. Schedule your free seller strategy call today.',
+    image: `${SITE_URL}/images/site/contact-hero.jpg`,
   },
   '/home-value': {
-    title: 'New Jersey Home Value Review',
+    title: 'Free NJ Home Value Review',
     description:
-      'Request a New Jersey home value review using recent comparable sales, nearby listings, condition, updates, and local market activity. Not a formal appraisal.',
+      'Request a free New Jersey home value review from REALTOR® Daiana Castro. Based on comparable sales, local market data, and your home\'s condition. No commitment required.',
   },
   '/mobile-notary': {
-    title: 'Mobile Notary in Union, Middlesex & Essex Counties',
+    title: 'Mobile Notary | Union, Middlesex & Essex County NJ',
     description:
-      'Mobile notary appointments for Union County, Middlesex County, and Essex County, NJ, including general notarizations, real estate documents, affidavits, and consent forms.',
+      'Need a mobile notary in NJ? Daiana Castro serves Union, Middlesex & Essex Counties for general notarizations, real estate documents, affidavits, and consent forms. Book online.',
+    image: `${SITE_URL}/images/site/notary-hero.jpg`,
   },
   '/resources': {
-    title: 'Real Estate Resources for NJ Buyers & Sellers',
+    title: 'Free Real Estate Resources for NJ Buyers & Sellers',
     description:
-      'Plain-language New Jersey buyer guides, seller guides, and local market updates for people preparing to buy, sell, or request a home value review.',
+      'Free NJ real estate guides for buyers and sellers. Plain-language market updates, buying and selling step-by-step guides, and home value insights from REALTOR® Daiana Castro.',
   },
   '/about': {
-    title: 'About Daiana Castro, REALTOR',
+    title: 'About Daiana Castro, REALTOR®',
     description:
-      'Meet Daiana Castro, REALTOR and mobile notary serving New Jersey buyers, sellers, and notary clients through Iris & J Holdings and All Star Real Estate Agency.',
+      'Daiana Castro is a licensed NJ REALTOR® with All Star Real Estate Agency and mobile notary serving Union, Middlesex & Essex Counties. Learn how she works with clients.',
+    image: `${SITE_URL}/images/site/daiana-portrait.jpg`,
   },
   '/book': {
     title: 'Book a Consultation or Notary Appointment',
     description:
-      'Contact Daiana Castro to schedule a New Jersey buyer consultation, seller strategy call, home value review, mobile notary appointment, or general question.',
+      'Book a NJ buyer consultation, seller strategy call, free home value review, or mobile notary appointment with Daiana Castro. Contact by phone, text, or online form.',
   },
   '/contact': {
     title: 'Book a Consultation or Notary Appointment',
     description:
-      'Contact Daiana Castro to schedule a New Jersey buyer consultation, seller strategy call, home value review, mobile notary appointment, or general question.',
+      'Book a NJ buyer consultation, seller strategy call, free home value review, or mobile notary appointment with Daiana Castro. Contact by phone, text, or online form.',
   },
   '/invoice-success': {
     title: 'Invoice Payment Received',
@@ -131,12 +136,13 @@ const ROUTE_META: Record<string, { title?: string; description?: string; robots?
     robots: 'noindex,nofollow',
   },
   '/vacation-rentals': {
-    title: 'Orlando Vacation Rental Near Theme Parks',
+    title: 'Orlando Vacation Rental Near Disney & Universal',
     description:
-      'Check availability and book an Orlando vacation rental in Central Florida near major theme parks with secure checkout, amenities, FAQs, and booking questions.',
+      'Book a family-friendly Orlando vacation rental in Central Florida near Disney, Universal, and major theme parks. Fully equipped home with amenities, easy online booking.',
+    image: `${SITE_URL}/images/site/vacation-hero.jpg`,
   },
   '/booking-success': {
-    title: 'Booking Status',
+    title: 'Booking Confirmed',
     description: 'Your Orlando vacation rental booking status.',
     robots: 'noindex,nofollow',
   },
@@ -151,9 +157,9 @@ const ROUTE_META: Record<string, { title?: string; description?: string; robots?
     robots: 'noindex,nofollow',
   },
   '/house-rules': {
-    title: 'Vacation Rental House Rules',
+    title: 'Orlando Vacation Rental House Rules',
     description:
-      'House rules for Orlando vacation rental bookings through Iris & J Holdings, including occupancy, parking, quiet hours, and guest list requirements.',
+      'House rules for Orlando vacation rental bookings through Iris & J Holdings, including occupancy limits, parking, quiet hours, pet policy, and guest list requirements.',
   },
   '/vacation-rental-intake': {
     title: 'Vacation Rental Intake',
@@ -168,12 +174,12 @@ const ROUTE_META: Record<string, { title?: string; description?: string; robots?
   '/privacy': {
     title: 'Privacy Policy',
     description:
-      'Privacy Policy for Iris & J Holdings, including website forms, contact requests, mobile notary appointment requests, home value requests, and vacation rental inquiries.',
+      'Privacy Policy for Iris & J Holdings covering website forms, contact requests, mobile notary appointments, home value requests, and vacation rental inquiries.',
   },
   '/terms': {
     title: 'Terms of Use',
     description:
-      'Terms of Use for Iris & J Holdings, including real estate service disclosures, mobile notary notices, vacation rental terms, and website use rules.',
+      'Terms of Use for Iris & J Holdings, including real estate service disclosures, mobile notary notices, vacation rental booking terms, and website use rules.',
   },
   '/accessibility': {
     title: 'Accessibility & Fair Housing',
@@ -186,6 +192,7 @@ type PageMetaOptions = {
   robots?: string;
   image?: string;
   type?: string;
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 };
 
 function setMeta(selector: string, attr: 'name' | 'property', key: string, content: string) {
@@ -208,6 +215,20 @@ function setCanonical(href: string) {
   tag.setAttribute('href', href);
 }
 
+function setPageJsonLd(data: Record<string, unknown> | Record<string, unknown>[]) {
+  const existing = document.head.querySelector<HTMLScriptElement>('script[type="application/ld+json"][data-page-schema]');
+  if (existing) existing.remove();
+  const script = document.createElement('script');
+  script.type = 'application/ld+json';
+  script.setAttribute('data-page-schema', '1');
+  script.textContent = JSON.stringify(data);
+  document.head.appendChild(script);
+}
+
+function removePageJsonLd() {
+  document.head.querySelector('script[type="application/ld+json"][data-page-schema]')?.remove();
+}
+
 function normalizedCurrentPath() {
   if (window.location.pathname === '/') return '/';
   return window.location.pathname.replace(/\/$/, '');
@@ -221,8 +242,8 @@ function canonicalUrlForCurrentPath(pathname: string) {
 }
 
 /**
- * Sets per-page title, description, canonical URL, robots, and social preview tags.
- * This is a single-page app, so each route updates the document head on mount.
+ * Sets per-page title, description, canonical URL, robots, social preview tags,
+ * and optional page-level JSON-LD structured data.
  */
 export function usePageMeta(title: string, description?: string, options: PageMetaOptions = {}) {
   const image = options.image ?? DEFAULT_IMAGE;
@@ -233,6 +254,7 @@ export function usePageMeta(title: string, description?: string, options: PageMe
     const routeMeta = ROUTE_META[pathname] ?? {};
     const effectiveTitle = routeMeta.title ?? title;
     const effectiveDescription = routeMeta.description ?? description;
+    const effectiveImage = routeMeta.image ?? image;
     const robots = options.robots ?? routeMeta.robots ?? 'index,follow';
     const fullTitle = effectiveTitle ? `${effectiveTitle} | ${BASE_TITLE}` : DEFAULT_TITLE;
     const canonicalUrl = canonicalUrlForCurrentPath(pathname);
@@ -243,15 +265,21 @@ export function usePageMeta(title: string, description?: string, options: PageMe
     setMeta('meta[property="og:title"]', 'property', 'og:title', fullTitle);
     setMeta('meta[property="og:type"]', 'property', 'og:type', type);
     setMeta('meta[property="og:url"]', 'property', 'og:url', canonicalUrl);
-    setMeta('meta[property="og:image"]', 'property', 'og:image', image);
+    setMeta('meta[property="og:image"]', 'property', 'og:image', effectiveImage);
     setMeta('meta[name="twitter:card"]', 'name', 'twitter:card', 'summary_large_image');
     setMeta('meta[name="twitter:title"]', 'name', 'twitter:title', fullTitle);
-    setMeta('meta[name="twitter:image"]', 'name', 'twitter:image', image);
+    setMeta('meta[name="twitter:image"]', 'name', 'twitter:image', effectiveImage);
 
     if (effectiveDescription) {
       setMeta('meta[name="description"]', 'name', 'description', effectiveDescription);
       setMeta('meta[property="og:description"]', 'property', 'og:description', effectiveDescription);
       setMeta('meta[name="twitter:description"]', 'name', 'twitter:description', effectiveDescription);
     }
-  }, [title, description, options.robots, image, type]);
+
+    if (options.jsonLd) {
+      setPageJsonLd(options.jsonLd);
+    } else {
+      removePageJsonLd();
+    }
+  }, [title, description, options.robots, image, type, options.jsonLd]);
 }

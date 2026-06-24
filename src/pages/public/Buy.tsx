@@ -2,10 +2,40 @@
 import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
 import { usePageMeta } from '../../lib/usePageMeta';
 
+const buyJsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Service',
+      '@id': 'https://www.irisjholdings.com/buy#service',
+      'name': 'New Jersey Home Buyer Consultation',
+      'description': 'Buyer consultation and home search guidance in New Jersey, covering budget review, pre-approval, home search strategy, offers, inspections, attorney review, and closing.',
+      'serviceType': 'Real Estate Buyer Consultation',
+      'provider': { '@id': 'https://www.irisjholdings.com/#daiana-castro' },
+      'areaServed': { '@type': 'State', 'name': 'New Jersey' },
+      'url': 'https://www.irisjholdings.com/buy',
+      'offers': {
+        '@type': 'Offer',
+        'price': '0',
+        'priceCurrency': 'USD',
+        'description': 'Free initial buyer consultation',
+      },
+    },
+    {
+      '@type': 'BreadcrumbList',
+      'itemListElement': [
+        { '@type': 'ListItem', 'position': 1, 'name': 'Home', 'item': 'https://www.irisjholdings.com/' },
+        { '@type': 'ListItem', 'position': 2, 'name': 'Buy a Home in NJ', 'item': 'https://www.irisjholdings.com/buy' },
+      ],
+    },
+  ],
+};
+
 function Buy() {
   usePageMeta(
     'Buy a Home in New Jersey',
-    'Buyer consultation and home search guidance in New Jersey, including budget review, pre-approval, offers, inspections, attorney review, and closing next steps.',
+    'Looking to buy a home in NJ? REALTOR® Daiana Castro guides buyers through budget review, pre-approval, home search, offers, inspections, and closing. Book a free consultation.',
+    { jsonLd: buyJsonLd },
   );
   const template = getSiteContentTemplate('buy');
   const { content, heroImageUrl } = usePublicSiteContent('buy', template?.defaults || {});

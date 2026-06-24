@@ -5,10 +5,40 @@ import { useContactForm } from '../../lib/useContactForm';
 import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
 import { usePageMeta } from '../../lib/usePageMeta';
 
+const sellJsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Service',
+      '@id': 'https://www.irisjholdings.com/sell#service',
+      'name': 'New Jersey Home Seller Strategy Consultation',
+      'description': 'Seller strategy guidance in New Jersey for pricing, preparation, marketing, negotiation, attorney review, and closing through All Star Real Estate Agency.',
+      'serviceType': 'Real Estate Seller Consultation',
+      'provider': { '@id': 'https://www.irisjholdings.com/#daiana-castro' },
+      'areaServed': { '@type': 'State', 'name': 'New Jersey' },
+      'url': 'https://www.irisjholdings.com/sell',
+      'offers': {
+        '@type': 'Offer',
+        'price': '0',
+        'priceCurrency': 'USD',
+        'description': 'Free initial seller strategy consultation',
+      },
+    },
+    {
+      '@type': 'BreadcrumbList',
+      'itemListElement': [
+        { '@type': 'ListItem', 'position': 1, 'name': 'Home', 'item': 'https://www.irisjholdings.com/' },
+        { '@type': 'ListItem', 'position': 2, 'name': 'Sell Your Home in NJ', 'item': 'https://www.irisjholdings.com/sell' },
+      ],
+    },
+  ],
+};
+
 function Sell() {
   usePageMeta(
     'Sell Your Home in New Jersey',
-    'Seller strategy guidance in New Jersey for pricing, preparation, marketing, negotiation, attorney review, and closing through All Star Real Estate Agency.',
+    'Ready to sell your NJ home? Get pricing strategy, preparation guidance, and representation through All Star Real Estate Agency. Schedule your free seller strategy call today.',
+    { jsonLd: sellJsonLd },
   );
   const { status, submit } = useContactForm('Seller Strategy Request');
   const template = getSiteContentTemplate('sell');

@@ -27,10 +27,59 @@ const notaryFaqs = [
   },
 ];
 
+const notaryJsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': ['LocalBusiness', 'ProfessionalService'],
+      '@id': 'https://www.irisjholdings.com/mobile-notary#localbusiness',
+      'name': 'Iris & J Holdings – Mobile Notary',
+      'description': 'Mobile notary appointments for Union, Middlesex, and Essex Counties, NJ, including general notarizations, real estate documents, affidavits, and consent forms.',
+      'url': 'https://www.irisjholdings.com/mobile-notary',
+      'telephone': '+1-908-499-6320',
+      'email': 'listingsbyd@gmail.com',
+      'address': {
+        '@type': 'PostalAddress',
+        'addressLocality': 'Union',
+        'addressRegion': 'NJ',
+        'postalCode': '07083',
+        'addressCountry': 'US',
+      },
+      'areaServed': [
+        { '@type': 'AdministrativeArea', 'name': 'Union County, NJ' },
+        { '@type': 'AdministrativeArea', 'name': 'Middlesex County, NJ' },
+        { '@type': 'AdministrativeArea', 'name': 'Essex County, NJ' },
+      ],
+      'serviceType': 'Mobile Notary',
+      'employee': { '@id': 'https://www.irisjholdings.com/#daiana-castro' },
+    },
+    {
+      '@type': 'FAQPage',
+      '@id': 'https://www.irisjholdings.com/mobile-notary#faq',
+      'mainEntity': notaryFaqs.map((faq) => ({
+        '@type': 'Question',
+        'name': faq.question,
+        'acceptedAnswer': {
+          '@type': 'Answer',
+          'text': faq.answer,
+        },
+      })),
+    },
+    {
+      '@type': 'BreadcrumbList',
+      'itemListElement': [
+        { '@type': 'ListItem', 'position': 1, 'name': 'Home', 'item': 'https://www.irisjholdings.com/' },
+        { '@type': 'ListItem', 'position': 2, 'name': 'Mobile Notary NJ', 'item': 'https://www.irisjholdings.com/mobile-notary' },
+      ],
+    },
+  ],
+};
+
 function MobileNotary() {
   usePageMeta(
-    'Mobile Notary in Union, Middlesex & Essex Counties',
-    'Mobile notary appointments for Union County, Middlesex County, and Essex County, NJ, including general notarizations, real estate documents, affidavits, and consent forms.',
+    'Mobile Notary | Union, Middlesex & Essex County NJ',
+    'Need a mobile notary in NJ? Daiana Castro serves Union, Middlesex & Essex Counties for general notarizations, real estate documents, affidavits, and consent forms. Book online.',
+    { jsonLd: notaryJsonLd },
   );
   const template = getSiteContentTemplate('mobile-notary');
   const { content, heroImageUrl } = usePublicSiteContent('mobile-notary', template?.defaults || {});

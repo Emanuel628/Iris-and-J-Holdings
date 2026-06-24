@@ -3,10 +3,66 @@ import SocialLinks from '../../components/ui/SocialLinks';
 import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
 import { usePageMeta } from '../../lib/usePageMeta';
 
+const aboutJsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': ['Person', 'RealEstateAgent'],
+      '@id': 'https://www.irisjholdings.com/#daiana-castro',
+      'name': 'Daiana Castro',
+      'givenName': 'Daiana',
+      'familyName': 'Castro',
+      'jobTitle': 'REALTOR® and Licensed Mobile Notary',
+      'description': 'Daiana Castro is a licensed New Jersey REALTOR® with All Star Real Estate Agency and a licensed mobile notary serving Union, Middlesex, and Essex Counties, NJ.',
+      'image': 'https://www.irisjholdings.com/images/site/daiana-portrait.jpg',
+      'telephone': '+1-908-499-6320',
+      'email': 'listingsbyd@gmail.com',
+      'url': 'https://www.irisjholdings.com/about',
+      'hasCredential': {
+        '@type': 'EducationalOccupationalCredential',
+        'credentialCategory': 'license',
+        'name': 'NJ Real Estate License #2190570',
+      },
+      'worksFor': {
+        '@type': 'RealEstateAgent',
+        'name': 'All Star Real Estate Agency',
+        'telephone': '+1-908-964-5005',
+        'address': {
+          '@type': 'PostalAddress',
+          'streetAddress': '1416B Morris Ave',
+          'addressLocality': 'Union',
+          'addressRegion': 'NJ',
+          'postalCode': '07083',
+          'addressCountry': 'US',
+        },
+      },
+      'memberOf': { '@id': 'https://www.irisjholdings.com/#organization' },
+      'knowsAbout': [
+        'New Jersey Real Estate',
+        'Home Buying in NJ',
+        'Home Selling in NJ',
+        'Mobile Notary Services',
+        'Real Estate Documents',
+        'Union County NJ Real Estate',
+        'Middlesex County NJ Real Estate',
+        'Essex County NJ Real Estate',
+      ],
+    },
+    {
+      '@type': 'BreadcrumbList',
+      'itemListElement': [
+        { '@type': 'ListItem', 'position': 1, 'name': 'Home', 'item': 'https://www.irisjholdings.com/' },
+        { '@type': 'ListItem', 'position': 2, 'name': 'About Daiana Castro', 'item': 'https://www.irisjholdings.com/about' },
+      ],
+    },
+  ],
+};
+
 function About() {
   usePageMeta(
     'About Daiana Castro, REALTOR®',
-    'Meet Daiana Castro, REALTOR® and mobile notary serving New Jersey buyers, sellers, and notary clients through Iris & J Holdings and All Star Real Estate Agency.',
+    'Daiana Castro is a licensed NJ REALTOR® with All Star Real Estate Agency and mobile notary serving Union, Middlesex & Essex Counties. Learn how she works with clients.',
+    { jsonLd: aboutJsonLd },
   );
   const template = getSiteContentTemplate('about');
   const { content, heroImageUrl } = usePublicSiteContent('about', template?.defaults || {});

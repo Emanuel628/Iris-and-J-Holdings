@@ -68,10 +68,66 @@ const orlandoFaqs = [
   },
 ];
 
+const vacationJsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'LodgingBusiness',
+      '@id': 'https://www.irisjholdings.com/vacation-rentals#lodging',
+      'name': 'Iris & J Holdings – Orlando Vacation Rental',
+      'description': 'Family-friendly vacation rental in the Orlando, FL area, close to Disney World, Universal Studios, and major Central Florida theme parks.',
+      'url': 'https://www.irisjholdings.com/vacation-rentals',
+      'telephone': '+1-908-499-6320',
+      'email': 'listingsbyd@gmail.com',
+      'address': {
+        '@type': 'PostalAddress',
+        'addressLocality': 'Orlando',
+        'addressRegion': 'FL',
+        'addressCountry': 'US',
+      },
+      'geo': {
+        '@type': 'GeoCoordinates',
+        'latitude': 28.5383,
+        'longitude': -81.3792,
+      },
+      'amenityFeature': [
+        { '@type': 'LocationFeatureSpecification', 'name': 'Fully equipped kitchen', 'value': true },
+        { '@type': 'LocationFeatureSpecification', 'name': 'Fast Wi-Fi', 'value': true },
+        { '@type': 'LocationFeatureSpecification', 'name': 'Free parking', 'value': true },
+        { '@type': 'LocationFeatureSpecification', 'name': 'Washer & dryer', 'value': true },
+        { '@type': 'LocationFeatureSpecification', 'name': 'Smart TV / streaming', 'value': true },
+        { '@type': 'LocationFeatureSpecification', 'name': 'Self check-in', 'value': true },
+        { '@type': 'LocationFeatureSpecification', 'name': 'Linens & towels provided', 'value': true },
+      ],
+      'starRating': { '@type': 'Rating', 'ratingValue': '4' },
+    },
+    {
+      '@type': 'FAQPage',
+      '@id': 'https://www.irisjholdings.com/vacation-rentals#faq',
+      'mainEntity': orlandoFaqs.map((faq) => ({
+        '@type': 'Question',
+        'name': faq.question,
+        'acceptedAnswer': {
+          '@type': 'Answer',
+          'text': faq.answer,
+        },
+      })),
+    },
+    {
+      '@type': 'BreadcrumbList',
+      'itemListElement': [
+        { '@type': 'ListItem', 'position': 1, 'name': 'Home', 'item': 'https://www.irisjholdings.com/' },
+        { '@type': 'ListItem', 'position': 2, 'name': 'Orlando Vacation Rental', 'item': 'https://www.irisjholdings.com/vacation-rentals' },
+      ],
+    },
+  ],
+};
+
 function VacationRentals() {
   usePageMeta(
-    'Orlando Vacation Rental Near Theme Parks',
-    'Check availability and book an Orlando vacation rental in Central Florida near major theme parks with secure checkout, amenities, FAQs, and booking questions.',
+    'Orlando Vacation Rental Near Disney & Universal',
+    'Book a family-friendly Orlando vacation rental in Central Florida near Disney, Universal, and major theme parks. Fully equipped home with amenities, easy online booking.',
+    { jsonLd: vacationJsonLd },
   );
   const { status, submit } = useContactForm('Orlando Vacation Rental Question');
   const template = getSiteContentTemplate('vacation-rentals');

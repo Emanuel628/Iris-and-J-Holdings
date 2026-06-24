@@ -20,7 +20,7 @@
     <meta property="og:title" content="Iris & J Holdings | New Jersey Real Estate, Mobile Notary & Orlando Rentals" />
     <meta
       property="og:description"
-      content="New Jersey buyer and seller guidance through All Star Real Estate Agency, mobile notary appointments, and Orlando vacation rental booking."
+      content="New Jersey real estate guidance through All Star Real Estate Agency, mobile notary appointments in Union, Middlesex & Essex Counties, and Orlando vacation rental booking."
     />
     <meta property="og:url" content="https://www.irisjholdings.com/" />
     <meta property="og:image" content="https://www.irisjholdings.com/images/site/contact-hero.jpg" />
@@ -29,11 +29,11 @@
     <meta name="twitter:title" content="Iris & J Holdings | New Jersey Real Estate, Mobile Notary & Orlando Rentals" />
     <meta
       name="twitter:description"
-      content="New Jersey buyer and seller guidance, mobile notary appointments, and Orlando vacation rental booking."
+      content="New Jersey real estate guidance, mobile notary appointments, and Orlando vacation rental booking through Iris & J Holdings."
     />
     <meta name="twitter:image" content="https://www.irisjholdings.com/images/site/contact-hero.jpg" />
 
-    <!-- Structured data for search engines -->
+    <!-- Global structured data for search engines -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -43,18 +43,30 @@
             "@id": "https://www.irisjholdings.com/#website",
             "name": "Iris & J Holdings",
             "url": "https://www.irisjholdings.com/",
-            "description": "New Jersey real estate guidance, mobile notary appointments, and Orlando vacation rental booking."
+            "description": "New Jersey real estate guidance, mobile notary appointments in Union, Middlesex & Essex Counties, and Orlando vacation rental booking.",
+            "publisher": {
+              "@id": "https://www.irisjholdings.com/#organization"
+            },
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": "https://www.irisjholdings.com/?q={search_term_string}"
+              },
+              "query-input": "required name=search_term_string"
+            }
           },
           {
-            "@type": "Organization",
-            "@id": "https://www.irisjholdings.com/#organization",
+            "@type": ["LocalBusiness", "ProfessionalService"],
+            "@id": "https://www.irisjholdings.com/#localbusiness",
             "name": "Iris & J Holdings",
             "url": "https://www.irisjholdings.com/",
+            "logo": "https://www.irisjholdings.com/favicon.svg",
+            "image": "https://www.irisjholdings.com/images/site/daiana-portrait.jpg",
             "telephone": "+1-908-499-6320",
             "email": "listingsbyd@gmail.com",
-            "image": "https://www.irisjholdings.com/images/site/daiana-portrait.jpg",
-            "description": "Marketing site for New Jersey real estate services provided by Daiana Castro through All Star Real Estate Agency, plus mobile notary services and Orlando vacation rentals through Iris & J Holdings.",
-            "areaServed": ["New Jersey", "Union County, NJ", "Middlesex County, NJ", "Essex County, NJ", "Orlando, FL"],
+            "description": "Iris & J Holdings provides mobile notary appointments and Orlando vacation rental booking. Real estate brokerage services are provided by Daiana Castro through All Star Real Estate Agency.",
+            "priceRange": "$$",
             "address": {
               "@type": "PostalAddress",
               "streetAddress": "1416B Morris Ave",
@@ -63,62 +75,121 @@
               "postalCode": "07083",
               "addressCountry": "US"
             },
-            "employee": {
-              "@id": "https://www.irisjholdings.com/#daiana-castro"
+            "geo": {
+              "@type": "GeoCoordinates",
+              "latitude": 40.6976,
+              "longitude": -74.2693
             },
+            "areaServed": [
+              {
+                "@type": "AdministrativeArea",
+                "name": "Union County, NJ"
+              },
+              {
+                "@type": "AdministrativeArea",
+                "name": "Middlesex County, NJ"
+              },
+              {
+                "@type": "AdministrativeArea",
+                "name": "Essex County, NJ"
+              },
+              {
+                "@type": "State",
+                "name": "New Jersey"
+              }
+            ],
+            "sameAs": [
+              "https://www.facebook.com/irisjholdings",
+              "https://www.instagram.com/irisjholdings"
+            ],
             "hasOfferCatalog": {
               "@type": "OfferCatalog",
-              "name": "Iris & J Holdings services",
+              "name": "Iris & J Holdings Services",
               "itemListElement": [
                 {
                   "@type": "Offer",
                   "itemOffered": {
                     "@type": "Service",
-                    "name": "New Jersey buyer guidance",
-                    "serviceType": "Real estate buyer consultation",
-                    "areaServed": "New Jersey"
+                    "name": "Mobile Notary Appointments",
+                    "description": "Mobile notary services for general notarizations, real estate documents, affidavits, and consent forms in Union, Middlesex, and Essex Counties, NJ.",
+                    "serviceType": "Mobile Notary",
+                    "areaServed": ["Union County, NJ", "Middlesex County, NJ", "Essex County, NJ"],
+                    "url": "https://www.irisjholdings.com/mobile-notary"
                   }
                 },
                 {
                   "@type": "Offer",
                   "itemOffered": {
                     "@type": "Service",
-                    "name": "New Jersey seller strategy",
-                    "serviceType": "Real estate seller consultation",
-                    "areaServed": "New Jersey"
-                  }
-                },
-                {
-                  "@type": "Offer",
-                  "itemOffered": {
-                    "@type": "Service",
-                    "name": "Mobile notary appointments",
-                    "serviceType": "Mobile notary service",
-                    "areaServed": ["Union County, NJ", "Middlesex County, NJ", "Essex County, NJ"]
-                  }
-                },
-                {
-                  "@type": "Offer",
-                  "itemOffered": {
-                    "@type": "Service",
-                    "name": "Orlando vacation rental booking",
-                    "serviceType": "Vacation rental accommodations",
-                    "areaServed": "Orlando, FL"
+                    "name": "Orlando Vacation Rental Booking",
+                    "description": "Short-term vacation rental accommodations in the Orlando, FL area near major theme parks.",
+                    "serviceType": "Vacation Rental",
+                    "areaServed": "Orlando, FL",
+                    "url": "https://www.irisjholdings.com/vacation-rentals"
                   }
                 }
               ]
             }
           },
           {
-            "@type": "Person",
-            "@id": "https://www.irisjholdings.com/#daiana-castro",
-            "name": "Daiana Castro",
-            "jobTitle": "REALTOR and Mobile Notary",
+            "@type": "Organization",
+            "@id": "https://www.irisjholdings.com/#organization",
+            "name": "Iris & J Holdings",
+            "url": "https://www.irisjholdings.com/",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://www.irisjholdings.com/favicon.svg"
+            },
             "telephone": "+1-908-499-6320",
             "email": "listingsbyd@gmail.com",
-            "affiliation": {
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": "1416B Morris Ave",
+              "addressLocality": "Union",
+              "addressRegion": "NJ",
+              "postalCode": "07083",
+              "addressCountry": "US"
+            },
+            "founder": {
+              "@id": "https://www.irisjholdings.com/#daiana-castro"
+            },
+            "sameAs": [
+              "https://www.facebook.com/irisjholdings",
+              "https://www.instagram.com/irisjholdings"
+            ]
+          },
+          {
+            "@type": ["Person", "RealEstateAgent"],
+            "@id": "https://www.irisjholdings.com/#daiana-castro",
+            "name": "Daiana Castro",
+            "givenName": "Daiana",
+            "familyName": "Castro",
+            "jobTitle": "REALTOR® and Licensed Mobile Notary",
+            "description": "Daiana Castro is a licensed New Jersey REALTOR® with All Star Real Estate Agency and a licensed mobile notary serving Union, Middlesex, and Essex Counties, NJ.",
+            "image": "https://www.irisjholdings.com/images/site/daiana-portrait.jpg",
+            "telephone": "+1-908-499-6320",
+            "email": "listingsbyd@gmail.com",
+            "url": "https://www.irisjholdings.com/about",
+            "knowsAbout": [
+              "New Jersey Real Estate",
+              "Home Buying",
+              "Home Selling",
+              "Mobile Notary Services",
+              "Real Estate Documents",
+              "Union County NJ Real Estate",
+              "Middlesex County NJ Real Estate",
+              "Essex County NJ Real Estate"
+            ],
+            "hasCredential": {
+              "@type": "EducationalOccupationalCredential",
+              "credentialCategory": "license",
+              "name": "NJ Real Estate License #2190570"
+            },
+            "worksFor": {
               "@type": "RealEstateAgent",
+              "@id": "https://www.irisjholdings.com/#all-star-realty",
               "name": "All Star Real Estate Agency",
+              "telephone": "+1-908-964-5005",
               "address": {
                 "@type": "PostalAddress",
                 "streetAddress": "1416B Morris Ave",
@@ -127,7 +198,10 @@
                 "postalCode": "07083",
                 "addressCountry": "US"
               },
-              "telephone": "+1-908-964-5005"
+              "areaServed": "New Jersey"
+            },
+            "memberOf": {
+              "@id": "https://www.irisjholdings.com/#organization"
             }
           }
         ]

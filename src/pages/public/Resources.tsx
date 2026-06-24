@@ -3,10 +3,56 @@ import NewsletterSignup from '../../components/ui/NewsletterSignup';
 import { getSiteContentTemplate, usePublicSiteContent } from '../../lib/siteContent';
 import { usePageMeta } from '../../lib/usePageMeta';
 
+const resourcesJsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'CollectionPage',
+      '@id': 'https://www.irisjholdings.com/resources#webpage',
+      'url': 'https://www.irisjholdings.com/resources',
+      'name': 'Free Real Estate Resources for NJ Buyers & Sellers',
+      'description': 'Free NJ real estate guides for buyers and sellers: buyer guide, seller guide, and local market updates from REALTOR® Daiana Castro.',
+      'isPartOf': { '@id': 'https://www.irisjholdings.com/#website' },
+      'about': { '@id': 'https://www.irisjholdings.com/#localbusiness' },
+      'mainEntity': {
+        '@type': 'ItemList',
+        'itemListElement': [
+          {
+            '@type': 'ListItem',
+            'position': 1,
+            'name': 'NJ Buyer Guide',
+            'description': 'What to do before you tour homes: setting a budget, getting pre-approved, and the New Jersey timeline from offer to closing.',
+          },
+          {
+            '@type': 'ListItem',
+            'position': 2,
+            'name': 'NJ Seller Guide',
+            'description': 'How to prepare, price, and time your sale, plus what to expect through offers, attorney review, and closing.',
+          },
+          {
+            '@type': 'ListItem',
+            'position': 3,
+            'name': 'NJ Market Updates',
+            'description': "Occasional, plain-language notes on local prices and inventory and what they mean if you're thinking about buying or selling.",
+          },
+        ],
+      },
+    },
+    {
+      '@type': 'BreadcrumbList',
+      'itemListElement': [
+        { '@type': 'ListItem', 'position': 1, 'name': 'Home', 'item': 'https://www.irisjholdings.com/' },
+        { '@type': 'ListItem', 'position': 2, 'name': 'NJ Real Estate Resources', 'item': 'https://www.irisjholdings.com/resources' },
+      ],
+    },
+  ],
+};
+
 function Resources() {
   usePageMeta(
-    'Real Estate Resources for NJ Buyers & Sellers',
-    'Plain-language New Jersey buyer guides, seller guides, and local market updates for people preparing to buy, sell, or request a home value review.',
+    'Free Real Estate Resources for NJ Buyers & Sellers',
+    'Free NJ real estate guides for buyers and sellers. Plain-language market updates, buying and selling step-by-step guides, and home value insights from REALTOR® Daiana Castro.',
+    { jsonLd: resourcesJsonLd },
   );
   const template = getSiteContentTemplate('resources');
   const { content, heroImageUrl } = usePublicSiteContent('resources', template?.defaults || {});
