@@ -39,42 +39,42 @@ function AdminRegister() {
       <div className="admin-auth-page-shell">
         <AdminAuthHeader />
         <div className="admin-auth-page">
-        <section className="admin-auth-shell info-panel">
-          <h1>Create admin account</h1>
-          <p>Use this once to create Daiana&apos;s admin access. After the first account exists, registration closes.</p>
-          <form className="form-shell" onSubmit={submit}>
-            <div className="input-group">
-              <label htmlFor="admin-register-name">Full Name</label>
-              <input id="admin-register-name" autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} required />
+          <section className="admin-auth-shell info-panel">
+            <h1>Create admin account</h1>
+            <p>Use this once to create Daiana&apos;s admin access. After the first account exists, registration closes.</p>
+            <form className="form-shell" onSubmit={submit}>
+              <div className="input-group">
+                <label htmlFor="admin-register-name">Full Name</label>
+                <input id="admin-register-name" autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} required />
+              </div>
+              <div className="input-group">
+                <label htmlFor="admin-register-email">Email</label>
+                <input id="admin-register-email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+              </div>
+              <div className="input-group">
+                <label htmlFor="admin-register-password">Password</label>
+                <input id="admin-register-password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} required />
+                <label className="form-note admin-password-toggle" htmlFor="admin-register-show-password">
+                  <input
+                    id="admin-register-show-password"
+                    type="checkbox"
+                    checked={showPassword}
+                    onChange={(event) => setShowPassword(event.target.checked)}
+                  /> Show password
+                </label>
+              </div>
+              <button className="button button-primary" type="submit" disabled={status === 'sending'}>
+                {status === 'sending' ? 'Creating account...' : 'Create admin account'}
+              </button>
+              {status === 'error' ? <p className="form-status form-status-error" role="alert">{errorMessage}</p> : null}
+            </form>
+            <div className="page-actions">
+              <a className="text-link" href="/admin/login">Back to sign in</a>
             </div>
-            <div className="input-group">
-              <label htmlFor="admin-register-email">Email</label>
-              <input id="admin-register-email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
-            </div>
-            <div className="input-group">
-              <label htmlFor="admin-register-password">Password</label>
-              <input id="admin-register-password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} required />
-              <label className="form-note admin-password-toggle" htmlFor="admin-register-show-password">
-                <input
-                  id="admin-register-show-password"
-                  type="checkbox"
-                  checked={showPassword}
-                  onChange={(event) => setShowPassword(event.target.checked)}
-                /> Show password
-              </label>
-            </div>
-            <button className="button button-primary" type="submit" disabled={status === 'sending'}>
-              {status === 'sending' ? 'Creating account...' : 'Create admin account'}
-            </button>
-            {status === 'error' ? <p className="form-status form-status-error" role="alert">{errorMessage}</p> : null}
-          </form>
-          <div className="page-actions">
-            <a className="text-link" href="/admin/login">Back to sign in</a>
-          </div>
-        </section>
-        <aside className="admin-auth-visual page-hero-image-frame" aria-label="Iris and J Holdings admin registration">
-          <img src="/images/site/vacation-hero.jpg" alt="Warm interior styled to match the Iris and J Holdings palette" />
-        </aside>
+          </section>
+          <aside className="admin-auth-visual page-hero-image-frame" aria-label="Iris and J Holdings admin registration">
+            <img src="/images/site/vacation-hero.jpg" alt="Warm interior styled to match the Iris and J Holdings palette" />
+          </aside>
         </div>
       </div>
     </AdminLayout>

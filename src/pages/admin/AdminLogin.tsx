@@ -41,38 +41,38 @@ function AdminLogin() {
       <div className="admin-auth-page-shell">
         <AdminAuthHeader />
         <div className="admin-auth-page">
-        <section className="admin-auth-shell info-panel">
-          <h1>Sign in</h1>
-          <form className="form-shell" onSubmit={submit}>
-            <div className="input-group">
-              <label htmlFor="admin-login-email">Email</label>
-              <input id="admin-login-email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+          <section className="admin-auth-shell info-panel">
+            <h1>Sign in</h1>
+            <form className="form-shell" onSubmit={submit}>
+              <div className="input-group">
+                <label htmlFor="admin-login-email">Email</label>
+                <input id="admin-login-email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+              </div>
+              <div className="input-group">
+                <label htmlFor="admin-login-password">Password</label>
+                <input id="admin-login-password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+                <label className="form-note admin-password-toggle" htmlFor="admin-login-show-password">
+                  <input
+                    id="admin-login-show-password"
+                    type="checkbox"
+                    checked={showPassword}
+                    onChange={(event) => setShowPassword(event.target.checked)}
+                  /> Show password
+                </label>
+              </div>
+              <button className="button button-primary" type="submit" disabled={status === 'sending'}>
+                {status === 'sending' ? 'Signing in...' : 'Sign in'}
+              </button>
+              {status === 'error' ? <p className="form-status form-status-error" role="alert">{errorMessage}</p> : null}
+            </form>
+            <div className="page-actions">
+              <a className="text-link" href="/admin/register">Create admin account</a>
+              <a className="text-link" href="/admin/forgot-password">Forgot password</a>
             </div>
-            <div className="input-group">
-              <label htmlFor="admin-login-password">Password</label>
-              <input id="admin-login-password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
-              <label className="form-note admin-password-toggle" htmlFor="admin-login-show-password">
-                <input
-                  id="admin-login-show-password"
-                  type="checkbox"
-                  checked={showPassword}
-                  onChange={(event) => setShowPassword(event.target.checked)}
-                /> Show password
-              </label>
-            </div>
-            <button className="button button-primary" type="submit" disabled={status === 'sending'}>
-              {status === 'sending' ? 'Signing in...' : 'Sign in'}
-            </button>
-            {status === 'error' ? <p className="form-status form-status-error" role="alert">{errorMessage}</p> : null}
-          </form>
-          <div className="page-actions">
-            <a className="text-link" href="/admin/register">Create admin account</a>
-            <a className="text-link" href="/admin/forgot-password">Forgot password</a>
-          </div>
-        </section>
-        <aside className="admin-auth-visual page-hero-image-frame" aria-label="Iris and J Holdings admin sign in">
-          <img src="/images/site/vacation-hero.jpg" alt="Warm interior styled to match the Iris and J Holdings palette" />
-        </aside>
+          </section>
+          <aside className="admin-auth-visual page-hero-image-frame" aria-label="Iris and J Holdings admin sign in">
+            <img src="/images/site/vacation-hero.jpg" alt="Warm interior styled to match the Iris and J Holdings palette" />
+          </aside>
         </div>
       </div>
     </AdminLayout>

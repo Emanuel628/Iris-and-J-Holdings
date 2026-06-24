@@ -178,6 +178,12 @@ export type AdminSettingsPayload = {
   };
 };
 
+export type AdminNewsletterConfigPayload = {
+  enabled: boolean;
+  activeCount: number;
+  totalCount: number;
+};
+
 export type HomeValueEstimateRecord = {
   id: number;
   client_name: string;
@@ -258,6 +264,10 @@ export function fetchAdminSellerLeads() {
 
 export function fetchAdminNewsletterSubscribers() {
   return fetchJson<{ subscribers: NewsletterSubscriberRecord[] }>('/api/admin/newsletter-subscribers');
+}
+
+export function fetchAdminNewsletterConfig() {
+  return fetchJson<AdminNewsletterConfigPayload>('/api/admin/newsletter/config');
 }
 
 export function fetchAdminNotifications() {

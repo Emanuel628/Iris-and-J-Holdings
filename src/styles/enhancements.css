@@ -1528,6 +1528,10 @@ html.desktop-view .notary-hero {
   .admin-auth-page {
     grid-template-columns: 1fr;
   }
+
+  html.desktop-view .admin-auth-page {
+    grid-template-columns: minmax(0, 600px) minmax(360px, 1fr);
+  }
 }
 
 /* A quiet-band used as a split-section column shouldn't carry its standalone
@@ -1838,47 +1842,88 @@ html.a11y-underline a {
 }
 
 /* ---- Newsletter admin composer ---- */
-.newsletter-admin {
-  max-width: 780px;
+.newsletter-admin-page {
+  gap: 1.25rem;
 }
 
-.newsletter-admin .info-panel {
-  margin-top: 2rem;
+.newsletter-admin-composer .form-shell {
+  gap: 1.1rem;
 }
 
-.nl-section {
-  margin-top: 0.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--color-border);
+.newsletter-email-preview {
+  max-width: 760px;
+  overflow: hidden;
+  background: #fffefd;
+  border: 1px solid #e7dfd4;
+  border-radius: 14px;
+  box-shadow: 0 18px 45px rgba(18, 24, 32, 0.08);
 }
 
-.nl-section-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.75rem;
+.newsletter-email-preview-head {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1.7rem 1.9rem 1.2rem;
+  border-bottom: 1px solid #e7dfd4;
 }
 
-.nl-section-head strong {
+.newsletter-email-preview-head strong {
+  color: #121820;
   font-family: var(--font-heading);
-  font-size: 1.05rem;
-  color: var(--color-ink);
+  font-size: 1.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
 }
 
-button.text-link {
-  background: none;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
+.newsletter-email-preview-head span {
+  color: #a77931;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
-.nl-listing {
-  margin-bottom: 0.75rem;
-  padding: 0.85rem;
-  background: var(--color-soft-cream);
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
+.newsletter-email-preview-body {
+  padding: 1.8rem 1.9rem;
+}
 
+.newsletter-email-preview-date {
+  margin: 0 0 0.5rem;
+  color: #a77931;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.newsletter-email-preview-body h3 {
+  margin: 0 0 1rem;
+  color: #121820;
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 4vw, 2.45rem);
+  line-height: 1.05;
+}
+
+.newsletter-email-preview-body p {
+  margin: 0 0 1rem;
+  color: #3f4650;
+  line-height: 1.7;
+}
+
+.newsletter-email-preview-foot {
+  padding: 1.2rem 1.9rem 1.45rem;
+  background: #f5efe6;
+  border-top: 1px solid #e7dfd4;
+}
+
+.newsletter-email-preview-foot p {
+  margin: 0 0 0.55rem;
+  color: #6f747b;
+  font-size: 0.82rem;
+  line-height: 1.65;
+}
+
+.newsletter-email-preview-foot p:last-child {
+  margin-bottom: 0;
 }
 
 
