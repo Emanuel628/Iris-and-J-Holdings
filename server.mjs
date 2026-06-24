@@ -3347,7 +3347,7 @@ app.post('/api/newsletter/subscribe', async (req, res) => {
       return res.status(400).json({ message: 'A valid email address is required.' });
     }
 
-    await subscribeEmail(email, fullName, source);
+    await subscribeEmail(email, fullName, source, { pgPool, ensureAdminTables });
 
     if (resendApiKey) {
       try {
