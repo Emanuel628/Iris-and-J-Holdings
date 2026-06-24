@@ -3400,7 +3400,7 @@ app.post('/api/newsletter/subscribe', async (req, res) => {
             `</td></tr>` +
             `<tr><td style="padding:20px 32px 26px;border-top:1px solid #e7dfd4;background:#f5efe6">` +
             `<p style="margin:0 0 8px;${bodyFont};font-size:12px;line-height:1.6;color:#6f747b">Iris &amp; J Holdings &middot; Real estate through All Star Real Estate Agency, a licensed New Jersey real estate brokerage &middot; Mobile notary &amp; Orlando vacation rentals offered independently through Iris &amp; J Holdings.</p>` +
-            `<p style="margin:0;${bodyFont};font-size:12px;color:#6f747b">You received this because you subscribed at irisjholdings.com. <a href="${escapeHtml(unsubUrl)}" style="color:#a77931">Unsubscribe immediately</a>.</p>` +
+            `<p style="margin:0;${bodyFont};font-size:12px;color:#6f747b">You received this because you subscribed at irisjholdings.com. <a href="${escapeHtml(unsubUrl)}" style="color:#a77931">Unsubscribe</a>.</p>` +
             `</td></tr>` +
             `</table></td></tr></table></body></html>`,
         });

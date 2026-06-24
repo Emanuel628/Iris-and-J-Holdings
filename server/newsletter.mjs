@@ -70,7 +70,7 @@ function newsletterHtml({ title, date, body, unsubscribeUrl }) {
       </td></tr>
       <tr><td style="padding:20px 32px 26px;border-top:1px solid #e7dfd4;background:#f5efe6">
         <p style="margin:0 0 8px;${bodyFont};font-size:12px;line-height:1.6;color:#6f747b">Iris &amp; J Holdings &middot; Real estate through All Star Real Estate Agency, a licensed New Jersey real estate brokerage &middot; Mobile notary &amp; Orlando vacation rentals offered independently through Iris &amp; J Holdings.</p>
-        <p style="margin:0;${bodyFont};font-size:12px;color:#6f747b">You are receiving this because you subscribed at irisjholdings.com. <a href="${s(unsubscribeUrl)}" style="color:#a77931">Unsubscribe immediately</a>.</p>
+        <p style="margin:0;${bodyFont};font-size:12px;color:#6f747b">You are receiving this because you subscribed at irisjholdings.com. <a href="${s(unsubscribeUrl)}" style="color:#a77931">Unsubscribe</a>.</p>
       </td></tr>
     </table>
   </td></tr></table>
@@ -185,7 +185,7 @@ export function registerNewsletterRoutes(app, deps) {
             `${title}\n` +
             `${date ? `${date}\n\n` : '\n'}` +
             `${body}\n\n` +
-            `Unsubscribe immediately: ${newsletterUnsubscribeUrl(email, siteUrl, unsubscribeSecret)}`,
+            `Unsubscribe: ${newsletterUnsubscribeUrl(email, siteUrl, unsubscribeSecret)}`,
           html: newsletterHtml({ title, date, body, unsubscribeUrl: newsletterUnsubscribeUrl(email, siteUrl, unsubscribeSecret) }),
         });
         sentCount += 1;
@@ -225,14 +225,12 @@ export function registerNewsletterRoutes(app, deps) {
       }
       await ensureAdminTables();
       await pgPool.query(
-        `UPDATE newsletter_subscribers
-         SET status = 'unsubscribed', updated_at = NOW()
-         WHERE email = $1`,
+        `DELETE FROM newsletter_subscribers WHERE email = $1`,
         [email],
       );
       return res.status(200).type('html').send(newsletterResultPage({
         title: 'You are unsubscribed',
-        message: 'You will no longer receive Iris & J Holdings newsletter emails at this address.',
+        message: 'You have been removed from the Iris & J Holdings mailing list and will not receive any further emails.',
         siteUrl,
       }));
     } catch (error) {

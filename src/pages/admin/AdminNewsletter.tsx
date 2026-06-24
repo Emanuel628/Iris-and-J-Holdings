@@ -249,7 +249,7 @@ function AdminNewsletter() {
               </div>
               <footer className="newsletter-email-preview-foot">
                 <p>Iris &amp; J Holdings · Real estate through All Star Real Estate Agency · Mobile notary and Orlando vacation rentals offered independently through Iris &amp; J Holdings.</p>
-                <p>Every recipient email includes an immediate unsubscribe link.</p>
+                <p>Every recipient email includes an unsubscribe link.</p>
               </footer>
             </article>
           </section>
