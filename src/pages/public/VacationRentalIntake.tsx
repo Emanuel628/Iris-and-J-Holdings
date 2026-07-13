@@ -248,7 +248,7 @@ function VacationRentalIntake() {
                     <label htmlFor="vacation-guest-count">Guest Count</label>
                     <input id="vacation-guest-count" type="number" min="1" max="10" value={guestCount} onChange={(event) => updateGuestCount(event.target.value)} required />
                   </div>
-                  <p className="cal-note">Only the primary booker details are required. Maximum occupancy is 10 guests.</p>
+                  <p className="cal-note">Maximum occupancy is 10 guests.</p>
                 </div>
 
                 <div className="rules-scroll-shell">

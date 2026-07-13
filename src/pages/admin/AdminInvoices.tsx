@@ -157,41 +157,74 @@ function AdminInvoices() {
     return items.sort((a, b) => b.created_at.localeCompare(a.created_at));
   }, [invoices, sortBy]);
 
+  async function saveInvoiceRequest() {
+    const res = await fetch('/api/admin/invoices/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        id: invoiceForm.id,
+        serviceType: invoiceForm.serviceType,
+        recipientName: invoiceForm.recipientName,
+        recipientEmail: invoiceForm.recipientEmail,
+        recipientPhone: invoiceForm.recipientPhone,
+        amountTotalCents: dollarsToCents(invoiceForm.amount),
+        description: invoiceForm.description,
+        notes: invoiceForm.notes,
+        rentalId: invoiceForm.rentalId,
+        checkIn: invoiceForm.checkIn,
+        checkOut: invoiceForm.checkOut,
+        guestCount: invoiceForm.guestCount,
+        guestListText: invoiceForm.guestListText,
+        appointmentDate: invoiceForm.appointmentDate,
+        appointmentTime: invoiceForm.appointmentTime,
+        city: invoiceForm.city,
+        documentType: invoiceForm.documentType,
+      }),
+    });
+    const payload = await res.json().catch(() => ({} as { message?: string; id?: number }));
+    if (!res.ok) throw new Error(payload.message || 'Could not save invoice.');
+    return payload.id || invoiceForm.id;
+  }
+
+  async function sendInvoiceRequest(id: number) {
+    const res = await fetch('/api/admin/invoices/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    const payload = await res.json().catch(() => ({} as { message?: string }));
+    if (!res.ok) throw new Error(payload.message || 'Could not send invoice.');
+  }
+
   async function saveInvoice() {
     setBusy(true);
     setStatusMessage('');
     setErrorMessage('');
     try {
-      const res = await fetch('/api/admin/invoices/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({
-          id: invoiceForm.id,
-          serviceType: invoiceForm.serviceType,
-          recipientName: invoiceForm.recipientName,
-          recipientEmail: invoiceForm.recipientEmail,
-          recipientPhone: invoiceForm.recipientPhone,
-          amountTotalCents: dollarsToCents(invoiceForm.amount),
-          description: invoiceForm.description,
-          notes: invoiceForm.notes,
-          rentalId: invoiceForm.rentalId,
-          checkIn: invoiceForm.checkIn,
-          checkOut: invoiceForm.checkOut,
-          guestCount: invoiceForm.guestCount,
-          guestListText: invoiceForm.guestListText,
-          appointmentDate: invoiceForm.appointmentDate,
-          appointmentTime: invoiceForm.appointmentTime,
-          city: invoiceForm.city,
-          documentType: invoiceForm.documentType,
-        }),
-      });
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(payload.message || 'Could not save invoice.');
+      const savedId = await saveInvoiceRequest();
       await loadData();
       setStatusMessage('Invoice saved.');
-      setInvoiceForm((current) => ({ ...current, id: payload.id || current.id }));
+      setInvoiceForm((current) => ({ ...current, id: savedId || current.id }));
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Could not save invoice.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function emailCurrentInvoice() {
+    setBusy(true);
+    setStatusMessage('');
+    setErrorMessage('');
+    try {
+      const savedId = await saveInvoiceRequest();
+      if (!savedId) throw new Error('Could not save invoice before sending.');
+      await sendInvoiceRequest(savedId);
+      await loadData();
+      setInvoiceForm((current) => ({ ...current, id: savedId }));
+      setStatusMessage('Invoice emailed to the recipient.');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Could not send invoice.');
     } finally {
       setBusy(false);
     }
@@ -202,13 +235,7 @@ function AdminInvoices() {
     setStatusMessage('');
     setErrorMessage('');
     try {
-      const res = await fetch('/api/admin/invoices/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ id }),
-      });
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(payload.message || 'Could not send invoice.');
+      await sendInvoiceRequest(id);
       await loadData();
       setStatusMessage('Invoice emailed with payment link.');
     } catch (error) {
@@ -338,7 +365,7 @@ function AdminInvoices() {
 
               <div className="admin-inline-actions">
                 <button className="button button-primary" type="button" onClick={saveInvoice} disabled={busy}>Save invoice</button>
-                {invoiceForm.id ? <button className="button-secondary" type="button" onClick={() => sendInvoice(invoiceForm.id!)} disabled={busy}>Send invoice</button> : null}
+                <button className="button-secondary" type="button" onClick={emailCurrentInvoice} disabled={busy}>Email invoice</button>
                 {invoiceForm.id ? <button className="button-secondary" type="button" onClick={() => setInvoiceForm(emptyInvoiceForm())} disabled={busy}>New invoice</button> : null}
               </div>
             </div>
