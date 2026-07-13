@@ -11,6 +11,7 @@ type RentalForm = {
   locationLabel: string;
   description: string;
   nightlyRate: string;
+  weekendRate: string;
   cleaningFee: string;
   maxGuests: string;
   heroImages: string[];
@@ -35,6 +36,7 @@ function emptyRentalForm(): RentalForm {
     locationLabel: '',
     description: '',
     nightlyRate: '',
+    weekendRate: '',
     cleaningFee: '',
     maxGuests: '10',
     heroImages: [],
@@ -54,6 +56,7 @@ function toRentalForm(rental: RentalRecord): RentalForm {
     locationLabel: rental.location_label,
     description: rental.description,
     nightlyRate: (rental.nightly_rate_cents / 100).toFixed(2),
+    weekendRate: ((rental.weekend_rate_cents || rental.nightly_rate_cents) / 100).toFixed(2),
     cleaningFee: (rental.cleaning_fee_cents / 100).toFixed(2),
     maxGuests: String(rental.max_guests),
     heroImages: rental.hero_image_url ? [rental.hero_image_url] : [],
@@ -108,6 +111,7 @@ function AdminRentals() {
       && !form.locationLabel
       && !form.description
       && !form.nightlyRate
+      && !form.weekendRate
       && !form.cleaningFee
       && !form.heroImages.length
       && !form.galleryImages.length
@@ -174,6 +178,7 @@ function AdminRentals() {
           locationLabel: rentalForm.locationLabel,
           description: rentalForm.description,
           nightlyRateCents: dollarsToCents(rentalForm.nightlyRate),
+          weekendRateCents: dollarsToCents(rentalForm.weekendRate || rentalForm.nightlyRate),
           cleaningFeeCents: dollarsToCents(rentalForm.cleaningFee),
           maxGuests: Number(rentalForm.maxGuests || 10),
           heroImageUrl: heroImages[0] || '',
@@ -326,10 +331,13 @@ function AdminRentals() {
             <div className="input-group"><label htmlFor="admin-rental-description">Description</label><textarea id="admin-rental-description" value={rentalForm.description} onChange={(event) => setRentalForm({ ...rentalForm, description: event.target.value })} /></div>
             <div className="form-row">
               <div className="input-group"><label htmlFor="admin-rental-rate">Nightly Rate</label><input id="admin-rental-rate" inputMode="decimal" placeholder="$100.00" value={formatCurrencyInput(rentalForm.nightlyRate)} onChange={(event) => setRentalForm({ ...rentalForm, nightlyRate: parseCurrencyInput(event.target.value) })} /></div>
-              <div className="input-group"><label htmlFor="admin-rental-cleaning">Cleaning Fee</label><input id="admin-rental-cleaning" inputMode="decimal" placeholder="$75.00" value={formatCurrencyInput(rentalForm.cleaningFee)} onChange={(event) => setRentalForm({ ...rentalForm, cleaningFee: parseCurrencyInput(event.target.value) })} /></div>
+              <div className="input-group"><label htmlFor="admin-rental-weekend-rate">Weekend Rate</label><input id="admin-rental-weekend-rate" inputMode="decimal" placeholder="$125.00" value={formatCurrencyInput(rentalForm.weekendRate)} onChange={(event) => setRentalForm({ ...rentalForm, weekendRate: parseCurrencyInput(event.target.value) })} /></div>
             </div>
             <div className="form-row">
+              <div className="input-group"><label htmlFor="admin-rental-cleaning">Cleaning Fee</label><input id="admin-rental-cleaning" inputMode="decimal" placeholder="$75.00" value={formatCurrencyInput(rentalForm.cleaningFee)} onChange={(event) => setRentalForm({ ...rentalForm, cleaningFee: parseCurrencyInput(event.target.value) })} /></div>
               <div className="input-group"><label htmlFor="admin-rental-max-guests">Max Guests</label><input id="admin-rental-max-guests" type="number" value={rentalForm.maxGuests} onChange={(event) => setRentalForm({ ...rentalForm, maxGuests: event.target.value })} /></div>
+            </div>
+            <div className="form-row">
               <label className="form-note" htmlFor="admin-rental-active"><input id="admin-rental-active" type="checkbox" checked={rentalForm.isActive} onChange={(event) => setRentalForm({ ...rentalForm, isActive: event.target.checked })} /> Active rental</label>
             </div>
             <AdminImagePicker

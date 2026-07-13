@@ -73,6 +73,41 @@ export function nightsBetween(checkIn, checkOut) {
   return Math.round((Date.parse(`${checkOut}T00:00:00Z`) - Date.parse(`${checkIn}T00:00:00Z`)) / 86400000);
 }
 
+export function addDays(dateString, amount) {
+  const date = new Date(`${dateString}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + amount);
+  return date.toISOString().slice(0, 10);
+}
+
+export function isWeekendNight(dateString) {
+  const day = new Date(`${dateString}T00:00:00Z`).getUTCDay();
+  return day === 5 || day === 6;
+}
+
+export function calculateStaySubtotal(checkIn, checkOut, nightlyRateCents, weekendRateCents) {
+  const standardRate = Number(nightlyRateCents || 0);
+  const weekendRate = Number(weekendRateCents || standardRate);
+  let cursor = checkIn;
+  let subtotal = 0;
+  let weeknightNights = 0;
+  let weekendNights = 0;
+  let guard = 0;
+
+  while (cursor < checkOut && guard < 800) {
+    if (isWeekendNight(cursor)) {
+      subtotal += weekendRate;
+      weekendNights += 1;
+    } else {
+      subtotal += standardRate;
+      weeknightNights += 1;
+    }
+    cursor = addDays(cursor, 1);
+    guard += 1;
+  }
+
+  return { subtotal, weeknightNights, weekendNights };
+}
+
 export function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }

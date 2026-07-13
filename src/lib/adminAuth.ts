@@ -18,6 +18,7 @@ export type RentalRecord = {
   location_label: string;
   description: string;
   nightly_rate_cents: number;
+  weekend_rate_cents: number;
   cleaning_fee_cents: number;
   max_guests: number;
   hero_image_url: string;

@@ -1,25 +1,24 @@
 ﻿import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, Minus, Plus } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import PublicLayout from '../../components/layout/PublicLayout';
 import { vacationHouseRules } from '../../content/vacationHouseRules';
+import { calculateStaySubtotal } from '../../lib/rentalPricing';
 import { usePageMeta } from '../../lib/usePageMeta';
 
 type Availability = {
   blocked: { start: string; end: string }[];
   nightlyRateCents: number;
+  weekendRateCents: number;
   cleaningFeeCents: number;
   currency: string;
   bookingEnabled: boolean;
 };
 
 type Guest = {
-  id: number;
   fullName: string;
   email: string;
   phone: string;
 };
-
-let nextGuestId = 2;
 
 function nightsBetween(a: string, b: string) {
   return Math.round((Date.parse(`${b}T00:00:00`) - Date.parse(`${a}T00:00:00`)) / 86_400_000);
@@ -44,16 +43,10 @@ function formatShortDate(value: string) {
   }).format(date);
 }
 
-function createGuest(): Guest {
-  const guest = { id: nextGuestId, fullName: '', email: '', phone: '' };
-  nextGuestId += 1;
-  return guest;
-}
-
 function VacationRentalIntake() {
   usePageMeta(
     'Vacation Rental Intake',
-    'Complete guest intake details and review house rules before Orlando vacation rental checkout.',
+    'Complete primary booker details and review house rules before Orlando vacation rental checkout.',
     { robots: 'noindex,nofollow' },
   );
 
@@ -63,8 +56,8 @@ function VacationRentalIntake() {
   const rentalId = Number(params.get('rentalId') || 0) || undefined;
   const [data, setData] = useState<Availability | null>(null);
   const [loadError, setLoadError] = useState('');
-  const [primaryGuest, setPrimaryGuest] = useState<Guest>({ id: 1, fullName: '', email: '', phone: '' });
-  const [additionalGuests, setAdditionalGuests] = useState<Guest[]>([]);
+  const [primaryGuest, setPrimaryGuest] = useState<Guest>({ fullName: '', email: '', phone: '' });
+  const [guestCount, setGuestCount] = useState(1);
   const [policyAgreed, setPolicyAgreed] = useState(false);
   const [rulesScrolled, setRulesScrolled] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -92,29 +85,22 @@ function VacationRentalIntake() {
   }, [checkIn, checkOut, rentalId]);
 
   const nights = checkIn && checkOut ? nightsBetween(checkIn, checkOut) : 0;
-  const nightlyTotal = nights * (data?.nightlyRateCents ?? 0);
+  const stayRates = checkIn && checkOut && data
+    ? calculateStaySubtotal(checkIn, checkOut, data.nightlyRateCents, data.weekendRateCents)
+    : { subtotal: 0 };
+  const nightlyTotal = stayRates.subtotal;
   const cleaning = data?.cleaningFeeCents ?? 0;
   const total = nights > 0 ? nightlyTotal + cleaning : 0;
   const currency = data?.currency ?? 'usd';
-  const guestCount = additionalGuests.length + 1;
 
   function updatePrimaryGuest<K extends keyof Guest>(key: K, value: Guest[K]) {
     setPrimaryGuest((current) => ({ ...current, [key]: value }));
   }
 
-  function updateAdditionalGuest(id: number, key: keyof Guest, value: string) {
-    setAdditionalGuests((current) => current.map((guest) => (
-      guest.id === id ? { ...guest, [key]: value } : guest
-    )));
-  }
-
-  function addGuest() {
-    if (guestCount >= 10) return;
-    setAdditionalGuests((current) => [...current, createGuest()]);
-  }
-
-  function removeGuest(id: number) {
-    setAdditionalGuests((current) => current.filter((guest) => guest.id !== id));
+  function updateGuestCount(value: string) {
+    const nextCount = Number(value);
+    if (!Number.isFinite(nextCount)) return;
+    setGuestCount(Math.min(10, Math.max(1, Math.round(nextCount))));
   }
 
   function handleRulesScroll() {
@@ -129,11 +115,11 @@ function VacationRentalIntake() {
     setBookingError('');
 
     if (!primaryGuest.fullName.trim() || !primaryGuest.email.trim() || !primaryGuest.phone.trim()) {
-      setBookingError('Primary Guest #1 must include full name, email, and phone number.');
+      setBookingError('Primary booker must include full name, email, and phone number.');
       return;
     }
-    if (additionalGuests.some((guest) => !guest.fullName.trim())) {
-      setBookingError('Each added guest must include a full name.');
+    if (guestCount < 1 || guestCount > 10) {
+      setBookingError('Guest count must be between 1 and 10.');
       return;
     }
     if (!rulesScrolled) {
@@ -159,11 +145,8 @@ function VacationRentalIntake() {
             email: primaryGuest.email.trim(),
             phone: primaryGuest.phone.trim(),
           },
-          additionalGuests: additionalGuests.map((guest) => ({
-            fullName: guest.fullName.trim(),
-            email: guest.email.trim(),
-            phone: guest.phone.trim(),
-          })),
+          guestCount,
+          additionalGuests: [],
           houseRulesAgreed: true,
           termsAgreed: true,
         }),
@@ -188,9 +171,9 @@ function VacationRentalIntake() {
         <section className="page-hero">
           <div className="page-hero-content">
             <p className="eyebrow">Vacation Rentals</p>
-            <h1>Complete the guest intake.</h1>
+            <h1>Complete the booking intake.</h1>
             <p>
-              Review your selected dates, enter the guest details, and accept the house rules and terms before secure checkout.
+              Review your selected dates, enter the primary booker details, and accept the house rules and terms before secure checkout.
             </p>
             <div className="notice-box">
               <strong>Selected stay:</strong> {checkIn ? formatShortDate(checkIn) : 'Missing check-in'} to {checkOut ? formatShortDate(checkOut) : 'Missing check-out'}
@@ -208,7 +191,7 @@ function VacationRentalIntake() {
                 <p>{loadError}</p>
               ) : (
                 <>
-                  <p>This step collects the guest list and required agreements before payment.</p>
+                  <p>This step collects the primary booker details, total guest count, and required agreements before payment.</p>
                   <dl className="cal-price">
                     <div>
                       <dt>Check-in</dt>
@@ -232,14 +215,14 @@ function VacationRentalIntake() {
                 <div className="booking-intake-header">
                   <div>
                     <p className="eyebrow">Guest intake</p>
-                    <h3>Guest details for this stay.</h3>
+                    <h3>Primary booker details.</h3>
                   </div>
                   <p className="guest-count">{guestCount} of 10 guests</p>
                 </div>
 
                 <div className="guest-card">
                   <div className="guest-card-header">
-                    <strong>Primary Guest #1</strong>
+                    <strong>Primary Booker</strong>
                   </div>
                   <div className="form-row">
                     <div className="input-group">
@@ -257,43 +240,15 @@ function VacationRentalIntake() {
                   </div>
                 </div>
 
-                <div className="guest-section">
-                  <div className="guest-section-header">
-                    <strong>Additional Guests</strong>
-                    <button className="button-secondary guest-add-button" type="button" onClick={addGuest} disabled={guestCount >= 10}>
-                      <Plus size={16} /> Add Guest
-                    </button>
+                <div className="guest-card">
+                  <div className="guest-card-header">
+                    <strong>Total Overnight Guests</strong>
                   </div>
-                  {additionalGuests.length === 0 ? (
-                    <p className="cal-note">Add each additional guest staying at the property. Maximum occupancy is 10 guests.</p>
-                  ) : (
-                    <div className="guest-list">
-                      {additionalGuests.map((guest, index) => (
-                        <div className="guest-card" key={guest.id}>
-                          <div className="guest-card-header">
-                            <strong>Guest #{index + 2}</strong>
-                            <button className="guest-remove-button" type="button" onClick={() => removeGuest(guest.id)}>
-                              <Minus size={14} /> Remove
-                            </button>
-                          </div>
-                          <div className="form-row">
-                            <div className="input-group">
-                              <label htmlFor={`vacation-guest-name-${guest.id}`}>Full Name</label>
-                              <input id={`vacation-guest-name-${guest.id}`} value={guest.fullName} onChange={(event) => updateAdditionalGuest(guest.id, 'fullName', event.target.value)} required />
-                            </div>
-                            <div className="input-group">
-                              <label htmlFor={`vacation-guest-email-${guest.id}`}>Email</label>
-                              <input id={`vacation-guest-email-${guest.id}`} type="email" value={guest.email} onChange={(event) => updateAdditionalGuest(guest.id, 'email', event.target.value)} />
-                            </div>
-                          </div>
-                          <div className="input-group">
-                            <label htmlFor={`vacation-guest-phone-${guest.id}`}>Phone Number</label>
-                            <input id={`vacation-guest-phone-${guest.id}`} type="tel" value={guest.phone} onChange={(event) => updateAdditionalGuest(guest.id, 'phone', event.target.value)} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <div className="input-group">
+                    <label htmlFor="vacation-guest-count">Guest Count</label>
+                    <input id="vacation-guest-count" type="number" min="1" max="10" value={guestCount} onChange={(event) => updateGuestCount(event.target.value)} required />
+                  </div>
+                  <p className="cal-note">Only the primary booker details are required. Maximum occupancy is 10 guests.</p>
                 </div>
 
                 <div className="rules-scroll-shell">

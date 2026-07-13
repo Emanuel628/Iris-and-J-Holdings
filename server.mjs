@@ -9,6 +9,7 @@ import multer from 'multer';
 import { getBlockedRanges, overlapsBlocked } from './server/airbnb.mjs';
 import {
   buildOrigin,
+  calculateStaySubtotal,
   clean,
   clearCookie,
   escapeHtml,
@@ -368,6 +369,7 @@ async function ensureAdminTables() {
       location_label TEXT NOT NULL,
       description TEXT NOT NULL DEFAULT '',
       nightly_rate_cents INTEGER NOT NULL DEFAULT 0,
+      weekend_rate_cents INTEGER NOT NULL DEFAULT 0,
       cleaning_fee_cents INTEGER NOT NULL DEFAULT 0,
       max_guests INTEGER NOT NULL DEFAULT 10,
       hero_image_url TEXT NOT NULL DEFAULT '',
@@ -383,6 +385,8 @@ async function ensureAdminTables() {
     );
   `);
   await pgPool.query(`ALTER TABLE rentals ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;`);
+  await pgPool.query(`ALTER TABLE rentals ADD COLUMN IF NOT EXISTS weekend_rate_cents INTEGER NOT NULL DEFAULT 0;`);
+  await pgPool.query(`UPDATE rentals SET weekend_rate_cents = nightly_rate_cents WHERE weekend_rate_cents = 0 AND nightly_rate_cents > 0;`);
   await pgPool.query(`ALTER TABLE rentals ADD COLUMN IF NOT EXISTS hero_image_captions JSONB NOT NULL DEFAULT '[]'::jsonb;`);
   await pgPool.query(`ALTER TABLE rentals ADD COLUMN IF NOT EXISTS gallery_image_captions JSONB NOT NULL DEFAULT '[]'::jsonb;`);
   await pgPool.query(`ALTER TABLE rentals ADD COLUMN IF NOT EXISTS gallery_image_groups JSONB NOT NULL DEFAULT '[]'::jsonb;`);
@@ -582,8 +586,8 @@ async function seedControlCenterData() {
   const settings = await readAppSettings();
   if (settings.initial_rental_seeded !== 'true') {
     await pgPool.query(
-      `INSERT INTO rentals (slug, title, location_label, description, nightly_rate_cents, cleaning_fee_cents, max_guests)
-       VALUES ('orlando-vacation-rental', 'Orlando Vacation Rental', 'Orlando / Central Florida', 'Primary Orlando vacation rental listing.', $1, $2, 10)
+      `INSERT INTO rentals (slug, title, location_label, description, nightly_rate_cents, weekend_rate_cents, cleaning_fee_cents, max_guests)
+       VALUES ('orlando-vacation-rental', 'Orlando Vacation Rental', 'Orlando / Central Florida', 'Primary Orlando vacation rental listing.', $1, $1, $2, 10)
        ON CONFLICT (slug) DO NOTHING`,
       [booking.nightlyRateCents, booking.cleaningFeeCents],
     );
@@ -1781,7 +1785,7 @@ app.get('/api/admin/rentals', async (req, res) => {
     if (!admin) return;
 
     const result = await pgPool.query(
-      `SELECT id, slug, title, location_label, description, nightly_rate_cents, cleaning_fee_cents,
+      `SELECT id, slug, title, location_label, description, nightly_rate_cents, weekend_rate_cents, cleaning_fee_cents,
               max_guests, hero_image_url, hero_image_captions, gallery_image_urls, gallery_image_captions, gallery_image_groups,
               amenities, is_active, created_at, updated_at
        FROM rentals
@@ -1801,7 +1805,7 @@ app.get('/api/public-rentals', async (_req, res) => {
       return res.json({ rentals: [] });
     }
     const result = await pgPool.query(
-      `SELECT id, slug, title, location_label, description, nightly_rate_cents, cleaning_fee_cents,
+      `SELECT id, slug, title, location_label, description, nightly_rate_cents, weekend_rate_cents, cleaning_fee_cents,
               max_guests, hero_image_url, hero_image_captions, gallery_image_urls, gallery_image_captions, gallery_image_groups,
               amenities, is_active, updated_at
        FROM rentals
@@ -1826,6 +1830,7 @@ app.post('/api/admin/rentals', async (req, res) => {
     const locationLabel = clean(req.body?.locationLabel);
     const description = clean(req.body?.description);
     const nightlyRateCents = Number(req.body?.nightlyRateCents || 0);
+    const weekendRateCents = Number(req.body?.weekendRateCents || nightlyRateCents);
     const cleaningFeeCents = Number(req.body?.cleaningFeeCents || 0);
     const maxGuests = Number(req.body?.maxGuests || 10);
     const heroImageUrl = clean(req.body?.heroImageUrl);
@@ -1845,28 +1850,29 @@ app.post('/api/admin/rentals', async (req, res) => {
       savedRentalResult = await pgPool.query(
         `UPDATE rentals
          SET slug = $2, title = $3, location_label = $4, description = $5,
-             nightly_rate_cents = $6, cleaning_fee_cents = $7, max_guests = $8,
-             hero_image_url = $9, hero_image_captions = $10::jsonb, gallery_image_urls = $11::jsonb,
-             gallery_image_captions = $12::jsonb, gallery_image_groups = $13::jsonb, amenities = $14::jsonb,
-             is_active = $15, updated_at = NOW()
+             nightly_rate_cents = $6, weekend_rate_cents = $7, cleaning_fee_cents = $8, max_guests = $9,
+             hero_image_url = $10, hero_image_captions = $11::jsonb, gallery_image_urls = $12::jsonb,
+             gallery_image_captions = $13::jsonb, gallery_image_groups = $14::jsonb, amenities = $15::jsonb,
+             is_active = $16, updated_at = NOW()
          WHERE id = $1
-         RETURNING id, slug, title, location_label, description, nightly_rate_cents, cleaning_fee_cents,
+         RETURNING id, slug, title, location_label, description, nightly_rate_cents, weekend_rate_cents, cleaning_fee_cents,
                    max_guests, hero_image_url, hero_image_captions, gallery_image_urls, gallery_image_captions, gallery_image_groups,
                    amenities, is_active, updated_at`,
-        [id, slug, title, locationLabel, description, nightlyRateCents, cleaningFeeCents, maxGuests, heroImageUrl, JSON.stringify(heroImageCaptions), JSON.stringify(galleryImageUrls), JSON.stringify(galleryImageCaptions), JSON.stringify(galleryImageGroups), JSON.stringify(amenities), isActive],
+        [id, slug, title, locationLabel, description, nightlyRateCents, weekendRateCents, cleaningFeeCents, maxGuests, heroImageUrl, JSON.stringify(heroImageCaptions), JSON.stringify(galleryImageUrls), JSON.stringify(galleryImageCaptions), JSON.stringify(galleryImageGroups), JSON.stringify(amenities), isActive],
       );
     } else {
       savedRentalResult = await pgPool.query(
         `INSERT INTO rentals (
-          slug, title, location_label, description, nightly_rate_cents, cleaning_fee_cents,
+          slug, title, location_label, description, nightly_rate_cents, weekend_rate_cents, cleaning_fee_cents,
           max_guests, hero_image_url, hero_image_captions, gallery_image_urls, gallery_image_captions, gallery_image_groups, amenities, is_active
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10::jsonb, $11::jsonb, $12::jsonb, $13::jsonb, $14)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11::jsonb, $12::jsonb, $13::jsonb, $14::jsonb, $15)
         ON CONFLICT (slug) DO UPDATE SET
           title = EXCLUDED.title,
           location_label = EXCLUDED.location_label,
           description = EXCLUDED.description,
           nightly_rate_cents = EXCLUDED.nightly_rate_cents,
+          weekend_rate_cents = EXCLUDED.weekend_rate_cents,
           cleaning_fee_cents = EXCLUDED.cleaning_fee_cents,
           max_guests = EXCLUDED.max_guests,
           hero_image_url = EXCLUDED.hero_image_url,
@@ -1878,10 +1884,10 @@ app.post('/api/admin/rentals', async (req, res) => {
           is_active = EXCLUDED.is_active,
           deleted_at = NULL,
           updated_at = NOW()
-        RETURNING id, slug, title, location_label, description, nightly_rate_cents, cleaning_fee_cents,
+        RETURNING id, slug, title, location_label, description, nightly_rate_cents, weekend_rate_cents, cleaning_fee_cents,
                   max_guests, hero_image_url, hero_image_captions, gallery_image_urls, gallery_image_captions, gallery_image_groups,
                   amenities, is_active, updated_at`,
-        [slug, title, locationLabel, description, nightlyRateCents, cleaningFeeCents, maxGuests, heroImageUrl, JSON.stringify(heroImageCaptions), JSON.stringify(galleryImageUrls), JSON.stringify(galleryImageCaptions), JSON.stringify(galleryImageGroups), JSON.stringify(amenities), isActive],
+        [slug, title, locationLabel, description, nightlyRateCents, weekendRateCents, cleaningFeeCents, maxGuests, heroImageUrl, JSON.stringify(heroImageCaptions), JSON.stringify(galleryImageUrls), JSON.stringify(galleryImageCaptions), JSON.stringify(galleryImageGroups), JSON.stringify(amenities), isActive],
       );
     }
 
@@ -2948,7 +2954,7 @@ app.get('/api/availability', async (req, res) => {
   const rentalId = Number(req.query?.rentalId || 0);
   if (pgPool && rentalId > 0) {
     const rentalResult = await pgPool.query(
-      `SELECT id, nightly_rate_cents, cleaning_fee_cents
+      `SELECT id, nightly_rate_cents, weekend_rate_cents, cleaning_fee_cents
        FROM rentals
        WHERE id = $1 AND is_active = TRUE AND deleted_at IS NULL
        LIMIT 1`,
@@ -2962,6 +2968,7 @@ app.get('/api/availability', async (req, res) => {
     return res.json({
       blocked,
       nightlyRateCents: rental.nightly_rate_cents,
+      weekendRateCents: rental.weekend_rate_cents || rental.nightly_rate_cents,
       cleaningFeeCents: rental.cleaning_fee_cents,
       currency: booking.currency,
       bookingEnabled: Boolean(stripe && rental.nightly_rate_cents > 0),
@@ -2973,6 +2980,7 @@ app.get('/api/availability', async (req, res) => {
   res.json({
     blocked,
     nightlyRateCents: booking.nightlyRateCents,
+    weekendRateCents: booking.nightlyRateCents,
     cleaningFeeCents: booking.cleaningFeeCents,
     currency: booking.currency,
     bookingEnabled: Boolean(stripe && booking.nightlyRateCents > 0),
@@ -2999,11 +3007,15 @@ app.post('/api/checkout', async (req, res) => {
     const primaryName = clean(primaryGuest?.fullName);
     const email = clean(primaryGuest?.email);
     const primaryPhone = clean(primaryGuest?.phone);
+    const guestCount = Number(req.body?.guestCount || additionalGuests.length + 1);
     const houseRulesAgreed = Boolean(req.body?.houseRulesAgreed);
     const termsAgreed = Boolean(req.body?.termsAgreed);
 
     if (!primaryName || !email || !primaryPhone) {
-      return res.status(400).json({ message: 'Primary Guest #1 must include full name, email, and phone number.' });
+      return res.status(400).json({ message: 'Primary booker must include full name, email, and phone number.' });
+    }
+    if (!Number.isFinite(guestCount) || guestCount < 1 || guestCount > 10) {
+      return res.status(400).json({ message: 'Guest count must be between 1 and 10.' });
     }
     if (additionalGuests.some((guest) => !guest.fullName)) {
       return res.status(400).json({ message: 'Each added guest must include a full name.' });
@@ -3018,12 +3030,13 @@ app.post('/api/checkout', async (req, res) => {
     }
 
     let rentalRate = booking.nightlyRateCents;
+    let weekendRate = booking.nightlyRateCents;
     let cleaningFee = booking.cleaningFeeCents;
     let rentalTitle = 'Orlando vacation rental';
 
     if (pgPool && rentalId > 0) {
       const rentalResult = await pgPool.query(
-        `SELECT id, title, nightly_rate_cents, cleaning_fee_cents
+        `SELECT id, title, nightly_rate_cents, weekend_rate_cents, cleaning_fee_cents
          FROM rentals
          WHERE id = $1 AND is_active = TRUE AND deleted_at IS NULL
          LIMIT 1`,
@@ -3034,6 +3047,7 @@ app.post('/api/checkout', async (req, res) => {
         return res.status(404).json({ message: 'Rental not found.' });
       }
       rentalRate = rental.nightly_rate_cents;
+      weekendRate = rental.weekend_rate_cents || rental.nightly_rate_cents;
       cleaningFee = rental.cleaning_fee_cents;
       rentalTitle = rental.title;
     }
@@ -3048,15 +3062,16 @@ app.post('/api/checkout', async (req, res) => {
     }
 
     const origin = buildOrigin(req);
+    const stayRates = calculateStaySubtotal(checkIn, checkOut, rentalRate, weekendRate);
     const lineItems = [
       {
         quantity: 1,
         price_data: {
           currency: booking.currency,
-          unit_amount: rentalRate * stay.nights,
+          unit_amount: stayRates.subtotal,
           product_data: {
             name: `${rentalTitle} - ${stay.nights} night${stay.nights > 1 ? 's' : ''}`,
-            description: `${checkIn} to ${checkOut}`,
+            description: `${checkIn} to ${checkOut} (${stayRates.weeknightNights} weeknight, ${stayRates.weekendNights} weekend)`,
           },
         },
       },
@@ -3090,7 +3105,7 @@ app.post('/api/checkout', async (req, res) => {
         email: metadataValue(email),
         primaryName: metadataValue(primaryName),
         primaryPhone: metadataValue(primaryPhone),
-        guestCount: String(additionalGuests.length + 1),
+        guestCount: String(guestCount),
         guestList: metadataValue(guestList),
         houseRulesAgreed: 'true',
         termsAgreed: 'true',

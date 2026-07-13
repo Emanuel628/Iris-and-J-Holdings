@@ -1,11 +1,13 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { addDays, calculateStaySubtotal } from '../../lib/rentalPricing';
 
 type BlockedRange = { start: string; end: string };
 
 type Availability = {
   blocked: BlockedRange[];
   nightlyRateCents: number;
+  weekendRateCents: number;
   cleaningFeeCents: number;
   currency: string;
   bookingEnabled: boolean;
@@ -29,12 +31,6 @@ function iso(year: number, month: number, day: number) {
 
 function todayIso() {
   const d = new Date();
-  return iso(d.getFullYear(), d.getMonth(), d.getDate());
-}
-
-function addDays(isoStr: string, amount: number) {
-  const d = new Date(`${isoStr}T00:00:00`);
-  d.setDate(d.getDate() + amount);
   return iso(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
@@ -110,7 +106,10 @@ function VacationBookingCalendar({ rentalId, mode = 'public', className = '' }: 
   }, [data]);
 
   const nights = checkIn && checkOut ? nightsBetween(checkIn, checkOut) : 0;
-  const nightlyTotal = nights * (data?.nightlyRateCents ?? 0);
+  const stayRates = checkIn && checkOut && data
+    ? calculateStaySubtotal(checkIn, checkOut, data.nightlyRateCents, data.weekendRateCents)
+    : { subtotal: 0, weeknightNights: 0, weekendNights: 0 };
+  const nightlyTotal = stayRates.subtotal;
   const cleaning = data?.cleaningFeeCents ?? 0;
   const total = nights > 0 ? nightlyTotal + cleaning : 0;
   const currency = data?.currency ?? 'usd';
@@ -230,10 +229,18 @@ function VacationBookingCalendar({ rentalId, mode = 'public', className = '' }: 
                   <div><span>Check-out</span><strong>{formatShortDate(checkOut)}</strong></div>
                 </div>
                 <dl className="cal-price">
-                  <div>
-                    <dt>{formatMoney(data.nightlyRateCents, currency)} x {nights} night{nights > 1 ? 's' : ''}</dt>
-                    <dd>{formatMoney(nightlyTotal, currency)}</dd>
-                  </div>
+                  {stayRates.weeknightNights > 0 && (
+                    <div>
+                      <dt>{formatMoney(data.nightlyRateCents, currency)} x {stayRates.weeknightNights} weeknight{stayRates.weeknightNights > 1 ? 's' : ''}</dt>
+                      <dd>{formatMoney(data.nightlyRateCents * stayRates.weeknightNights, currency)}</dd>
+                    </div>
+                  )}
+                  {stayRates.weekendNights > 0 && (
+                    <div>
+                      <dt>{formatMoney(data.weekendRateCents || data.nightlyRateCents, currency)} x {stayRates.weekendNights} weekend night{stayRates.weekendNights > 1 ? 's' : ''}</dt>
+                      <dd>{formatMoney((data.weekendRateCents || data.nightlyRateCents) * stayRates.weekendNights, currency)}</dd>
+                    </div>
+                  )}
                   {cleaning > 0 && (
                     <div>
                       <dt>Cleaning fee</dt>

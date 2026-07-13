@@ -105,7 +105,7 @@ export const publicSeoRoutes = {
   },
   '/house-rules': {
     title: 'Vacation Rental House Rules | Iris & J Holdings',
-    description: 'House rules for Orlando vacation rental bookings through Iris & J Holdings, including occupancy, parking, quiet hours, and guest list requirements.',
+    description: 'House rules for Orlando vacation rental bookings through Iris & J Holdings, including occupancy, parking, and quiet hours.',
     image: 'https://www.irisjholdings.com/images/site/vacation-hero.jpg',
     breadcrumb: 'House Rules',
   },

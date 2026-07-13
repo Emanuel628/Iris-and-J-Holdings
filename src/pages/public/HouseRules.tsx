@@ -6,7 +6,7 @@ import { usePageMeta } from '../../lib/usePageMeta';
 function HouseRules() {
   usePageMeta(
     'Vacation Rental House Rules',
-    'House rules for Orlando vacation rental bookings through Iris & J Holdings, including occupancy, noise, parking, damage, and guest list requirements.',
+    'House rules for Orlando vacation rental bookings through Iris & J Holdings, including occupancy, noise, parking, and damage.',
   );
   const template = getSiteContentTemplate('house-rules');
   const { content, heroImageUrl } = usePublicSiteContent('house-rules', template?.defaults || {});

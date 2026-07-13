@@ -25,6 +25,7 @@ type RentalForm = {
   locationLabel: string;
   description: string;
   nightlyRateCents: string;
+  weekendRateCents: string;
   cleaningFeeCents: string;
   maxGuests: string;
   heroImageUrl: string;
@@ -54,6 +55,7 @@ function emptyRentalForm(): RentalForm {
     locationLabel: '',
     description: '',
     nightlyRateCents: '',
+    weekendRateCents: '',
     cleaningFeeCents: '',
     maxGuests: '10',
     heroImageUrl: '',
@@ -71,6 +73,7 @@ function toRentalForm(rental: RentalRecord): RentalForm {
     locationLabel: rental.location_label,
     description: rental.description,
     nightlyRateCents: String(rental.nightly_rate_cents),
+    weekendRateCents: String(rental.weekend_rate_cents || rental.nightly_rate_cents),
     cleaningFeeCents: String(rental.cleaning_fee_cents),
     maxGuests: String(rental.max_guests),
     heroImageUrl: rental.hero_image_url,
@@ -165,6 +168,7 @@ function AdminDashboard() {
           locationLabel: rentalForm.locationLabel,
           description: rentalForm.description,
           nightlyRateCents: Number(rentalForm.nightlyRateCents || 0),
+          weekendRateCents: Number(rentalForm.weekendRateCents || rentalForm.nightlyRateCents || 0),
           cleaningFeeCents: Number(rentalForm.cleaningFeeCents || 0),
           maxGuests: Number(rentalForm.maxGuests || 10),
           heroImageUrl: rentalForm.heroImageUrl,
@@ -343,10 +347,13 @@ function AdminDashboard() {
               <div className="input-group"><label htmlFor="admin-rental-description">Description</label><textarea id="admin-rental-description" value={rentalForm.description} onChange={(event) => setRentalForm({ ...rentalForm, description: event.target.value })} /></div>
               <div className="form-row">
                 <div className="input-group"><label htmlFor="admin-rental-rate">Nightly Rate (cents)</label><input id="admin-rental-rate" type="number" value={rentalForm.nightlyRateCents} onChange={(event) => setRentalForm({ ...rentalForm, nightlyRateCents: event.target.value })} /></div>
-                <div className="input-group"><label htmlFor="admin-rental-cleaning">Cleaning Fee (cents)</label><input id="admin-rental-cleaning" type="number" value={rentalForm.cleaningFeeCents} onChange={(event) => setRentalForm({ ...rentalForm, cleaningFeeCents: event.target.value })} /></div>
+                <div className="input-group"><label htmlFor="admin-rental-weekend-rate">Weekend Rate (cents)</label><input id="admin-rental-weekend-rate" type="number" value={rentalForm.weekendRateCents} onChange={(event) => setRentalForm({ ...rentalForm, weekendRateCents: event.target.value })} /></div>
               </div>
               <div className="form-row">
+                <div className="input-group"><label htmlFor="admin-rental-cleaning">Cleaning Fee (cents)</label><input id="admin-rental-cleaning" type="number" value={rentalForm.cleaningFeeCents} onChange={(event) => setRentalForm({ ...rentalForm, cleaningFeeCents: event.target.value })} /></div>
                 <div className="input-group"><label htmlFor="admin-rental-max-guests">Max Guests</label><input id="admin-rental-max-guests" type="number" value={rentalForm.maxGuests} onChange={(event) => setRentalForm({ ...rentalForm, maxGuests: event.target.value })} /></div>
+              </div>
+              <div className="form-row">
                 <label className="form-note" htmlFor="admin-rental-active"><input id="admin-rental-active" type="checkbox" checked={rentalForm.isActive} onChange={(event) => setRentalForm({ ...rentalForm, isActive: event.target.checked })} /> Active rental</label>
               </div>
               <div className="input-group"><label htmlFor="admin-rental-hero">Hero Image URL</label><input id="admin-rental-hero" value={rentalForm.heroImageUrl} onChange={(event) => setRentalForm({ ...rentalForm, heroImageUrl: event.target.value })} /></div>

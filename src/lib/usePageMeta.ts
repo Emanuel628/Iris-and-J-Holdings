@@ -159,11 +159,11 @@ const ROUTE_META: Record<string, { title?: string; description?: string; robots?
   '/house-rules': {
     title: 'Orlando Vacation Rental House Rules',
     description:
-      'House rules for Orlando vacation rental bookings through Iris & J Holdings, including occupancy limits, parking, quiet hours, pet policy, and guest list requirements.',
+      'House rules for Orlando vacation rental bookings through Iris & J Holdings, including occupancy limits, parking, quiet hours, and pet policy.',
   },
   '/vacation-rental-intake': {
     title: 'Vacation Rental Intake',
-    description: 'Complete guest intake details and review house rules before Orlando vacation rental checkout.',
+    description: 'Complete primary booker details and review house rules before Orlando vacation rental checkout.',
     robots: 'noindex,nofollow',
   },
   '/refund-cancellation-policy': {

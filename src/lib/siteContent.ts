@@ -172,7 +172,7 @@ export const siteContentTemplates: SiteContentTemplate[] = [
       availabilityEyebrow: 'Availability',
       availabilityTitle: 'Available dates for the rental.',
       availabilityDescription:
-        'Open dates are available to book; grayed-out dates are already taken. Pick your check-in and check-out here, then continue to a separate intake page for guest details, house rules, and checkout.',
+        'Open dates are available to book; grayed-out dates are already taken. Pick your check-in and check-out here, then continue to a separate intake page for primary booker details, house rules, and checkout.',
     },
   },
   {
