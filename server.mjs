@@ -484,6 +484,7 @@ async function ensureAdminTables() {
       document_type TEXT NOT NULL DEFAULT '',
       stripe_session_id TEXT UNIQUE,
       stripe_checkout_url TEXT NOT NULL DEFAULT '',
+      confirmation_email_sent_at TIMESTAMPTZ,
       vacation_booking_id INTEGER REFERENCES vacation_bookings(id) ON DELETE SET NULL,
       notary_request_id INTEGER REFERENCES notary_requests(id) ON DELETE SET NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -493,6 +494,7 @@ async function ensureAdminTables() {
   await pgPool.query(`ALTER TABLE admin_invoices ALTER COLUMN stripe_session_id DROP NOT NULL;`).catch(() => undefined);
   await pgPool.query(`ALTER TABLE admin_invoices ALTER COLUMN stripe_session_id DROP DEFAULT;`).catch(() => undefined);
   await pgPool.query(`UPDATE admin_invoices SET stripe_session_id = NULL WHERE stripe_session_id = '';`).catch(() => undefined);
+  await pgPool.query(`ALTER TABLE admin_invoices ADD COLUMN IF NOT EXISTS confirmation_email_sent_at TIMESTAMPTZ;`);
   await pgPool.query(`
     CREATE TABLE IF NOT EXISTS buyer_leads (
       id SERIAL PRIMARY KEY,
@@ -1342,7 +1344,7 @@ async function handleInvoicePaidFromSession(session) {
   );
   const invoice = result.rows[0];
   if (!invoice) return;
-  const alreadyConfirmed = ['paid', 'approved', 'refunded'].includes(invoice.status);
+  const confirmationAlreadySent = Boolean(invoice.confirmation_email_sent_at) || invoice.status === 'refunded';
 
   await markInvoicePaidFromSession(session);
 
@@ -1390,8 +1392,15 @@ async function handleInvoicePaidFromSession(session) {
     bookedCache = { at: 0, ranges: [] };
   }
 
-  if (!alreadyConfirmed) {
+  if (!confirmationAlreadySent) {
     await sendPaidInvoiceConfirmation(invoice, session);
+    await pgPool.query(
+      `UPDATE admin_invoices
+       SET confirmation_email_sent_at = COALESCE(confirmation_email_sent_at, NOW()),
+           updated_at = NOW()
+       WHERE id = $1`,
+      [invoice.id],
+    );
   }
 }
 
@@ -2833,18 +2842,35 @@ app.post('/api/admin/invoices/send', async (req, res) => {
       subject: `Invoice from Iris & J Holdings - ${invoice.service_type === 'vacation' ? 'Vacation rental' : 'Notary appointment'}`,
       text:
         `Hi ${invoice.recipient_name || 'there'},\n\n` +
-        `${invoice.description || 'An invoice is ready for you.'}\n\n` +
+        `Your invoice is ready for payment.\n\n` +
+        `${invoice.description ? `${invoice.description}\n\n` : ''}` +
+        (invoice.service_type === 'vacation'
+          ? `Rental: ${invoice.rental_title || 'Vacation rental'}\nDates: ${formatDisplayDate(invoice.check_in)} to ${formatDisplayDate(invoice.check_out)}\nGuests: ${invoice.guest_count || 1}\n`
+          : `Service: Notary appointment\n${invoice.appointment_date ? `Appointment: ${formatDisplayDate(invoice.appointment_date)}${invoice.appointment_time ? ` at ${invoice.appointment_time}` : ''}\n` : ''}`) +
         `Amount due: ${money(invoice.amount_total_cents || 0, invoice.currency || 'usd')}\n` +
-        `${session.url ? `Payment link: ${session.url}\n\n` : '\n'}` +
+        `${session.url ? `Pay securely here: ${session.url}\n\n` : '\n'}` +
         `Reply to this email with any questions.\n\n` +
         `- Iris & J Holdings`,
       html:
+        `<div style="font-family:Arial,sans-serif;color:#24313f;line-height:1.6;max-width:640px;margin:0 auto;padding:24px">` +
+        `<h2 style="margin:0 0 12px;color:#182635">Your invoice is ready</h2>` +
         `<p>Hi ${escapeHtml(invoice.recipient_name || 'there')},</p>` +
-        `<p>${escapeHtml(invoice.description || 'An invoice is ready for you.')}</p>` +
-        `<p><strong>Amount due:</strong> ${escapeHtml(money(invoice.amount_total_cents || 0, invoice.currency || 'usd'))}</p>` +
-        `${session.url ? `<p><a href="${escapeHtml(session.url)}">Pay this invoice</a></p>` : ''}` +
+        `<p>Your invoice from Iris &amp; J Holdings is ready for secure payment.</p>` +
+        `${invoice.description ? `<p>${escapeHtml(invoice.description)}</p>` : ''}` +
+        `<div style="border:1px solid #e1d5c4;border-radius:10px;padding:16px;margin:18px 0;background:#fffaf2">` +
+        (invoice.service_type === 'vacation'
+          ? `<p style="margin:0 0 8px"><strong>Rental:</strong> ${escapeHtml(invoice.rental_title || 'Vacation rental')}</p>` +
+            `<p style="margin:0 0 8px"><strong>Dates:</strong> ${escapeHtml(formatDisplayDate(invoice.check_in))} to ${escapeHtml(formatDisplayDate(invoice.check_out))}</p>` +
+            `<p style="margin:0 0 8px"><strong>Guests:</strong> ${escapeHtml(String(invoice.guest_count || 1))}</p>`
+          : `<p style="margin:0 0 8px"><strong>Service:</strong> Notary appointment</p>` +
+            `${invoice.appointment_date ? `<p style="margin:0 0 8px"><strong>Appointment:</strong> ${escapeHtml(formatDisplayDate(invoice.appointment_date))}${invoice.appointment_time ? ` at ${escapeHtml(invoice.appointment_time)}` : ''}</p>` : ''}`) +
+        `<p style="margin:0;font-size:18px"><strong>Amount due:</strong> ${escapeHtml(money(invoice.amount_total_cents || 0, invoice.currency || 'usd'))}</p>` +
+        `</div>` +
+        `${session.url ? `<p><a href="${escapeHtml(session.url)}" style="display:inline-block;background:#a9793b;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 18px;border-radius:8px">Pay securely with Stripe</a></p>` : ''}` +
+        `<p style="font-size:14px;color:#586575">Stripe processes the payment securely. A Stripe receipt will be sent after payment is completed.</p>` +
         `<p>Reply to this email with any questions.</p>` +
-        `<p>- Iris &amp; J Holdings</p>`,
+        `<p>- Iris &amp; J Holdings</p>` +
+        `</div>`,
     });
 
     return res.json({ ok: true, checkoutUrl: session.url || '' });
@@ -3437,6 +3463,8 @@ app.get('/api/checkout-session', async (req, res) => {
     if (session.payment_status === 'paid') {
       if (session.metadata?.type === 'notary') {
         await persistNotaryRequest(session);
+      } else if (session.metadata?.type === 'invoice') {
+        await handleInvoicePaidFromSession(session);
       } else if (session.metadata?.type === 'vacation') {
         await persistVacationBooking(session);
       }

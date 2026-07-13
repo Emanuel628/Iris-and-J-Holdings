@@ -54,8 +54,8 @@ function InvoiceSuccess() {
               <p>Confirming your payment...</p>
             ) : paid && info ? (
               <p>
-                We received {info.amountTotal ? formatMoney(info.amountTotal, info.currency) : 'your payment'} and sent a receipt
-                to {info.email || 'your email'}. Daiana will review the invoice and follow up with the next step.
+                We received {info.amountTotal ? formatMoney(info.amountTotal, info.currency) : 'your payment'} and are sending confirmation
+                details to {info.email || 'your email'}. Daiana will review the invoice and follow up with the next step.
                 {isVacation ? <> Requested stay: <strong>{info.checkIn}</strong> to <strong>{info.checkOut}</strong>.</> : null}
                 {!isVacation && info.appointmentDate ? <> Requested appointment: <strong>{info.appointmentDate}</strong>{info.appointmentTime ? <> at <strong>{info.appointmentTime}</strong></> : null}.</> : null}
               </p>
