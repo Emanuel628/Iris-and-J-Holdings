@@ -2558,14 +2558,14 @@ app.post('/api/admin/invoices/save', async (req, res) => {
     if (!recipientName || !recipientEmail || amountTotalCents <= 0) {
       return res.status(400).json({ message: 'Recipient name, email, and invoice amount are required.' });
     }
-    if (serviceType === 'vacation' && (!isIsoDate(checkIn) || !isIsoDate(checkOut) || checkOut <= checkIn)) {
-      return res.status(400).json({ message: 'Vacation invoices require valid check-in and check-out dates.' });
+    if (serviceType === 'vacation' && ((checkIn && !isIsoDate(checkIn)) || (checkOut && !isIsoDate(checkOut)) || (checkIn && checkOut && checkOut <= checkIn))) {
+      return res.status(400).json({ message: 'Vacation invoice dates are optional, but check-out must be after check-in when dates are entered.' });
     }
     if (!Number.isFinite(guestCount) || guestCount < 1) {
       return res.status(400).json({ message: 'Guest count must be at least 1.' });
     }
-    if (serviceType === 'notary' && (!isIsoDate(appointmentDate) || !appointmentTime)) {
-      return res.status(400).json({ message: 'Notary invoices require a valid date and time.' });
+    if (serviceType === 'notary' && ((appointmentDate && !isIsoDate(appointmentDate)) || (!appointmentDate && appointmentTime))) {
+      return res.status(400).json({ message: 'Notary invoice appointment details are optional, but appointment date must be valid when entered.' });
     }
 
     const invoiceValues = [

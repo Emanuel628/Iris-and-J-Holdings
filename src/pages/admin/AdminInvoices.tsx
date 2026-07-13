@@ -100,6 +100,18 @@ function toInvoiceForm(invoice: AdminInvoiceRecord): InvoiceForm {
   };
 }
 
+function updateInvoicePaymentLink(invoices: AdminInvoiceRecord[], id: number, checkoutUrl: string) {
+  return invoices.map((invoice) => (
+    invoice.id === id
+      ? {
+        ...invoice,
+        stripe_checkout_url: checkoutUrl || invoice.stripe_checkout_url,
+        status: invoice.status === 'approved' ? invoice.status : 'sent',
+      }
+      : invoice
+  ));
+}
+
 function AdminInvoices() {
   usePageMeta('Admin Invoices', 'Create and manage custom invoices for vacation rentals and notary appointments.', { robots: 'noindex,nofollow' });
   const [rentals, setRentals] = useState<RentalRecord[]>([]);
@@ -185,8 +197,8 @@ function AdminInvoices() {
           documentType: invoiceForm.documentType,
         }),
       });
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(payload.message || 'Could not save invoice.');
+      const payload = await res.json().catch(() => ({} as { message?: string; id?: number }));
+      if (!res.ok) throw new Error(payload.message || `Could not save invoice. Server returned ${res.status}.`);
       await loadData();
       setStatusMessage('Invoice saved.');
       setInvoiceForm((current) => ({ ...current, id: payload.id || current.id }));
@@ -207,9 +219,12 @@ function AdminInvoices() {
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ id }),
       });
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(payload.message || 'Could not send invoice.');
+      const payload = await res.json().catch(() => ({} as { message?: string; checkoutUrl?: string }));
+      if (!res.ok) throw new Error(payload.message || `Could not send invoice. Server returned ${res.status}.`);
       await loadData();
+      if (payload.checkoutUrl) {
+        setInvoices((current) => updateInvoicePaymentLink(current, id, payload.checkoutUrl || ''));
+      }
       setStatusMessage('Invoice emailed with payment link.');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Could not send invoice.');
@@ -341,6 +356,7 @@ function AdminInvoices() {
                 {invoiceForm.id ? <button className="button-secondary" type="button" onClick={() => sendInvoice(invoiceForm.id!)} disabled={busy}>Send invoice</button> : null}
                 {invoiceForm.id ? <button className="button-secondary" type="button" onClick={() => setInvoiceForm(emptyInvoiceForm())} disabled={busy}>New invoice</button> : null}
               </div>
+              <p className="form-note">Use Send invoice after saving to email a Stripe payment link. The Payment link button appears in the invoice list after the link is created.</p>
             </div>
           </section>
 
