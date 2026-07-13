@@ -355,6 +355,32 @@ function AdminInvoices() {
     }
   }
 
+  async function deleteInvoice(id: number) {
+    const confirmation = window.prompt('Type DELETE to permanently remove this invoice.');
+    if (confirmation === null) return;
+    setBusy(true);
+    setStatusMessage('');
+    setErrorMessage('');
+    try {
+      const res = await fetch('/api/admin/invoices/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ id, confirmation }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload.message || 'Could not delete invoice.');
+      await loadData();
+      if (invoiceForm.id === id) {
+        setInvoiceForm(emptyInvoiceForm());
+      }
+      setStatusMessage('Invoice deleted.');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Could not delete invoice.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function updateInvoiceDates(next: Partial<Pick<InvoiceForm, 'rentalId' | 'checkIn' | 'checkOut'>>) {
     setAmountOverridden(false);
     setInvoiceForm((current) => ({ ...current, ...next }));
@@ -496,6 +522,7 @@ function AdminInvoices() {
                   {invoice.stripe_checkout_url ? <a className="button-secondary" href={invoice.stripe_checkout_url} target="_blank" rel="noreferrer">Payment link</a> : null}
                   <button className="button-secondary" type="button" onClick={() => updateInvoiceStatus(invoice.id, 'approved')} disabled={busy}>Approve</button>
                   <button className="button-secondary" type="button" onClick={() => refundInvoice(invoice.id)} disabled={busy || invoice.status === 'refunded'}>Refund</button>
+                  <button className="button-secondary" type="button" onClick={() => deleteInvoice(invoice.id)} disabled={busy}>Delete</button>
                 </div>
               </article>
             ))}
