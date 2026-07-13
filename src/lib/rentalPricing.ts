@@ -4,7 +4,7 @@ export function addDays(dateString: string, amount: number) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
-function isWeekendNight(dateString: string) {
+export function isWeekendNight(dateString: string) {
   const day = new Date(`${dateString}T00:00:00`).getDay();
   return day === 5 || day === 6;
 }

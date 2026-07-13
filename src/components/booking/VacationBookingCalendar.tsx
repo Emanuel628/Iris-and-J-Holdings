@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
-import { addDays, calculateStaySubtotal } from '../../lib/rentalPricing';
+import { addDays, calculateStaySubtotal, isWeekendNight } from '../../lib/rentalPricing';
 
 type BlockedRange = { start: string; end: string };
 
@@ -64,6 +64,18 @@ function formatShortDate(value: string) {
     day: '2-digit',
     year: '2-digit',
   }).format(date);
+}
+
+function formatCompactMoney(cents: number, currency: string) {
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: currency.toUpperCase(),
+      maximumFractionDigits: 0,
+    }).format(cents / 100);
+  } catch {
+    return `$${Math.round(cents / 100)}`;
+  }
 }
 
 function VacationBookingCalendar({ rentalId, mode = 'public', className = '' }: VacationBookingCalendarProps) {
@@ -189,6 +201,9 @@ function VacationBookingCalendar({ rentalId, mode = 'public', className = '' }: 
               const isStart = date === checkIn;
               const isEnd = date === checkOut;
               const inRange = Boolean(checkIn && checkOut && date > checkIn && date < checkOut);
+              const dateRate = isWeekendNight(date)
+                ? data.weekendRateCents || data.nightlyRateCents
+                : data.nightlyRateCents;
               const classes = [
                 'cal-day',
                 disabled ? 'is-disabled' : 'is-open',
@@ -208,7 +223,10 @@ function VacationBookingCalendar({ rentalId, mode = 'public', className = '' }: 
                   aria-label={`${MONTHS[view.month]} ${day}, ${view.year}${isBlocked ? ' - booked' : ''}`}
                   onClick={() => selectDate(date)}
                 >
-                  {day}
+                  <span className="cal-day-number">{day}</span>
+                  {!disabled && dateRate > 0 ? (
+                    <span className="cal-day-rate">{formatCompactMoney(dateRate, currency)}</span>
+                  ) : null}
                 </button>
               );
             })}

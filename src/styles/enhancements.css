@@ -467,8 +467,10 @@ summary:focus-visible,
 .cal-day {
   aspect-ratio: 1 / 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0.08rem;
   font-size: 0.82rem;
   font-weight: 700;
   color: var(--color-ink);
@@ -477,6 +479,21 @@ summary:focus-visible,
   border-radius: 7px;
   cursor: pointer;
   transition: background-color var(--speed) var(--ease-soft), border-color var(--speed) var(--ease-soft), color var(--speed) var(--ease-soft), transform var(--speed) var(--ease-soft);
+}
+
+.cal-day-number,
+.cal-day-rate {
+  display: block;
+  line-height: 1;
+}
+
+.cal-day-rate {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: clamp(0.48rem, 1.4vw, 0.62rem);
+  font-weight: 800;
+  color: #755f44;
 }
 
 .cal-day.is-empty {
@@ -521,6 +538,11 @@ summary:focus-visible,
   color: #fff;
   background: var(--color-champagne);
   border-color: var(--color-champagne-dark);
+}
+
+.cal-day.is-start .cal-day-rate,
+.cal-day.is-end .cal-day-rate {
+  color: #fff7e8;
 }
 
 .cal-legend {

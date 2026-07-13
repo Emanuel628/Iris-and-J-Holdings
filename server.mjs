@@ -2558,64 +2558,77 @@ app.post('/api/admin/invoices/save', async (req, res) => {
     if (!recipientName || !recipientEmail || amountTotalCents <= 0) {
       return res.status(400).json({ message: 'Recipient name, email, and invoice amount are required.' });
     }
-    if (serviceType === 'vacation' && (!isIsoDate(checkIn) || !isIsoDate(checkOut) || checkOut < checkIn)) {
+    if (serviceType === 'vacation' && (!isIsoDate(checkIn) || !isIsoDate(checkOut) || checkOut <= checkIn)) {
       return res.status(400).json({ message: 'Vacation invoices require valid check-in and check-out dates.' });
+    }
+    if (!Number.isFinite(guestCount) || guestCount < 1) {
+      return res.status(400).json({ message: 'Guest count must be at least 1.' });
     }
     if (serviceType === 'notary' && (!isIsoDate(appointmentDate) || !appointmentTime)) {
       return res.status(400).json({ message: 'Notary invoices require a valid date and time.' });
     }
 
-    const result = await pgPool.query(
-      `INSERT INTO admin_invoices (
-        id, service_type, recipient_name, recipient_email, recipient_phone, description, notes,
-        amount_total_cents, currency, rental_id, check_in, check_out, guest_count, guest_list_text,
-        appointment_date, appointment_time, city, document_type, updated_at
+    const invoiceValues = [
+      serviceType,
+      recipientName,
+      recipientEmail,
+      recipientPhone,
+      description,
+      notes,
+      amountTotalCents,
+      booking.currency,
+      rentalId,
+      checkIn || null,
+      checkOut || null,
+      guestCount,
+      guestListText,
+      appointmentDate || null,
+      appointmentTime,
+      city,
+      documentType,
+    ];
+    const result = id > 0
+      ? await pgPool.query(
+        `UPDATE admin_invoices
+         SET service_type = $2,
+             recipient_name = $3,
+             recipient_email = $4,
+             recipient_phone = $5,
+             description = $6,
+             notes = $7,
+             amount_total_cents = $8,
+             currency = $9,
+             rental_id = $10,
+             check_in = $11::date,
+             check_out = $12::date,
+             guest_count = $13,
+             guest_list_text = $14,
+             appointment_date = $15::date,
+             appointment_time = $16,
+             city = $17,
+             document_type = $18,
+             updated_at = NOW()
+         WHERE id = $1
+         RETURNING id`,
+        [id, ...invoiceValues],
       )
-      VALUES (
-        NULLIF($1, 0), $2, $3, $4, $5, $6, $7,
-        $8, $9, $10, $11::date, $12::date, $13, $14,
-        $15::date, $16, $17, $18, NOW()
-      )
-      ON CONFLICT (id) DO UPDATE SET
-        service_type = EXCLUDED.service_type,
-        recipient_name = EXCLUDED.recipient_name,
-        recipient_email = EXCLUDED.recipient_email,
-        recipient_phone = EXCLUDED.recipient_phone,
-        description = EXCLUDED.description,
-        notes = EXCLUDED.notes,
-        amount_total_cents = EXCLUDED.amount_total_cents,
-        rental_id = EXCLUDED.rental_id,
-        check_in = EXCLUDED.check_in,
-        check_out = EXCLUDED.check_out,
-        guest_count = EXCLUDED.guest_count,
-        guest_list_text = EXCLUDED.guest_list_text,
-        appointment_date = EXCLUDED.appointment_date,
-        appointment_time = EXCLUDED.appointment_time,
-        city = EXCLUDED.city,
-        document_type = EXCLUDED.document_type,
-        updated_at = NOW()
-      RETURNING id`,
-      [
-        id,
-        serviceType,
-        recipientName,
-        recipientEmail,
-        recipientPhone,
-        description,
-        notes,
-        amountTotalCents,
-        booking.currency,
-        rentalId,
-        checkIn || null,
-        checkOut || null,
-        guestCount,
-        guestListText,
-        appointmentDate || null,
-        appointmentTime,
-        city,
-        documentType,
-      ],
-    );
+      : await pgPool.query(
+        `INSERT INTO admin_invoices (
+          service_type, recipient_name, recipient_email, recipient_phone, description, notes,
+          amount_total_cents, currency, rental_id, check_in, check_out, guest_count, guest_list_text,
+          appointment_date, appointment_time, city, document_type, updated_at
+        )
+        VALUES (
+          $1, $2, $3, $4, $5, $6,
+          $7, $8, $9, $10::date, $11::date, $12, $13,
+          $14::date, $15, $16, $17, NOW()
+        )
+        RETURNING id`,
+        invoiceValues,
+      );
+    if (!result.rows[0]) {
+      return res.status(404).json({ message: 'Invoice not found.' });
+    }
     return res.json({ ok: true, id: result.rows[0].id });
   } catch (error) {
     console.error('Admin invoice save failed:', error);
