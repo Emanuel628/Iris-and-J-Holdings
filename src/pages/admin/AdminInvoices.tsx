@@ -27,6 +27,10 @@ type InvoiceForm = {
 };
 
 type SortOption = 'latest-created' | 'status' | 'recipient-name' | 'service-type';
+type RefundFormState = {
+  open: boolean;
+  amount: string;
+};
 
 function emptyInvoiceForm(): InvoiceForm {
   return {
@@ -157,6 +161,10 @@ function updateInvoicePaymentLink(invoices: AdminInvoiceRecord[], id: number, ch
   ));
 }
 
+function refundAmountForPercent(invoice: AdminInvoiceRecord, percent: number) {
+  return centsToAmountInput(Math.round((invoice.amount_total_cents * percent) / 100));
+}
+
 function calculatedVacationInvoiceTotal(form: InvoiceForm, rentals: RentalRecord[]) {
   if (form.serviceType !== 'vacation' || !form.rentalId || !form.checkIn || !form.checkOut || form.checkOut <= form.checkIn) {
     return 0;
@@ -182,6 +190,7 @@ function AdminInvoices() {
   const [statusMessage, setStatusMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [amountOverridden, setAmountOverridden] = useState(false);
+  const [refundForms, setRefundForms] = useState<Record<number, RefundFormState>>({});
 
   async function loadData() {
     const [me, rentalsPayload, invoicesPayload] = await Promise.all([
@@ -330,8 +339,14 @@ function AdminInvoices() {
     }
   }
 
-  async function refundInvoice(id: number) {
-    const confirmation = window.prompt('Type REFUND to refund this invoice payment in Stripe.');
+  async function refundInvoice(invoice: AdminInvoiceRecord) {
+    const refundForm = refundForms[invoice.id];
+    const amountCents = dollarsToCents(refundForm?.amount || '');
+    if (amountCents <= 0 || amountCents > invoice.amount_total_cents) {
+      setErrorMessage('Refund amount must be greater than $0.00 and no more than the paid amount.');
+      return;
+    }
+    const confirmation = window.prompt(`Type REFUND to refund ${formatCurrency(amountCents, invoice.currency)} in Stripe.`);
     if (confirmation === null) return;
     if (confirmation !== 'REFUND') {
       setErrorMessage('Refund cancelled. Type REFUND to confirm.');
@@ -344,17 +359,41 @@ function AdminInvoices() {
       const res = await fetch('/api/admin/invoices/refund', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ id }),
+        body: JSON.stringify({ id: invoice.id, amountCents }),
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(payload.message || 'Could not refund invoice.');
       await loadData();
+      setRefundForms((current) => ({ ...current, [invoice.id]: { open: false, amount: '' } }));
       setStatusMessage(payload.alreadyRefunded ? 'Invoice was already refunded.' : 'Invoice refunded in Stripe.');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Could not refund invoice.');
     } finally {
       setBusy(false);
     }
+  }
+
+  function toggleRefundForm(invoice: AdminInvoiceRecord) {
+    setRefundForms((current) => {
+      const existing = current[invoice.id];
+      return {
+        ...current,
+        [invoice.id]: {
+          open: !existing?.open,
+          amount: existing?.amount || centsToAmountInput(invoice.amount_total_cents),
+        },
+      };
+    });
+  }
+
+  function setRefundAmount(invoiceId: number, amount: string) {
+    setRefundForms((current) => ({
+      ...current,
+      [invoiceId]: {
+        open: current[invoiceId]?.open ?? true,
+        amount,
+      },
+    }));
   }
 
   async function deleteInvoice(id: number) {
@@ -523,9 +562,32 @@ function AdminInvoices() {
                   <button className="button-secondary" type="button" onClick={() => sendInvoice(invoice.id)} disabled={busy}>Send</button>
                   {invoice.stripe_checkout_url ? <a className="button-secondary" href={invoice.stripe_checkout_url} target="_blank" rel="noreferrer">Payment link</a> : null}
                   <button className="button-secondary" type="button" onClick={() => updateInvoiceStatus(invoice.id, 'approved')} disabled={busy}>Approve</button>
-                  <button className="button-secondary" type="button" onClick={() => refundInvoice(invoice.id)} disabled={busy || invoice.status === 'refunded'}>Refund</button>
+                  <button className="button-secondary" type="button" onClick={() => toggleRefundForm(invoice)} disabled={busy || invoice.status === 'refunded'}>Refund</button>
                   <button className="button-secondary" type="button" onClick={() => deleteInvoice(invoice.id)} disabled={busy}>Delete</button>
                 </div>
+                {refundForms[invoice.id]?.open ? (
+                  <div className="form-shell">
+                    <div className="input-group">
+                      <label htmlFor={`invoice-refund-amount-${invoice.id}`}>Refund Amount</label>
+                      <input
+                        id={`invoice-refund-amount-${invoice.id}`}
+                        inputMode="decimal"
+                        value={formatCurrencyInput(refundForms[invoice.id]?.amount || '')}
+                        onChange={(event) => setRefundAmount(invoice.id, parseCurrencyInput(event.target.value))}
+                      />
+                    </div>
+                    <div className="admin-inline-actions">
+                      {[25, 50, 75, 100].map((percent) => (
+                        <button className="button-secondary" type="button" key={percent} onClick={() => setRefundAmount(invoice.id, refundAmountForPercent(invoice, percent))}>
+                          {percent}%
+                        </button>
+                      ))}
+                      <button className="button button-primary" type="button" onClick={() => refundInvoice(invoice)} disabled={busy}>
+                        Issue refund
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
               </article>
             ))}
             {!sortedInvoices.length ? <p>No invoices yet.</p> : null}

@@ -2918,6 +2918,7 @@ app.post('/api/admin/invoices/refund', async (req, res) => {
     if (!admin) return;
     if (!stripe) return res.status(503).json({ message: 'Stripe is not configured.' });
     const id = Number(req.body?.id || 0);
+    const amountCents = Number(req.body?.amountCents || 0);
     if (!id) return res.status(400).json({ message: 'Invoice id is required.' });
 
     const result = await pgPool.query(
@@ -2939,9 +2940,14 @@ app.post('/api/admin/invoices/refund', async (req, res) => {
     if (session.payment_status !== 'paid' || !session.payment_intent) {
       return res.status(400).json({ message: 'This invoice has not been paid in Stripe yet.' });
     }
+    const paidAmount = Number(session.amount_total || invoice.amount_total_cents || 0);
+    if (!Number.isFinite(amountCents) || amountCents <= 0 || amountCents > paidAmount) {
+      return res.status(400).json({ message: 'Refund amount must be greater than $0.00 and no more than the paid amount.' });
+    }
 
     const refund = await stripe.refunds.create({
       payment_intent: typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent.id,
+      amount: amountCents,
       metadata: {
         type: 'invoice_refund',
         invoiceId: String(id),
