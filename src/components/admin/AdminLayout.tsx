@@ -13,7 +13,6 @@ const adminLinks = [
   { href: '/admin/notary-requests', label: 'Notary Queue', notificationKey: 'notary' as const },
   { href: '/admin/realtor-tools', label: 'Realtor Tools' },
   { href: '/admin/invoices', label: 'Invoices' },
-  { href: '/admin/email-settings', label: 'Email Settings' },
   { href: '/admin/home-value-lab', label: 'Home Value Lab' },
   { href: '/admin/newsletter', label: 'Newsletter' },
   { href: '/admin/site-content', label: 'Site Content' },

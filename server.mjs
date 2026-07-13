@@ -276,8 +276,6 @@ async function sendResendEmail({ to, replyTo, subject, text, html }) {
     throw new Error('RESEND_API_KEY is not configured.');
   }
 
-  const decorated = await applyGlobalEmailCopy({ text, html });
-
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -289,8 +287,8 @@ async function sendResendEmail({ to, replyTo, subject, text, html }) {
       to,
       reply_to: replyTo,
       subject,
-      text: decorated.text,
-      html: decorated.html,
+      text,
+      html,
     }),
   });
 
@@ -329,41 +327,6 @@ function cancelReservationUrl(origin, sessionId) {
 
 function textToHtmlLines(value) {
   return escapeHtml(value).replace(/\n/g, '<br>');
-}
-
-async function getEmailCopySettings() {
-  try {
-    const settings = await readAppSettings();
-    return {
-      globalNote: clean(settings.email_global_note),
-      signature: clean(settings.email_signature),
-      footer: clean(settings.email_footer),
-    };
-  } catch (error) {
-    console.error('Email copy settings load failed:', error);
-    return { globalNote: '', signature: '', footer: '' };
-  }
-}
-
-async function applyGlobalEmailCopy({ text = '', html = '' }) {
-  const settings = await getEmailCopySettings();
-  const textSections = [
-    settings.globalNote,
-    settings.signature ? `- ${settings.signature}` : '',
-    settings.footer,
-  ].filter(Boolean);
-  const htmlSections = [
-    settings.globalNote ? `<p>${textToHtmlLines(settings.globalNote)}</p>` : '',
-    settings.signature ? `<p>- ${textToHtmlLines(settings.signature)}</p>` : '',
-    settings.footer ? `<p style="font-size:13px;color:#586575">${textToHtmlLines(settings.footer)}</p>` : '',
-  ].filter(Boolean);
-
-  return {
-    text: textSections.length ? `${text}${text ? '\n\n' : ''}${textSections.join('\n\n')}` : text,
-    html: htmlSections.length
-      ? `${html || ''}<div style="margin-top:24px;border-top:1px solid #e6ddce;padding-top:16px">${htmlSections.join('')}</div>`
-      : html,
-  };
 }
 
 async function ensureAdminTables() {
@@ -670,9 +633,6 @@ async function seedControlCenterData() {
     ['home_value_default_radius', '3'],
     ['home_value_default_days_old', '180'],
     ['home_value_default_comp_count', '12'],
-    ['email_global_note', ''],
-    ['email_signature', ''],
-    ['email_footer', ''],
   ];
   for (const [key, value] of defaultSettings) {
     await pgPool.query(
@@ -3211,38 +3171,6 @@ app.post('/api/admin/settings', async (req, res) => {
   } catch (error) {
     console.error('Admin settings save failed:', error);
     return res.status(500).json({ message: 'Could not save settings.' });
-  }
-});
-
-app.get('/api/admin/email-settings', async (req, res) => {
-  try {
-    const admin = await requireAdmin(req, res);
-    if (!admin) return;
-    const settings = await readAppSettings();
-    return res.json({
-      settings: {
-        emailGlobalNote: settings.email_global_note || '',
-        emailSignature: settings.email_signature || '',
-        emailFooter: settings.email_footer || '',
-      },
-    });
-  } catch (error) {
-    console.error('Admin email settings load failed:', error);
-    return res.status(500).json({ message: 'Could not load email settings.' });
-  }
-});
-
-app.post('/api/admin/email-settings', async (req, res) => {
-  try {
-    const admin = await requireAdmin(req, res);
-    if (!admin) return;
-    await upsertAppSetting('email_global_note', clean(req.body?.emailGlobalNote));
-    await upsertAppSetting('email_signature', clean(req.body?.emailSignature));
-    await upsertAppSetting('email_footer', clean(req.body?.emailFooter));
-    return res.json({ ok: true });
-  } catch (error) {
-    console.error('Admin email settings save failed:', error);
-    return res.status(500).json({ message: 'Could not save email settings.' });
   }
 });
 

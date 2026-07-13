@@ -2,7 +2,6 @@ import Home from './pages/public/Home';
 import AdminConfirmEmailChange from './pages/admin/AdminConfirmEmailChange';
 import AdminControlCenter from './pages/admin/AdminControlCenter';
 import AdminForgotPassword from './pages/admin/AdminForgotPassword';
-import AdminEmailSettings from './pages/admin/AdminEmailSettings';
 import AdminInvoices from './pages/admin/AdminInvoices';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminMediaLibrary from './pages/admin/AdminMediaLibrary';
@@ -44,7 +43,6 @@ const routes = {
   '/admin/confirm-email-change': AdminConfirmEmailChange,
   '/admin': AdminControlCenter,
   '/admin/forgot-password': AdminForgotPassword,
-  '/admin/email-settings': AdminEmailSettings,
   '/admin/invoices': AdminInvoices,
   '/admin/login': AdminLogin,
   '/admin/media': AdminMediaLibrary,

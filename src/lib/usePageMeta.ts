@@ -46,11 +46,6 @@ const ROUTE_META: Record<string, { title?: string; description?: string; robots?
     description: 'Reset the Iris & J Holdings admin password.',
     robots: 'noindex,nofollow',
   },
-  '/admin/email-settings': {
-    title: 'Admin Email Settings',
-    description: 'Update global outgoing email copy.',
-    robots: 'noindex,nofollow',
-  },
   '/admin/invoices': {
     title: 'Admin Invoices',
     description: 'Create and manage invoices for vacation rentals and notary appointments.',
