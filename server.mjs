@@ -1291,6 +1291,42 @@ async function sendPaidInvoiceConfirmation(invoice, session) {
   });
 }
 
+async function sendRefundInvoiceConfirmation(invoice, refund, session) {
+  const recipientEmail = invoice.recipient_email || session.customer_details?.email || session.customer_email;
+  if (!recipientEmail) return;
+
+  const refundAmount = money(refund.amount ?? session.amount_total ?? invoice.amount_total_cents ?? 0, refund.currency || session.currency || invoice.currency || 'usd');
+  const rentalTitle = invoice.rental_title || session.metadata?.rentalTitle || 'Vacation rental';
+  const checkIn = invoice.check_in || session.metadata?.checkIn || '';
+  const checkOut = invoice.check_out || session.metadata?.checkOut || '';
+  const isVacation = invoice.service_type === 'vacation';
+
+  await sendResendEmail({
+    to: recipientEmail,
+    replyTo: contactTo,
+    subject: isVacation ? `Your ${rentalTitle} refund has been issued` : 'Your invoice refund has been issued',
+    text:
+      `Hi ${invoice.recipient_name || session.metadata?.recipientName || 'there'},\n\n` +
+      `A refund has been issued for your ${isVacation ? 'vacation rental booking' : 'invoice'}.\n\n` +
+      (isVacation
+        ? `Rental: ${rentalTitle}\nDates: ${formatDisplayDate(checkIn)} to ${formatDisplayDate(checkOut)}\n`
+        : `Service: ${invoice.service_type || 'Invoice'}\n`) +
+      `Refund amount: ${refundAmount}\n\n` +
+      `Stripe and your bank or card provider control the exact timing for the funds to appear. Processing times may vary.\n\n` +
+      `- Iris & J Holdings`,
+    html:
+      `<p>Hi ${escapeHtml(invoice.recipient_name || session.metadata?.recipientName || 'there')},</p>` +
+      `<p>A refund has been issued for your ${isVacation ? 'vacation rental booking' : 'invoice'}.</p>` +
+      (isVacation
+        ? `<p><strong>Rental:</strong> ${escapeHtml(rentalTitle)}<br>` +
+          `<strong>Dates:</strong> ${escapeHtml(formatDisplayDate(checkIn))} to ${escapeHtml(formatDisplayDate(checkOut))}</p>`
+        : `<p><strong>Service:</strong> ${escapeHtml(invoice.service_type || 'Invoice')}</p>`) +
+      `<p><strong>Refund amount:</strong> ${escapeHtml(refundAmount)}</p>` +
+      `<p>Stripe and your bank or card provider control the exact timing for the funds to appear. Processing times may vary.</p>` +
+      `<p>- Iris &amp; J Holdings</p>`,
+  });
+}
+
 async function handleInvoicePaidFromSession(session) {
   if (!pgPool) return;
   const invoiceId = Number(session.metadata?.invoiceId || 0);
@@ -2859,9 +2895,10 @@ app.post('/api/admin/invoices/refund', async (req, res) => {
     if (!id) return res.status(400).json({ message: 'Invoice id is required.' });
 
     const result = await pgPool.query(
-      `SELECT id, stripe_session_id, vacation_booking_id, notary_request_id, status
-       FROM admin_invoices
-       WHERE id = $1
+      `SELECT i.*, r.title AS rental_title
+       FROM admin_invoices i
+       LEFT JOIN rentals r ON r.id = i.rental_id
+       WHERE i.id = $1
        LIMIT 1`,
       [id],
     );
@@ -2899,6 +2936,7 @@ app.post('/api/admin/invoices/refund', async (req, res) => {
     if (invoice.notary_request_id) {
       await pgPool.query('UPDATE notary_requests SET status = $2 WHERE id = $1', [invoice.notary_request_id, 'refunded']);
     }
+    await sendRefundInvoiceConfirmation(invoice, refund, session);
     bookedCache = { at: 0, ranges: [] };
     return res.json({ ok: true, refundId: refund.id });
   } catch (error) {

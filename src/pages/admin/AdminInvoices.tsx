@@ -3,6 +3,7 @@ import { ChevronsUpDown } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import VacationBookingCalendar from '../../components/booking/VacationBookingCalendar';
 import { fetchAdminInvoices, fetchAdminMe, fetchAdminRentals, type AdminInvoiceRecord, type RentalRecord } from '../../lib/adminAuth';
+import { calculateStaySubtotal } from '../../lib/rentalPricing';
 import { usePageMeta } from '../../lib/usePageMeta';
 
 type InvoiceForm = {
@@ -72,6 +73,10 @@ function formatCurrencyInput(value: string) {
   const [whole, decimal = ''] = normalized.split('.');
   const formattedWhole = new Intl.NumberFormat('en-US').format(Number(whole || 0));
   return decimal.length ? `$${formattedWhole}.${decimal.slice(0, 2)}` : `$${formattedWhole}`;
+}
+
+function centsToAmountInput(cents: number) {
+  return cents > 0 ? (cents / 100).toFixed(2) : '';
 }
 
 function parseCurrencyInput(value: string) {
@@ -152,6 +157,21 @@ function updateInvoicePaymentLink(invoices: AdminInvoiceRecord[], id: number, ch
   ));
 }
 
+function calculatedVacationInvoiceTotal(form: InvoiceForm, rentals: RentalRecord[]) {
+  if (form.serviceType !== 'vacation' || !form.rentalId || !form.checkIn || !form.checkOut || form.checkOut <= form.checkIn) {
+    return 0;
+  }
+  const rental = rentals.find((item) => item.id === Number(form.rentalId));
+  if (!rental) return 0;
+  const rates = calculateStaySubtotal(
+    form.checkIn,
+    form.checkOut,
+    rental.nightly_rate_cents,
+    rental.weekend_rate_cents || rental.nightly_rate_cents,
+  );
+  return rates.subtotal + rental.cleaning_fee_cents;
+}
+
 function AdminInvoices() {
   usePageMeta('Admin Invoices', 'Create and manage custom invoices for vacation rentals and notary appointments.', { robots: 'noindex,nofollow' });
   const [rentals, setRentals] = useState<RentalRecord[]>([]);
@@ -161,6 +181,7 @@ function AdminInvoices() {
   const [busy, setBusy] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [amountOverridden, setAmountOverridden] = useState(false);
 
   async function loadData() {
     const [me, rentalsPayload, invoicesPayload] = await Promise.all([
@@ -194,6 +215,19 @@ function AdminInvoices() {
       window.clearInterval(interval);
     };
   }, []);
+
+  const calculatedAmountCents = useMemo(
+    () => calculatedVacationInvoiceTotal(invoiceForm, rentals),
+    [invoiceForm.serviceType, invoiceForm.rentalId, invoiceForm.checkIn, invoiceForm.checkOut, rentals],
+  );
+
+  useEffect(() => {
+    if (invoiceForm.serviceType !== 'vacation' || amountOverridden || calculatedAmountCents <= 0) return;
+    setInvoiceForm((current) => {
+      const nextAmount = centsToAmountInput(calculatedAmountCents);
+      return current.amount === nextAmount ? current : { ...current, amount: nextAmount };
+    });
+  }, [amountOverridden, calculatedAmountCents, invoiceForm.serviceType]);
 
   const sortedInvoices = useMemo(() => {
     const items = [...invoices];
@@ -321,6 +355,17 @@ function AdminInvoices() {
     }
   }
 
+  function updateInvoiceDates(next: Partial<Pick<InvoiceForm, 'rentalId' | 'checkIn' | 'checkOut'>>) {
+    setAmountOverridden(false);
+    setInvoiceForm((current) => ({ ...current, ...next }));
+  }
+
+  function useCalculatedAmount() {
+    if (calculatedAmountCents <= 0) return;
+    setAmountOverridden(false);
+    setInvoiceForm((current) => ({ ...current, amount: centsToAmountInput(calculatedAmountCents) }));
+  }
+
   return (
     <AdminLayout>
       <div className="admin-page">
@@ -351,7 +396,7 @@ function AdminInvoices() {
               </div>
               <div className="form-row">
                 <div className="input-group"><label htmlFor="invoice-recipient-phone">Recipient Phone</label><input id="invoice-recipient-phone" value={invoiceForm.recipientPhone} onChange={(event) => setInvoiceForm({ ...invoiceForm, recipientPhone: event.target.value })} /></div>
-                <div className="input-group"><label htmlFor="invoice-amount">Amount</label><input id="invoice-amount" inputMode="decimal" placeholder="$100.00" value={formatCurrencyInput(invoiceForm.amount)} onChange={(event) => setInvoiceForm({ ...invoiceForm, amount: parseCurrencyInput(event.target.value) })} /></div>
+                <div className="input-group"><label htmlFor="invoice-amount">Amount</label><input id="invoice-amount" inputMode="decimal" placeholder="$100.00" value={formatCurrencyInput(invoiceForm.amount)} onChange={(event) => { setAmountOverridden(true); setInvoiceForm({ ...invoiceForm, amount: parseCurrencyInput(event.target.value) }); }} /></div>
               </div>
               <div className="input-group"><label htmlFor="invoice-description">Description</label><input id="invoice-description" value={invoiceForm.description} onChange={(event) => setInvoiceForm({ ...invoiceForm, description: event.target.value })} /></div>
               <div className="input-group"><label htmlFor="invoice-notes">Notes</label><textarea id="invoice-notes" value={invoiceForm.notes} onChange={(event) => setInvoiceForm({ ...invoiceForm, notes: event.target.value })} /></div>
@@ -361,7 +406,7 @@ function AdminInvoices() {
                   <div className="input-group">
                     <label htmlFor="invoice-rental-id">Rental</label>
                     <div className="admin-select-shell">
-                      <select id="invoice-rental-id" value={invoiceForm.rentalId} onChange={(event) => setInvoiceForm({ ...invoiceForm, rentalId: event.target.value })}>
+                      <select id="invoice-rental-id" value={invoiceForm.rentalId} onChange={(event) => updateInvoiceDates({ rentalId: event.target.value })}>
                         <option value="">Select rental</option>
                         {rentals.map((rental) => (
                           <option key={rental.id} value={rental.id}>{rental.title}</option>
@@ -371,9 +416,15 @@ function AdminInvoices() {
                     </div>
                   </div>
                   <div className="form-row">
-                    <div className="input-group"><label htmlFor="invoice-check-in">Check-in</label><input id="invoice-check-in" type="date" value={invoiceForm.checkIn} onChange={(event) => setInvoiceForm({ ...invoiceForm, checkIn: event.target.value })} /></div>
-                    <div className="input-group"><label htmlFor="invoice-check-out">Check-out</label><input id="invoice-check-out" type="date" value={invoiceForm.checkOut} onChange={(event) => setInvoiceForm({ ...invoiceForm, checkOut: event.target.value })} /></div>
+                    <div className="input-group"><label htmlFor="invoice-check-in">Check-in</label><input id="invoice-check-in" type="date" value={invoiceForm.checkIn} onChange={(event) => updateInvoiceDates({ checkIn: event.target.value })} /></div>
+                    <div className="input-group"><label htmlFor="invoice-check-out">Check-out</label><input id="invoice-check-out" type="date" value={invoiceForm.checkOut} onChange={(event) => updateInvoiceDates({ checkOut: event.target.value })} /></div>
                   </div>
+                  {calculatedAmountCents > 0 ? (
+                    <div className="notice-box">
+                      Calculated stay total: {formatCurrency(calculatedAmountCents, 'usd')}. {amountOverridden ? 'The amount box has a manual override.' : 'The amount box is using this total.'}
+                      {amountOverridden ? <button className="button-secondary" type="button" onClick={useCalculatedAmount}>Use calculated total</button> : null}
+                    </div>
+                  ) : null}
                   <div className="form-row">
                     <div className="input-group"><label htmlFor="invoice-guest-count">Guest Count</label><input id="invoice-guest-count" type="number" min="1" value={invoiceForm.guestCount} onChange={(event) => setInvoiceForm({ ...invoiceForm, guestCount: event.target.value })} /></div>
                   </div>
@@ -395,7 +446,7 @@ function AdminInvoices() {
               <div className="admin-inline-actions">
                 <button className="button button-primary" type="button" onClick={saveInvoice} disabled={busy}>Save invoice</button>
                 {invoiceForm.id ? <button className="button-secondary" type="button" onClick={() => sendInvoice(invoiceForm.id!)} disabled={busy}>Send invoice</button> : null}
-                {invoiceForm.id ? <button className="button-secondary" type="button" onClick={() => setInvoiceForm(emptyInvoiceForm())} disabled={busy}>New invoice</button> : null}
+                {invoiceForm.id ? <button className="button-secondary" type="button" onClick={() => { setAmountOverridden(false); setInvoiceForm(emptyInvoiceForm()); }} disabled={busy}>New invoice</button> : null}
               </div>
               <p className="form-note">Use Send invoice after saving to email a Stripe payment link. The Payment link button appears in the invoice list after the link is created.</p>
             </div>
@@ -440,7 +491,7 @@ function AdminInvoices() {
                   {invoice.notes ? <p>Notes: {invoice.notes}</p> : null}
                 </div>
                 <div className="admin-inline-actions">
-                  <button className="button-secondary" type="button" onClick={() => setInvoiceForm(toInvoiceForm(invoice))} disabled={busy}>Edit</button>
+                  <button className="button-secondary" type="button" onClick={() => { setAmountOverridden(true); setInvoiceForm(toInvoiceForm(invoice)); }} disabled={busy}>Edit</button>
                   <button className="button-secondary" type="button" onClick={() => sendInvoice(invoice.id)} disabled={busy}>Send</button>
                   {invoice.stripe_checkout_url ? <a className="button-secondary" href={invoice.stripe_checkout_url} target="_blank" rel="noreferrer">Payment link</a> : null}
                   <button className="button-secondary" type="button" onClick={() => updateInvoiceStatus(invoice.id, 'approved')} disabled={busy}>Approve</button>
