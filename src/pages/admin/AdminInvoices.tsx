@@ -273,9 +273,11 @@ function AdminInvoices() {
       });
       const payload = await res.json().catch(() => ({} as { message?: string; id?: number }));
       if (!res.ok) throw new Error(payload.message || `Could not save invoice. Server returned ${res.status}.`);
-      await loadData();
+      const savedForm = { ...invoiceForm, id: payload.id || invoiceForm.id };
+      const invoicesPayload = await fetchAdminInvoices();
+      setInvoices(invoicesPayload.invoices);
       setStatusMessage('Invoice saved.');
-      setInvoiceForm((current) => ({ ...current, id: payload.id || current.id }));
+      setInvoiceForm(savedForm);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Could not save invoice.');
     } finally {
@@ -483,7 +485,7 @@ function AdminInvoices() {
               <h2>Availability calendar</h2>
               <p>Vacation sync</p>
             </div>
-            <VacationBookingCalendar rentalId={Number(invoiceForm.rentalId || 0) || undefined} mode="admin" className="availability-calendar-extended" />
+            <VacationBookingCalendar key={invoiceForm.rentalId || 'default-rental'} rentalId={Number(invoiceForm.rentalId || 0) || undefined} mode="admin" className="availability-calendar-extended" />
           </section>
         </section>
 

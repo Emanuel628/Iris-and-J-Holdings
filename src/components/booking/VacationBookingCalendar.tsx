@@ -90,6 +90,11 @@ function VacationBookingCalendar({ rentalId, mode = 'public', className = '' }: 
 
   useEffect(() => {
     let active = true;
+    setData(null);
+    setLoadError(false);
+    setCalendarError('');
+    setCheckIn('');
+    setCheckOut('');
     const params = new URLSearchParams();
     if (rentalId) params.set('rentalId', String(rentalId));
     fetch(`/api/availability${params.toString() ? `?${params.toString()}` : ''}`)
