@@ -282,11 +282,15 @@ function AdminInvoices() {
       });
       const payload = await res.json().catch(() => ({} as { message?: string; id?: number }));
       if (!res.ok) throw new Error(payload.message || `Could not save invoice. Server returned ${res.status}.`);
-      const savedForm = { ...invoiceForm, id: payload.id || invoiceForm.id };
       const invoicesPayload = await fetchAdminInvoices();
+      const nextForm = emptyInvoiceForm();
+      if (rentals[0]) {
+        nextForm.rentalId = String(rentals[0].id);
+      }
       setInvoices(invoicesPayload.invoices);
       setStatusMessage('Invoice saved.');
-      setInvoiceForm(savedForm);
+      setAmountOverridden(false);
+      setInvoiceForm(nextForm);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Could not save invoice.');
     } finally {
@@ -392,6 +396,16 @@ function AdminInvoices() {
       [invoiceId]: {
         open: current[invoiceId]?.open ?? true,
         amount,
+      },
+    }));
+  }
+
+  function closeRefundForm(invoiceId: number) {
+    setRefundForms((current) => ({
+      ...current,
+      [invoiceId]: {
+        open: false,
+        amount: current[invoiceId]?.amount || '',
       },
     }));
   }
@@ -584,6 +598,9 @@ function AdminInvoices() {
                       ))}
                       <button className="button button-primary" type="button" onClick={() => refundInvoice(invoice)} disabled={busy}>
                         Issue refund
+                      </button>
+                      <button className="button-secondary" type="button" onClick={() => closeRefundForm(invoice.id)} disabled={busy}>
+                        Cancel
                       </button>
                     </div>
                   </div>

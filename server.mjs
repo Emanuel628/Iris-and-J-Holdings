@@ -276,6 +276,8 @@ async function sendResendEmail({ to, replyTo, subject, text, html }) {
     throw new Error('RESEND_API_KEY is not configured.');
   }
 
+  const decorated = await applyGlobalEmailCopy({ text, html });
+
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -287,8 +289,8 @@ async function sendResendEmail({ to, replyTo, subject, text, html }) {
       to,
       reply_to: replyTo,
       subject,
-      text,
-      html,
+      text: decorated.text,
+      html: decorated.html,
     }),
   });
 
@@ -318,6 +320,50 @@ function verifyManageToken(sessionId, token) {
 function manageUrl(origin, sessionId) {
   const params = new URLSearchParams({ session_id: sessionId, token: createManageToken(sessionId) });
   return `${origin}/manage-booking?${params.toString()}`;
+}
+
+function cancelReservationUrl(origin, sessionId) {
+  const params = new URLSearchParams({ session_id: sessionId });
+  return `${origin}/cancel-reservation?${params.toString()}`;
+}
+
+function textToHtmlLines(value) {
+  return escapeHtml(value).replace(/\n/g, '<br>');
+}
+
+async function getEmailCopySettings() {
+  try {
+    const settings = await readAppSettings();
+    return {
+      globalNote: clean(settings.email_global_note),
+      signature: clean(settings.email_signature),
+      footer: clean(settings.email_footer),
+    };
+  } catch (error) {
+    console.error('Email copy settings load failed:', error);
+    return { globalNote: '', signature: '', footer: '' };
+  }
+}
+
+async function applyGlobalEmailCopy({ text = '', html = '' }) {
+  const settings = await getEmailCopySettings();
+  const textSections = [
+    settings.globalNote,
+    settings.signature ? `- ${settings.signature}` : '',
+    settings.footer,
+  ].filter(Boolean);
+  const htmlSections = [
+    settings.globalNote ? `<p>${textToHtmlLines(settings.globalNote)}</p>` : '',
+    settings.signature ? `<p>- ${textToHtmlLines(settings.signature)}</p>` : '',
+    settings.footer ? `<p style="font-size:13px;color:#586575">${textToHtmlLines(settings.footer)}</p>` : '',
+  ].filter(Boolean);
+
+  return {
+    text: textSections.length ? `${text}${text ? '\n\n' : ''}${textSections.join('\n\n')}` : text,
+    html: htmlSections.length
+      ? `${html || ''}<div style="margin-top:24px;border-top:1px solid #e6ddce;padding-top:16px">${htmlSections.join('')}</div>`
+      : html,
+  };
 }
 
 async function ensureAdminTables() {
@@ -624,6 +670,9 @@ async function seedControlCenterData() {
     ['home_value_default_radius', '3'],
     ['home_value_default_days_old', '180'],
     ['home_value_default_comp_count', '12'],
+    ['email_global_note', ''],
+    ['email_signature', ''],
+    ['email_footer', ''],
   ];
   for (const [key, value] of defaultSettings) {
     await pgPool.query(
@@ -1016,6 +1065,7 @@ async function notifyBookingV2(session) {
   const guestEmail = session.customer_details?.email || session.customer_email || email || '';
   const amount = money(session.amount_total ?? 0, session.currency || 'usd');
   const link = manageUrl(origin, session.id);
+  const cancelLink = cancelReservationUrl(origin, session.id);
 
   await sendResendEmail({
     to: contactTo,
@@ -1060,6 +1110,7 @@ async function notifyBookingV2(session) {
       `Amount paid: ${amount}\n\n` +
       `A Stripe receipt should arrive separately by email.\n` +
       `Manage your booking here: ${link}\n\n` +
+      `Cancel reservation request: ${cancelLink}\n\n` +
       `Date changes and cancellation requests are reviewed manually and are not confirmed automatically.\n\n` +
       `- Iris & J Holdings`,
     html:
@@ -1069,7 +1120,8 @@ async function notifyBookingV2(session) {
       `<strong>Dates:</strong> ${escapeHtml(checkIn)} to ${escapeHtml(checkOut)}<br>` +
       `<strong>Amount paid:</strong> ${escapeHtml(amount)}</p>` +
       `<p>A Stripe receipt should arrive separately by email.</p>` +
-      `<p><a href="${escapeHtml(link)}">Request a cancellation or date change</a></p>` +
+      `<p><a href="${escapeHtml(cancelLink)}">Cancel reservation</a></p>` +
+      `<p><a href="${escapeHtml(link)}">Request a date change</a></p>` +
       `<p>Date changes and cancellation requests are reviewed manually and are not confirmed automatically.</p>` +
       `<p>- Iris &amp; J Holdings</p>`,
   });
@@ -1262,6 +1314,8 @@ async function sendPaidInvoiceConfirmation(invoice, session) {
   const checkOut = invoice.check_out || session.metadata?.checkOut || '';
   const guestCount = invoice.guest_count || session.metadata?.guestCount || 1;
   const isVacation = invoice.service_type === 'vacation';
+  const origin = session.metadata?.origin || `https://${canonicalHost}`;
+  const cancelLink = isVacation ? cancelReservationUrl(origin, session.id) : '';
   const subject = isVacation
     ? `Your ${rentalTitle} booking is confirmed`
     : 'Your invoice payment was received';
@@ -1277,6 +1331,7 @@ async function sendPaidInvoiceConfirmation(invoice, session) {
         ? `Rental: ${rentalTitle}\nDates: ${formatDisplayDate(checkIn)} to ${formatDisplayDate(checkOut)}\nGuests: ${guestCount}\n`
         : `Service: ${invoice.service_type || 'Invoice'}\n`) +
       `Amount paid: ${amount}\n\n` +
+      (isVacation ? `Cancel reservation request: ${cancelLink}\n\n` : '') +
       `A Stripe receipt should arrive separately by email. Daiana will follow up with any remaining details.\n\n` +
       `- Iris & J Holdings`,
     html:
@@ -1288,6 +1343,7 @@ async function sendPaidInvoiceConfirmation(invoice, session) {
           `<strong>Guests:</strong> ${escapeHtml(String(guestCount))}</p>`
         : `<p><strong>Service:</strong> ${escapeHtml(invoice.service_type || 'Invoice')}</p>`) +
       `<p><strong>Amount paid:</strong> ${escapeHtml(amount)}</p>` +
+      (isVacation ? `<p><a href="${escapeHtml(cancelLink)}">Cancel reservation</a></p>` : '') +
       `<p>A Stripe receipt should arrive separately by email. Daiana will follow up with any remaining details.</p>` +
       `<p>- Iris &amp; J Holdings</p>`,
   });
@@ -3158,6 +3214,38 @@ app.post('/api/admin/settings', async (req, res) => {
   }
 });
 
+app.get('/api/admin/email-settings', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const settings = await readAppSettings();
+    return res.json({
+      settings: {
+        emailGlobalNote: settings.email_global_note || '',
+        emailSignature: settings.email_signature || '',
+        emailFooter: settings.email_footer || '',
+      },
+    });
+  } catch (error) {
+    console.error('Admin email settings load failed:', error);
+    return res.status(500).json({ message: 'Could not load email settings.' });
+  }
+});
+
+app.post('/api/admin/email-settings', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    await upsertAppSetting('email_global_note', clean(req.body?.emailGlobalNote));
+    await upsertAppSetting('email_signature', clean(req.body?.emailSignature));
+    await upsertAppSetting('email_footer', clean(req.body?.emailFooter));
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin email settings save failed:', error);
+    return res.status(500).json({ message: 'Could not save email settings.' });
+  }
+});
+
 app.post('/api/home-value-estimate', async (req, res) => {
   try {
     const address = clean(req.body?.address);
@@ -3625,6 +3713,81 @@ app.post('/api/manage-booking-request', async (req, res) => {
   } catch (error) {
     console.error('Manage booking request failed:', error);
     return res.status(500).json({ message: 'Could not send the request.' });
+  }
+});
+
+app.post('/api/cancel-reservation-request', async (req, res) => {
+  try {
+    const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+    if (isRateLimited(`cancel:${ip}`)) {
+      return res.status(429).json({ message: 'Too many requests. Please try again in a little while.' });
+    }
+
+    const sessionId = clean(req.body?.sessionId);
+    const fullName = clean(req.body?.fullName);
+    const email = normalizeEmail(req.body?.email);
+    const phone = clean(req.body?.phone);
+    const reason = clean(req.body?.reason);
+
+    if (!fullName || !email || !isValidEmail(email) || !phone || !reason) {
+      return res.status(400).json({ message: 'Name, phone, valid email, and cancellation reason are required.' });
+    }
+
+    let session = null;
+    if (sessionId && stripe) {
+      try {
+        session = await stripe.checkout.sessions.retrieve(sessionId);
+      } catch (lookupError) {
+        console.error('Cancel reservation session lookup failed:', lookupError);
+      }
+    }
+
+    const metadata = session?.metadata || {};
+    const bookingType = metadata.type === 'invoice' ? metadata.serviceType || 'invoice' : metadata.type || 'vacation';
+    const rentalTitle = metadata.rentalTitle || 'Vacation rental';
+    const currentBooking = metadata.checkIn || metadata.checkOut
+      ? `${metadata.checkIn || 'unknown'} to ${metadata.checkOut || 'unknown'}`
+      : 'Dates not available';
+    const amount = session ? money(session.amount_total ?? 0, session.currency || 'usd') : 'Not available';
+    const customerEmail = session?.customer_details?.email || session?.customer_email || metadata.email || metadata.recipientEmail || '';
+    const customerName = metadata.primaryName || metadata.recipientName || metadata.name || '';
+
+    await sendResendEmail({
+      to: contactTo,
+      replyTo: email,
+      subject: `Cancellation request - ${rentalTitle}`,
+      text:
+        `A reservation cancellation request was submitted.\n\n` +
+        `Submitted by: ${fullName}\n` +
+        `Phone: ${phone}\n` +
+        `Email: ${email}\n` +
+        `Reason: ${reason}\n\n` +
+        `Rental: ${rentalTitle}\n` +
+        `Dates: ${currentBooking}\n` +
+        `Booking type: ${bookingType}\n` +
+        `Amount paid: ${amount}\n` +
+        `Stripe customer name: ${customerName || 'Not available'}\n` +
+        `Stripe customer email: ${customerEmail || 'Not available'}\n` +
+        `Stripe session: ${sessionId || 'Not provided'}`,
+      html:
+        `<h2>Reservation cancellation request</h2>` +
+        `<p><strong>Submitted by:</strong> ${escapeHtml(fullName)}<br>` +
+        `<strong>Phone:</strong> ${escapeHtml(phone)}<br>` +
+        `<strong>Email:</strong> ${escapeHtml(email)}<br>` +
+        `<strong>Reason:</strong> ${textToHtmlLines(reason)}</p>` +
+        `<p><strong>Rental:</strong> ${escapeHtml(rentalTitle)}<br>` +
+        `<strong>Dates:</strong> ${escapeHtml(currentBooking)}<br>` +
+        `<strong>Booking type:</strong> ${escapeHtml(bookingType)}<br>` +
+        `<strong>Amount paid:</strong> ${escapeHtml(amount)}<br>` +
+        `<strong>Stripe customer name:</strong> ${escapeHtml(customerName || 'Not available')}<br>` +
+        `<strong>Stripe customer email:</strong> ${escapeHtml(customerEmail || 'Not available')}<br>` +
+        `<strong>Stripe session:</strong> ${escapeHtml(sessionId || 'Not provided')}</p>`,
+    });
+
+    return res.status(200).json({ message: 'Cancellation request sent.' });
+  } catch (error) {
+    console.error('Cancel reservation request failed:', error);
+    return res.status(500).json({ message: 'Could not send the cancellation request.' });
   }
 });
 
