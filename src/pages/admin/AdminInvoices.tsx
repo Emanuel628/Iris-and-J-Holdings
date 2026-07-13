@@ -78,6 +78,46 @@ function parseCurrencyInput(value: string) {
   return value.replace(/[^0-9.]/g, '');
 }
 
+function dateInputValue(value: string | null) {
+  return value ? value.slice(0, 10) : '';
+}
+
+function formatDisplayDate(value: string | null) {
+  if (!value) return '';
+  const date = new Date(`${value.slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date);
+}
+
+function invoicePrimaryLine(invoice: AdminInvoiceRecord) {
+  if (invoice.service_type === 'vacation') {
+    const rental = invoice.rental_title || 'Vacation rental';
+    const dates = invoice.check_in && invoice.check_out
+      ? `${formatDisplayDate(invoice.check_in)} to ${formatDisplayDate(invoice.check_out)}`
+      : 'Dates not entered';
+    return `${rental} | ${dates}`;
+  }
+  const appointment = invoice.appointment_date
+    ? `${formatDisplayDate(invoice.appointment_date)}${invoice.appointment_time ? ` at ${invoice.appointment_time}` : ''}`
+    : 'Appointment date not entered';
+  return `Notary appointment | ${appointment}`;
+}
+
+function invoiceDetailsLine(invoice: AdminInvoiceRecord) {
+  const contact = [
+    invoice.recipient_email,
+    invoice.recipient_phone || 'No phone',
+  ].filter(Boolean).join(' | ');
+  const guestDetails = invoice.service_type === 'vacation'
+    ? ` | ${invoice.guest_count || 1} guest${Number(invoice.guest_count || 1) === 1 ? '' : 's'}`
+    : '';
+  return `${contact}${guestDetails}`;
+}
+
 function toInvoiceForm(invoice: AdminInvoiceRecord): InvoiceForm {
   return {
     id: invoice.id,
@@ -89,11 +129,11 @@ function toInvoiceForm(invoice: AdminInvoiceRecord): InvoiceForm {
     description: invoice.description,
     notes: invoice.notes,
     rentalId: invoice.rental_id ? String(invoice.rental_id) : '',
-    checkIn: invoice.check_in || '',
-    checkOut: invoice.check_out || '',
+    checkIn: dateInputValue(invoice.check_in),
+    checkOut: dateInputValue(invoice.check_out),
     guestCount: String(invoice.guest_count || 1),
     guestListText: invoice.guest_list_text || '',
-    appointmentDate: invoice.appointment_date || '',
+    appointmentDate: dateInputValue(invoice.appointment_date),
     appointmentTime: invoice.appointment_time || '',
     city: invoice.city || '',
     documentType: invoice.document_type || '',
@@ -254,27 +294,28 @@ function AdminInvoices() {
     }
   }
 
-  async function deleteInvoice(id: number) {
-    const confirmation = window.prompt('Type DELETE to permanently remove this invoice.');
+  async function refundInvoice(id: number) {
+    const confirmation = window.prompt('Type REFUND to refund this invoice payment in Stripe.');
     if (confirmation === null) return;
+    if (confirmation !== 'REFUND') {
+      setErrorMessage('Refund cancelled. Type REFUND to confirm.');
+      return;
+    }
     setBusy(true);
     setStatusMessage('');
     setErrorMessage('');
     try {
-      const res = await fetch('/api/admin/invoices/delete', {
+      const res = await fetch('/api/admin/invoices/refund', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ id, confirmation }),
+        body: JSON.stringify({ id }),
       });
       const payload = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(payload.message || 'Could not delete invoice.');
+      if (!res.ok) throw new Error(payload.message || 'Could not refund invoice.');
       await loadData();
-      if (invoiceForm.id === id) {
-        setInvoiceForm(emptyInvoiceForm());
-      }
-      setStatusMessage('Invoice deleted.');
+      setStatusMessage(payload.alreadyRefunded ? 'Invoice was already refunded.' : 'Invoice refunded in Stripe.');
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Could not delete invoice.');
+      setErrorMessage(error instanceof Error ? error.message : 'Could not refund invoice.');
     } finally {
       setBusy(false);
     }
@@ -392,18 +433,18 @@ function AdminInvoices() {
               <article className="admin-list-row admin-record admin-record-stack" key={invoice.id}>
                 <div className="admin-record-copy">
                   <strong>{invoice.recipient_name}</strong>
-                  <p>{invoice.service_type === 'vacation' ? `${invoice.check_in || ''} to ${invoice.check_out || ''}` : `${invoice.appointment_date || ''} at ${invoice.appointment_time || ''}`}</p>
-                  <p><a href={`mailto:${invoice.recipient_email}`}>{invoice.recipient_email}</a> | {invoice.recipient_phone || 'No phone'} | {invoice.service_type}</p>
+                  <p>{invoicePrimaryLine(invoice)}</p>
+                  <p><a href={`mailto:${invoice.recipient_email}`}>{invoiceDetailsLine(invoice)}</a></p>
                   <p>Status: {invoice.status} | Total: {formatCurrency(invoice.amount_total_cents, invoice.currency)}</p>
-                  <p>{invoice.description || 'No description entered.'}</p>
+                  {invoice.description ? <p>{invoice.description}</p> : null}
+                  {invoice.notes ? <p>Notes: {invoice.notes}</p> : null}
                 </div>
                 <div className="admin-inline-actions">
                   <button className="button-secondary" type="button" onClick={() => setInvoiceForm(toInvoiceForm(invoice))} disabled={busy}>Edit</button>
                   <button className="button-secondary" type="button" onClick={() => sendInvoice(invoice.id)} disabled={busy}>Send</button>
                   {invoice.stripe_checkout_url ? <a className="button-secondary" href={invoice.stripe_checkout_url} target="_blank" rel="noreferrer">Payment link</a> : null}
                   <button className="button-secondary" type="button" onClick={() => updateInvoiceStatus(invoice.id, 'approved')} disabled={busy}>Approve</button>
-                  <button className="button-secondary" type="button" onClick={() => updateInvoiceStatus(invoice.id, 'cancelled')} disabled={busy}>Cancel</button>
-                  <button className="button-secondary" type="button" onClick={() => deleteInvoice(invoice.id)} disabled={busy}>Delete</button>
+                  <button className="button-secondary" type="button" onClick={() => refundInvoice(invoice.id)} disabled={busy || invoice.status === 'refunded'}>Refund</button>
                 </div>
               </article>
             ))}

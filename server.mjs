@@ -125,7 +125,7 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
         await persistNotaryRequest(session);
         await notifyNotaryBookingV2(session);
       } else if (session.metadata?.type === 'invoice') {
-        await markInvoicePaidFromSession(session);
+        await handleInvoicePaidFromSession(session);
       } else {
         bookedCache = { at: 0, ranges: [] }; // vacation booking - refresh website/Airbnb availability merge
         await persistVacationBooking(session);
@@ -824,7 +824,7 @@ async function getWebsiteBookedRanges() {
     const result = await pgPool.query(
       `SELECT check_in::text AS start, check_out::text AS end
        FROM vacation_bookings
-       WHERE deleted_at IS NULL AND status <> 'cancelled'
+       WHERE deleted_at IS NULL AND status NOT IN ('cancelled', 'refunded')
        ORDER BY check_in ASC`,
     );
     return result.rows;
@@ -877,7 +877,7 @@ async function getRentalBlockedRanges(rentalId) {
     pgPool.query(
       `SELECT check_in::text AS start, check_out::text AS end
        FROM vacation_bookings
-       WHERE rental_id = $1 AND deleted_at IS NULL AND status <> 'cancelled'
+       WHERE rental_id = $1 AND deleted_at IS NULL AND status NOT IN ('cancelled', 'refunded')
        ORDER BY check_in ASC`,
       [rentalId],
     ),
@@ -1008,6 +1008,7 @@ async function notifyBookingV2(session) {
     primaryPhone = '',
     guestCount = '',
     guestList = '',
+    rentalTitle = 'Vacation rental',
     origin = `https://${canonicalHost}`,
   } = session.metadata || {};
   const guestEmail = session.customer_details?.email || session.customer_email || email || '';
@@ -1019,6 +1020,7 @@ async function notifyBookingV2(session) {
     subject: `New vacation rental booking - ${checkIn} to ${checkOut}`,
     text:
       `A vacation rental booking was paid through Stripe.\n\n` +
+      `Rental: ${rentalTitle || 'Vacation rental'}\n` +
       `Dates: ${checkIn} to ${checkOut}\n` +
       `Primary guest: ${primaryName || 'unknown'}\n` +
       `Email: ${guestEmail || 'unknown'}\n` +
@@ -1030,7 +1032,8 @@ async function notifyBookingV2(session) {
       `Stripe session: ${session.id}`,
     html:
       `<h2>New vacation rental booking</h2>` +
-      `<p><strong>Dates:</strong> ${escapeHtml(checkIn)} to ${escapeHtml(checkOut)}<br>` +
+      `<p><strong>Rental:</strong> ${escapeHtml(rentalTitle || 'Vacation rental')}<br>` +
+      `<strong>Dates:</strong> ${escapeHtml(checkIn)} to ${escapeHtml(checkOut)}<br>` +
       `<strong>Primary guest:</strong> ${escapeHtml(primaryName || 'unknown')}<br>` +
       `<strong>Email:</strong> ${escapeHtml(guestEmail || 'unknown')}<br>` +
       `<strong>Phone:</strong> ${escapeHtml(primaryPhone || 'Not provided')}<br>` +
@@ -1050,6 +1053,7 @@ async function notifyBookingV2(session) {
     text:
       `Hi ${primaryName || 'there'},\n\n` +
       `Your Orlando vacation rental booking has been paid and received.\n\n` +
+      `Rental: ${rentalTitle || 'Vacation rental'}\n` +
       `Dates: ${checkIn} to ${checkOut}\n` +
       `Amount paid: ${amount}\n\n` +
       `A Stripe receipt should arrive separately by email.\n` +
@@ -1059,7 +1063,8 @@ async function notifyBookingV2(session) {
     html:
       `<p>Hi ${escapeHtml(primaryName || 'there')},</p>` +
       `<p>Your Orlando vacation rental booking has been paid and received.</p>` +
-      `<p><strong>Dates:</strong> ${escapeHtml(checkIn)} to ${escapeHtml(checkOut)}<br>` +
+      `<p><strong>Rental:</strong> ${escapeHtml(rentalTitle || 'Vacation rental')}<br>` +
+      `<strong>Dates:</strong> ${escapeHtml(checkIn)} to ${escapeHtml(checkOut)}<br>` +
       `<strong>Amount paid:</strong> ${escapeHtml(amount)}</p>` +
       `<p>A Stripe receipt should arrive separately by email.</p>` +
       `<p><a href="${escapeHtml(link)}">Request a cancellation or date change</a></p>` +
@@ -1231,6 +1236,127 @@ async function markInvoicePaidFromSession(session) {
      WHERE id = $1`,
     [invoiceId, session.id],
   );
+}
+
+function formatDisplayDate(value) {
+  const cleaned = clean(value);
+  if (!cleaned) return '';
+  const date = new Date(`${cleaned.slice(0, 10)}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return cleaned;
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date);
+}
+
+async function sendPaidInvoiceConfirmation(invoice, session) {
+  const recipientEmail = invoice.recipient_email || session.customer_details?.email || session.customer_email;
+  if (!recipientEmail) return;
+
+  const amount = money(session.amount_total ?? invoice.amount_total_cents ?? 0, session.currency || invoice.currency || 'usd');
+  const rentalTitle = invoice.rental_title || session.metadata?.rentalTitle || 'Vacation rental';
+  const checkIn = invoice.check_in || session.metadata?.checkIn || '';
+  const checkOut = invoice.check_out || session.metadata?.checkOut || '';
+  const guestCount = invoice.guest_count || session.metadata?.guestCount || 1;
+  const isVacation = invoice.service_type === 'vacation';
+  const subject = isVacation
+    ? `Your ${rentalTitle} booking is confirmed`
+    : 'Your invoice payment was received';
+
+  await sendResendEmail({
+    to: recipientEmail,
+    replyTo: contactTo,
+    subject,
+    text:
+      `Hi ${invoice.recipient_name || session.metadata?.recipientName || 'there'},\n\n` +
+      `Thank you. Your payment has been received and your ${isVacation ? 'vacation rental booking' : 'invoice'} is confirmed.\n\n` +
+      (isVacation
+        ? `Rental: ${rentalTitle}\nDates: ${formatDisplayDate(checkIn)} to ${formatDisplayDate(checkOut)}\nGuests: ${guestCount}\n`
+        : `Service: ${invoice.service_type || 'Invoice'}\n`) +
+      `Amount paid: ${amount}\n\n` +
+      `A Stripe receipt should arrive separately by email. Daiana will follow up with any remaining details.\n\n` +
+      `- Iris & J Holdings`,
+    html:
+      `<p>Hi ${escapeHtml(invoice.recipient_name || session.metadata?.recipientName || 'there')},</p>` +
+      `<p>Thank you. Your payment has been received and your ${isVacation ? 'vacation rental booking' : 'invoice'} is confirmed.</p>` +
+      (isVacation
+        ? `<p><strong>Rental:</strong> ${escapeHtml(rentalTitle)}<br>` +
+          `<strong>Dates:</strong> ${escapeHtml(formatDisplayDate(checkIn))} to ${escapeHtml(formatDisplayDate(checkOut))}<br>` +
+          `<strong>Guests:</strong> ${escapeHtml(String(guestCount))}</p>`
+        : `<p><strong>Service:</strong> ${escapeHtml(invoice.service_type || 'Invoice')}</p>`) +
+      `<p><strong>Amount paid:</strong> ${escapeHtml(amount)}</p>` +
+      `<p>A Stripe receipt should arrive separately by email. Daiana will follow up with any remaining details.</p>` +
+      `<p>- Iris &amp; J Holdings</p>`,
+  });
+}
+
+async function handleInvoicePaidFromSession(session) {
+  if (!pgPool) return;
+  const invoiceId = Number(session.metadata?.invoiceId || 0);
+  if (!invoiceId) return;
+
+  const result = await pgPool.query(
+    `SELECT i.*, r.title AS rental_title
+     FROM admin_invoices i
+     LEFT JOIN rentals r ON r.id = i.rental_id
+     WHERE i.id = $1
+     LIMIT 1`,
+    [invoiceId],
+  );
+  const invoice = result.rows[0];
+  if (!invoice) return;
+  const alreadyConfirmed = ['paid', 'approved', 'refunded'].includes(invoice.status);
+
+  await markInvoicePaidFromSession(session);
+
+  if (invoice.service_type === 'vacation' && invoice.check_in && invoice.check_out) {
+    const upsert = await pgPool.query(
+      `INSERT INTO vacation_bookings (
+        stripe_session_id, rental_id, guest_name, guest_email, guest_phone, guest_count,
+        guest_list_text, check_in, check_out, amount_total_cents, currency, status
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8::date, $9::date, $10, $11, 'paid')
+      ON CONFLICT (stripe_session_id) DO UPDATE SET
+        rental_id = EXCLUDED.rental_id,
+        guest_name = EXCLUDED.guest_name,
+        guest_email = EXCLUDED.guest_email,
+        guest_phone = EXCLUDED.guest_phone,
+        guest_count = EXCLUDED.guest_count,
+        guest_list_text = EXCLUDED.guest_list_text,
+        check_in = EXCLUDED.check_in,
+        check_out = EXCLUDED.check_out,
+        amount_total_cents = EXCLUDED.amount_total_cents,
+        currency = EXCLUDED.currency,
+        status = 'paid'
+      RETURNING id`,
+      [
+        session.id,
+        invoice.rental_id || null,
+        invoice.recipient_name,
+        invoice.recipient_email,
+        invoice.recipient_phone || '',
+        Number(invoice.guest_count || 1),
+        invoice.guest_list_text || '',
+        invoice.check_in,
+        invoice.check_out,
+        Number(session.amount_total ?? invoice.amount_total_cents ?? 0),
+        session.currency || invoice.currency || 'usd',
+      ],
+    );
+    await pgPool.query(
+      `UPDATE admin_invoices
+       SET vacation_booking_id = $2,
+           updated_at = NOW()
+       WHERE id = $1`,
+      [invoice.id, upsert.rows[0].id],
+    );
+    bookedCache = { at: 0, ranges: [] };
+  }
+
+  if (!alreadyConfirmed) {
+    await sendPaidInvoiceConfirmation(invoice, session);
+  }
 }
 
 async function createInvoiceStripeSession(req, invoiceRecord) {
@@ -1419,7 +1545,7 @@ async function syncRecentPaidCheckoutSessions(force = false) {
     if (session.metadata?.type === 'notary') {
       await persistNotaryRequest(session);
     } else if (session.metadata?.type === 'invoice') {
-      await markInvoicePaidFromSession(session);
+      await handleInvoicePaidFromSession(session);
     } else if (session.metadata?.type === 'vacation') {
       await persistVacationBooking(session);
     }
@@ -2721,6 +2847,63 @@ app.post('/api/admin/invoices/status', async (req, res) => {
   } catch (error) {
     console.error('Admin invoice status update failed:', error);
     return res.status(500).json({ message: error instanceof Error ? error.message : 'Could not update invoice status.' });
+  }
+});
+
+app.post('/api/admin/invoices/refund', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    if (!stripe) return res.status(503).json({ message: 'Stripe is not configured.' });
+    const id = Number(req.body?.id || 0);
+    if (!id) return res.status(400).json({ message: 'Invoice id is required.' });
+
+    const result = await pgPool.query(
+      `SELECT id, stripe_session_id, vacation_booking_id, notary_request_id, status
+       FROM admin_invoices
+       WHERE id = $1
+       LIMIT 1`,
+      [id],
+    );
+    const invoice = result.rows[0];
+    if (!invoice) return res.status(404).json({ message: 'Invoice not found.' });
+    if (invoice.status === 'refunded') return res.json({ ok: true, alreadyRefunded: true });
+    if (!invoice.stripe_session_id) {
+      return res.status(400).json({ message: 'This invoice does not have a Stripe checkout session to refund.' });
+    }
+
+    const session = await stripe.checkout.sessions.retrieve(invoice.stripe_session_id);
+    if (session.payment_status !== 'paid' || !session.payment_intent) {
+      return res.status(400).json({ message: 'This invoice has not been paid in Stripe yet.' });
+    }
+
+    const refund = await stripe.refunds.create({
+      payment_intent: typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent.id,
+      metadata: {
+        type: 'invoice_refund',
+        invoiceId: String(id),
+        refundedBy: metadataValue(admin.email || ''),
+      },
+    });
+
+    await pgPool.query(
+      `UPDATE admin_invoices
+       SET status = 'refunded',
+           updated_at = NOW()
+       WHERE id = $1`,
+      [id],
+    );
+    if (invoice.vacation_booking_id) {
+      await pgPool.query('UPDATE vacation_bookings SET status = $2 WHERE id = $1', [invoice.vacation_booking_id, 'refunded']);
+    }
+    if (invoice.notary_request_id) {
+      await pgPool.query('UPDATE notary_requests SET status = $2 WHERE id = $1', [invoice.notary_request_id, 'refunded']);
+    }
+    bookedCache = { at: 0, ranges: [] };
+    return res.json({ ok: true, refundId: refund.id });
+  } catch (error) {
+    console.error('Admin invoice refund failed:', error);
+    return res.status(500).json({ message: error instanceof Error ? error.message : 'Could not refund invoice.' });
   }
 });
 
