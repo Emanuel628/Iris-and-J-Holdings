@@ -182,16 +182,16 @@ app.post('/api/admin/upload-image', (req, res, next) => {
 
 app.use(express.json({ limit: '25mb' }));
 
-app.get('/api/vacation-calendar.ics', async (req, res) => {
+async function sendVacationCalendar(req, res, suppliedKey) {
   try {
-    const suppliedKey = clean(req.query.key);
+    const cleanSuppliedKey = clean(suppliedKey);
 
-    if (!vacationCalendarExportKey || !suppliedKey) {
+    if (!vacationCalendarExportKey || !cleanSuppliedKey) {
       return res.status(404).send('Calendar not found.');
     }
 
     const expectedKeyBuffer = Buffer.from(vacationCalendarExportKey);
-    const suppliedKeyBuffer = Buffer.from(suppliedKey);
+    const suppliedKeyBuffer = Buffer.from(cleanSuppliedKey);
 
     if (
       expectedKeyBuffer.length !== suppliedKeyBuffer.length ||
@@ -237,6 +237,7 @@ app.get('/api/vacation-calendar.ics', async (req, res) => {
       uid: `vacation-booking-${row.id}@irisjholdings.com`,
       start: row.start,
       end: row.end,
+      stamp: row.created_at,
       summary: 'Reserved',
       description: 'Reserved through Iris & J Holdings',
     }));
@@ -245,6 +246,7 @@ app.get('/api/vacation-calendar.ics', async (req, res) => {
       uid: `owner-block-${row.id}@irisjholdings.com`,
       start: row.start,
       end: row.end,
+      stamp: row.created_at,
       summary: 'Owner Block',
       description: row.reason || 'Unavailable',
     }));
@@ -268,6 +270,14 @@ app.get('/api/vacation-calendar.ics', async (req, res) => {
     console.error('Vacation calendar export failed:', error);
     return res.status(500).send('Calendar is temporarily unavailable.');
   }
+}
+
+app.get('/api/vacation-calendar/:key.ics', (req, res) => {
+  return sendVacationCalendar(req, res, req.params.key);
+});
+
+app.get('/api/vacation-calendar.ics', (req, res) => {
+  return sendVacationCalendar(req, res, req.query.key);
 });
 
 // Simple in-memory rate limit for the public contact endpoint.
@@ -423,7 +433,9 @@ function icalDate(value) {
 }
 
 function icalTimestamp(value = new Date()) {
-  return value.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+  const date = value instanceof Date ? value : new Date(value);
+  const validDate = Number.isFinite(date.getTime()) ? date : new Date();
+  return validDate.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
 }
 
 function escapeIcalText(value) {
@@ -434,19 +446,46 @@ function escapeIcalText(value) {
     .replace(/;/g, '\\;');
 }
 
+function foldIcalLine(line) {
+  const text = String(line || '');
+  const chunks = [];
+  let chunk = '';
+  let chunkBytes = 0;
+  let limit = 75;
+
+  for (const character of text) {
+    const characterBytes = Buffer.byteLength(character);
+    if (chunk && chunkBytes + characterBytes > limit) {
+      chunks.push(chunk);
+      chunk = '';
+      chunkBytes = 0;
+      limit = 74;
+    }
+    chunk += character;
+    chunkBytes += characterBytes;
+  }
+
+  chunks.push(chunk);
+  return chunks.map((part, index) => (index === 0 ? part : ` ${part}`)).join('\r\n');
+}
+
 function buildIcalEvent({
   uid,
   start,
   end,
+  stamp = new Date(),
   summary,
   description = '',
   status = 'CONFIRMED',
   transparency = 'OPAQUE',
 }) {
+  const timestamp = icalTimestamp(stamp);
   return [
     'BEGIN:VEVENT',
     `UID:${escapeIcalText(uid)}`,
-    `DTSTAMP:${icalTimestamp()}`,
+    `DTSTAMP:${timestamp}`,
+    `CREATED:${timestamp}`,
+    `LAST-MODIFIED:${timestamp}`,
     `DTSTART;VALUE=DATE:${icalDate(start)}`,
     `DTEND;VALUE=DATE:${icalDate(end)}`,
     `SUMMARY:${escapeIcalText(summary)}`,
@@ -455,6 +494,7 @@ function buildIcalEvent({
       : []),
     `STATUS:${status}`,
     `TRANSP:${transparency}`,
+    'SEQUENCE:0',
     'END:VEVENT',
   ];
 }
@@ -471,10 +511,9 @@ function buildVacationCalendar(events) {
   ];
 
   // Some OTA importers leave a syntactically valid but empty VCALENDAR in a
-  // pending/activating state. This stable event is deliberately transparent
-  // and far in the past, so it gives them a VEVENT to validate without ever
-  // blocking a bookable date. It is only emitted until the feed has real
-  // direct bookings or owner blocks.
+  // pending/activating state. This stable event is far in the past, so it gives
+  // them a real busy VEVENT to validate without blocking a bookable date. It is
+  // only emitted until the feed has real direct bookings or owner blocks.
   const exportEvents = events.length
     ? events
     : [
@@ -482,9 +521,9 @@ function buildVacationCalendar(events) {
           uid: 'calendar-feed-ready@irisjholdings.com',
           start: '2000-01-01',
           end: '2000-01-02',
+          stamp: '2000-01-01T00:00:00Z',
           summary: 'Calendar synchronization',
           description: 'Iris & J Holdings calendar feed',
-          transparency: 'TRANSPARENT',
         },
       ];
 
@@ -494,7 +533,7 @@ function buildVacationCalendar(events) {
 
   lines.push('END:VCALENDAR');
 
-  return `${lines.join('\r\n')}\r\n`;
+  return `${lines.map(foldIcalLine).join('\r\n')}\r\n`;
 }
 
 async function ensureAdminTables() {
