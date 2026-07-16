@@ -39,6 +39,7 @@ const canonicalHost = 'www.irisjholdings.com';
 const apexHost = 'irisjholdings.com';
 const sessionCookieName = 'ijh_admin_session';
 const databaseUrl = process.env.DATABASE_URL || '';
+const vacationCalendarExportKey = process.env.VACATION_CALENDAR_EXPORT_KEY || '';
 const adminSessionDays = Number(process.env.ADMIN_SESSION_DAYS || 14);
 const secureCookies = process.env.NODE_ENV === 'production';
 const rentcastApiKey = process.env.RENTCAST_API_KEY || '';
@@ -180,6 +181,110 @@ app.post('/api/admin/upload-image', (req, res, next) => {
 });
 
 app.use(express.json({ limit: '25mb' }));
+
+app.get('/api/vacation-calendar.ics', async (req, res) => {
+  try {
+    const suppliedKey = clean(req.query.key);
+
+    if (!vacationCalendarExportKey || !suppliedKey) {
+      return res.status(404).send('Calendar not found.');
+    }
+
+    const expectedKeyBuffer = Buffer.from(vacationCalendarExportKey);
+    const suppliedKeyBuffer = Buffer.from(suppliedKey);
+
+    if (
+      expectedKeyBuffer.length !== suppliedKeyBuffer.length ||
+      !timingSafeEqual(expectedKeyBuffer, suppliedKeyBuffer)
+    ) {
+      return res.status(404).send('Calendar not found.');
+    }
+
+    if (!pgPool) {
+      return res.status(503).send('Calendar is temporarily unavailable.');
+    }
+
+    await ensureAdminTables();
+
+    const [bookingsResult, blockedDatesResult] = await Promise.all([
+      pgPool.query(
+        `SELECT
+           id,
+           rental_id,
+           check_in::text AS start,
+           check_out::text AS end,
+           updated_at,
+           created_at
+         FROM vacation_bookings
+         WHERE deleted_at IS NULL
+           AND status NOT IN ('cancelled', 'refunded')
+         ORDER BY check_in ASC`,
+      ).catch(async (error) => {
+        if (error?.code !== '42703') throw error;
+
+        return pgPool.query(
+          `SELECT
+             id,
+             rental_id,
+             check_in::text AS start,
+             check_out::text AS end,
+             created_at
+           FROM vacation_bookings
+           WHERE deleted_at IS NULL
+             AND status NOT IN ('cancelled', 'refunded')
+           ORDER BY check_in ASC`,
+        );
+      }),
+
+      pgPool.query(
+        `SELECT
+           id,
+           rental_id,
+           start_date::text AS start,
+           end_date::text AS end,
+           reason,
+           created_at
+         FROM blocked_dates
+         ORDER BY start_date ASC`,
+      ),
+    ]);
+
+    const bookingEvents = bookingsResult.rows.map((row) => ({
+      uid: `vacation-booking-${row.id}@irisjholdings.com`,
+      start: row.start,
+      end: row.end,
+      summary: 'Reserved',
+      description: 'Reserved through Iris & J Holdings',
+    }));
+
+    const blockedEvents = blockedDatesResult.rows.map((row) => ({
+      uid: `owner-block-${row.id}@irisjholdings.com`,
+      start: row.start,
+      end: row.end,
+      summary: 'Owner Block',
+      description: row.reason || 'Unavailable',
+    }));
+
+    const calendar = buildVacationCalendar([
+      ...bookingEvents,
+      ...blockedEvents,
+    ]);
+
+    res.set({
+      'Content-Type': 'text/calendar; charset=utf-8',
+      'Content-Disposition':
+        'inline; filename="iris-j-holdings-calendar.ics"',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      Pragma: 'no-cache',
+      Expires: '0',
+    });
+
+    return res.status(200).send(calendar);
+  } catch (error) {
+    console.error('Vacation calendar export failed:', error);
+    return res.status(500).send('Calendar is temporarily unavailable.');
+  }
+});
 
 // Simple in-memory rate limit for the public contact endpoint.
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
@@ -327,6 +432,59 @@ function cancelReservationUrl(origin, sessionId) {
 
 function textToHtmlLines(value) {
   return escapeHtml(value).replace(/\n/g, '<br>');
+}
+
+function icalDate(value) {
+  return String(value || '').replaceAll('-', '').slice(0, 8);
+}
+
+function icalTimestamp(value = new Date()) {
+  return value.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+}
+
+function escapeIcalText(value) {
+  return String(value || '')
+    .replace(/\\/g, '\\\\')
+    .replace(/\r?\n/g, '\\n')
+    .replace(/,/g, '\\,')
+    .replace(/;/g, '\\;');
+}
+
+function buildIcalEvent({ uid, start, end, summary, description = '' }) {
+  return [
+    'BEGIN:VEVENT',
+    `UID:${escapeIcalText(uid)}`,
+    `DTSTAMP:${icalTimestamp()}`,
+    `DTSTART;VALUE=DATE:${icalDate(start)}`,
+    `DTEND;VALUE=DATE:${icalDate(end)}`,
+    `SUMMARY:${escapeIcalText(summary)}`,
+    ...(description
+      ? [`DESCRIPTION:${escapeIcalText(description)}`]
+      : []),
+    'STATUS:CONFIRMED',
+    'TRANSP:OPAQUE',
+    'END:VEVENT',
+  ];
+}
+
+function buildVacationCalendar(events) {
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Iris and J Holdings//Vacation Rental Calendar//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'X-WR-CALNAME:Iris & J Holdings Availability',
+    'X-WR-TIMEZONE:America/New_York',
+  ];
+
+  for (const event of events) {
+    lines.push(...buildIcalEvent(event));
+  }
+
+  lines.push('END:VCALENDAR');
+
+  return `${lines.join('\r\n')}\r\n`;
 }
 
 async function ensureAdminTables() {
