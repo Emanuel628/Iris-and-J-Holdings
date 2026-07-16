@@ -233,19 +233,6 @@ app.get('/api/vacation-calendar.ics', async (req, res) => {
       ),
     ]);
 
-      pgPool.query(
-        `SELECT
-           id,
-           rental_id,
-           start_date::text AS start,
-           end_date::text AS end,
-           reason,
-           created_at
-         FROM blocked_dates
-         ORDER BY start_date ASC`,
-      ),
-    ]);
-
     const bookingEvents = bookingsResult.rows.map((row) => ({
       uid: `vacation-booking-${row.id}@irisjholdings.com`,
       start: row.start,
