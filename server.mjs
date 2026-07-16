@@ -434,7 +434,15 @@ function escapeIcalText(value) {
     .replace(/;/g, '\\;');
 }
 
-function buildIcalEvent({ uid, start, end, summary, description = '' }) {
+function buildIcalEvent({
+  uid,
+  start,
+  end,
+  summary,
+  description = '',
+  status = 'CONFIRMED',
+  transparency = 'OPAQUE',
+}) {
   return [
     'BEGIN:VEVENT',
     `UID:${escapeIcalText(uid)}`,
@@ -445,8 +453,8 @@ function buildIcalEvent({ uid, start, end, summary, description = '' }) {
     ...(description
       ? [`DESCRIPTION:${escapeIcalText(description)}`]
       : []),
-    'STATUS:CONFIRMED',
-    'TRANSP:OPAQUE',
+    `STATUS:${status}`,
+    `TRANSP:${transparency}`,
     'END:VEVENT',
   ];
 }
@@ -462,7 +470,25 @@ function buildVacationCalendar(events) {
     'X-WR-TIMEZONE:America/New_York',
   ];
 
-  for (const event of events) {
+  // Some OTA importers leave a syntactically valid but empty VCALENDAR in a
+  // pending/activating state. This stable event is deliberately transparent
+  // and far in the past, so it gives them a VEVENT to validate without ever
+  // blocking a bookable date. It is only emitted until the feed has real
+  // direct bookings or owner blocks.
+  const exportEvents = events.length
+    ? events
+    : [
+        {
+          uid: 'calendar-feed-ready@irisjholdings.com',
+          start: '2000-01-01',
+          end: '2000-01-02',
+          summary: 'Calendar synchronization',
+          description: 'Iris & J Holdings calendar feed',
+          transparency: 'TRANSPARENT',
+        },
+      ];
+
+  for (const event of exportEvents) {
     lines.push(...buildIcalEvent(event));
   }
 
