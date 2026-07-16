@@ -209,32 +209,29 @@ app.get('/api/vacation-calendar.ics', async (req, res) => {
     const [bookingsResult, blockedDatesResult] = await Promise.all([
       pgPool.query(
         `SELECT
-           id,
-           rental_id,
-           check_in::text AS start,
-           check_out::text AS end,
-           updated_at,
-           created_at
-         FROM vacation_bookings
-         WHERE deleted_at IS NULL
-           AND status NOT IN ('cancelled', 'refunded')
-         ORDER BY check_in ASC`,
-      ).catch(async (error) => {
-        if (error?.code !== '42703') throw error;
-
-        return pgPool.query(
-          `SELECT
-             id,
-             rental_id,
-             check_in::text AS start,
-             check_out::text AS end,
-             created_at
-           FROM vacation_bookings
-           WHERE deleted_at IS NULL
-             AND status NOT IN ('cancelled', 'refunded')
-           ORDER BY check_in ASC`,
-        );
-      }),
+        id,
+        rental_id,
+        check_in::text AS start,
+        check_out::text AS end,
+        created_at
+      FROM vacation_bookings
+      WHERE deleted_at IS NULL
+      AND status NOT IN ('cancelled', 'refunded')
+      ORDER BY check_in ASC`,
+      ),
+      
+      pgPool.query(
+        `SELECT
+        id,
+        rental_id,
+        start_date::text AS start,
+        end_date::text AS end,
+        reason,
+        created_at
+      FROM blocked_dates
+      ORDER BY start_date ASC`,
+      ),
+    ]);
 
       pgPool.query(
         `SELECT
