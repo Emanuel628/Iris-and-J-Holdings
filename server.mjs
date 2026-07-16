@@ -1019,7 +1019,10 @@ async function getManualBlockedRanges() {
 
 async function getRentalBlockedRanges(rentalId) {
   if (!pgPool || !rentalId) return [];
-  const [manual, bookingsResult] = await Promise.all([
+
+  const [externalCalendars, manual, bookingsResult] = await Promise.all([
+    getBlockedRanges(booking.icalUrls),
+
     pgPool.query(
       `SELECT start_date::text AS start, end_date::text AS end
        FROM blocked_dates
@@ -1027,15 +1030,23 @@ async function getRentalBlockedRanges(rentalId) {
        ORDER BY start_date ASC`,
       [rentalId],
     ),
+
     pgPool.query(
       `SELECT check_in::text AS start, check_out::text AS end
        FROM vacation_bookings
-       WHERE rental_id = $1 AND deleted_at IS NULL AND status NOT IN ('cancelled', 'refunded')
+       WHERE rental_id = $1
+         AND deleted_at IS NULL
+         AND status NOT IN ('cancelled', 'refunded')
        ORDER BY check_in ASC`,
       [rentalId],
     ),
   ]);
-  return [...manual.rows, ...bookingsResult.rows];
+
+  return [
+    ...externalCalendars,
+    ...manual.rows,
+    ...bookingsResult.rows,
+  ];
 }
 
 async function getAllBlockedRanges() {
