@@ -46,7 +46,10 @@ const rentcastApiKey = process.env.RENTCAST_API_KEY || '';
 const RENTCAST_MONTHLY_FREE_LIMIT = 50;
 const RENTCAST_OVERAGE_COST_USD = 0.2;
 const RENTCAST_INITIAL_USED_THIS_MONTH = 3;
-const allowedUploadExtensions = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'avif', 'heic', 'heif']);
+// SVG is deliberately excluded: it's active content (can carry <script>), and a browser
+// that's navigated directly to an uploaded file's URL (rather than rendering it inside
+// an <img> tag) will execute it in our origin - a real risk if an admin ever opens one.
+const allowedUploadExtensions = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif', 'heic', 'heif']);
 const siteUrl = 'https://www.irisjholdings.com';
 const defaultSeoImage = `${siteUrl}/images/site/contact-hero.jpg`;
 
@@ -83,7 +86,7 @@ const uploadImage = multer({
     const hasAllowedExtension = allowedUploadExtensions.has(extension);
     const hasImageLikeMime = !mimeType || mimeType.startsWith('image/') || mimeType === 'application/octet-stream';
     if (!hasAllowedExtension || !hasImageLikeMime) {
-      cb(new Error('Supported image types include PNG, JPG, JPEG, WebP, GIF, SVG, AVIF, HEIC, and HEIF.'));
+      cb(new Error('Supported image types include PNG, JPG, JPEG, WebP, GIF, AVIF, HEIC, and HEIF.'));
       return;
     }
     cb(null, true);
@@ -130,9 +133,14 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
         await persistNotaryRequest(session);
       } else if (session.metadata?.type === 'invoice') {
         await handleInvoicePaidFromSession(session);
-      } else {
+      } else if (session.metadata?.type === 'vacation') {
         bookedCache = { at: 0, ranges: [] }; // vacation booking - refresh website/Airbnb availability merge
         await persistVacationBooking(session);
+      } else {
+        // Anything without one of our known types (a stray/unrelated session on this
+        // Stripe account, an old session predating the metadata field, etc.) is
+        // deliberately ignored rather than defaulted into a vacation booking.
+        console.error('Ignoring checkout.session.completed with unrecognized metadata.type:', session.id, session.metadata?.type);
       }
     } catch (persistError) {
       if (persistError?.code === '23P01') {
@@ -158,7 +166,7 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
       try {
         if (session.metadata?.type === 'notary') {
           await notifyNotaryBookingV2(session);
-        } else if (session.metadata?.type !== 'invoice') {
+        } else if (session.metadata?.type === 'vacation') {
           await notifyBookingV2(session);
         }
       } catch (notifyError) {
@@ -179,7 +187,14 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
   return res.json({ received: true });
 });
 
-app.post('/api/admin/upload-image', (req, res, next) => {
+app.post('/api/admin/upload-image', async (req, res, next) => {
+  // Auth must run before Multer touches the request body - otherwise an unauthenticated
+  // caller can force the server to buffer up to the full upload limit in memory before
+  // ever being rejected, which is a cheap way to exhaust memory.
+  const admin = await requireAdmin(req, res);
+  if (!admin) return;
+  next();
+}, (req, res, next) => {
   uploadImage.single('image')(req, res, (error) => {
     if (error) {
       if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE') {
@@ -193,10 +208,6 @@ app.post('/api/admin/upload-image', (req, res, next) => {
   });
 }, async (req, res) => {
   try {
-    const admin = await requireAdmin(req, res);
-    if (!admin) {
-      return;
-    }
     await ensureAdminTables();
 
     if (!req.file?.buffer?.length) {
@@ -255,7 +266,7 @@ async function sendVacationCalendar(req, res, suppliedKey) {
         created_at
       FROM vacation_bookings
       WHERE deleted_at IS NULL
-      AND status IN ('paid', 'approved', 'reviewed')
+      AND status IN ('paid', 'approved', 'reviewed', 'partially_refunded')
       ORDER BY check_in ASC`,
       ),
 
@@ -787,6 +798,12 @@ async function ensureAdminTables() {
   await pgPool.query(`ALTER TABLE admin_invoices ALTER COLUMN stripe_session_id DROP DEFAULT;`).catch(() => undefined);
   await pgPool.query(`UPDATE admin_invoices SET stripe_session_id = NULL WHERE stripe_session_id = '';`).catch(() => undefined);
   await pgPool.query(`ALTER TABLE admin_invoices ADD COLUMN IF NOT EXISTS confirmation_email_sent_at TIMESTAMPTZ;`);
+  await pgPool.query(`ALTER TABLE admin_invoices ADD COLUMN IF NOT EXISTS refunded_amount_cents INTEGER NOT NULL DEFAULT 0;`);
+  await pgPool.query(`ALTER TABLE admin_invoices ADD COLUMN IF NOT EXISTS pending_refund_key TEXT;`);
+  await pgPool.query(`ALTER TABLE admin_invoices ADD COLUMN IF NOT EXISTS pending_refund_amount_cents INTEGER;`);
+  await pgPool.query(`ALTER TABLE admin_invoices ADD COLUMN IF NOT EXISTS pending_refund_started_at TIMESTAMPTZ;`);
+  await pgPool.query(`ALTER TABLE vacation_bookings ADD COLUMN IF NOT EXISTS refunded_amount_cents INTEGER NOT NULL DEFAULT 0;`);
+  await pgPool.query(`ALTER TABLE notary_requests ADD COLUMN IF NOT EXISTS refunded_amount_cents INTEGER NOT NULL DEFAULT 0;`);
   await pgPool.query(`
     CREATE TABLE IF NOT EXISTS buyer_leads (
       id SERIAL PRIMARY KEY,
@@ -1552,7 +1569,8 @@ async function persistVacationBooking(session) {
       check_out = EXCLUDED.check_out,
       amount_total_cents = EXCLUDED.amount_total_cents,
       currency = EXCLUDED.currency,
-      status = EXCLUDED.status`,
+      status = EXCLUDED.status
+    WHERE vacation_bookings.status NOT IN ('refunded', 'partially_refunded', 'cancelled')`,
     [
       session.id,
       rentalId,
@@ -1588,7 +1606,8 @@ async function persistNotaryRequest(session) {
       notes = EXCLUDED.notes,
       amount_total_cents = EXCLUDED.amount_total_cents,
       currency = EXCLUDED.currency,
-      status = EXCLUDED.status`,
+      status = EXCLUDED.status
+    WHERE notary_requests.status NOT IN ('refunded', 'partially_refunded', 'cancelled')`,
     [
       session.id,
       session.metadata?.name || '',
@@ -1614,7 +1633,7 @@ async function markInvoicePaidFromSession(session) {
      SET status = CASE WHEN status = 'approved' THEN 'approved' ELSE 'paid' END,
          stripe_session_id = $2,
          updated_at = NOW()
-     WHERE id = $1`,
+     WHERE id = $1 AND status NOT IN ('refunded', 'partially_refunded', 'cancelled')`,
     [invoiceId, session.id],
   );
 }
@@ -1727,7 +1746,14 @@ async function handleInvoicePaidFromSession(session) {
   );
   const invoice = result.rows[0];
   if (!invoice) return;
-  const confirmationAlreadySent = Boolean(invoice.confirmation_email_sent_at) || invoice.status === 'refunded';
+  // Stripe's Checkout Session payment_status stays 'paid' forever, even after we refund
+  // it - it never reports 'refunded'. Without this guard, any reconciliation pass (a
+  // webhook redelivery, the recovery endpoint, or the periodic sync) would resurrect an
+  // already-refunded/cancelled invoice and its booking back to 'paid'.
+  if (['refunded', 'partially_refunded', 'cancelled'].includes(invoice.status)) {
+    return;
+  }
+  const confirmationAlreadySent = Boolean(invoice.confirmation_email_sent_at);
 
   await markInvoicePaidFromSession(session);
 
@@ -1750,6 +1776,7 @@ async function handleInvoicePaidFromSession(session) {
         amount_total_cents = EXCLUDED.amount_total_cents,
         currency = EXCLUDED.currency,
         status = 'paid'
+      WHERE vacation_bookings.status NOT IN ('refunded', 'partially_refunded', 'cancelled')
       RETURNING id`,
       [
         session.id,
@@ -1765,14 +1792,16 @@ async function handleInvoicePaidFromSession(session) {
         session.currency || invoice.currency || 'usd',
       ],
     );
-    await pgPool.query(
-      `UPDATE admin_invoices
-       SET vacation_booking_id = $2,
-           updated_at = NOW()
-       WHERE id = $1`,
-      [invoice.id, upsert.rows[0].id],
-    );
-    bookedCache = { at: 0, ranges: [] };
+    if (upsert.rows[0]) {
+      await pgPool.query(
+        `UPDATE admin_invoices
+         SET vacation_booking_id = $2,
+             updated_at = NOW()
+         WHERE id = $1`,
+        [invoice.id, upsert.rows[0].id],
+      );
+      bookedCache = { at: 0, ranges: [] };
+    }
   }
 
   if (!confirmationAlreadySent) {
@@ -1861,6 +1890,9 @@ async function approveInvoice(invoiceId) {
   }
   if (invoice.status === 'cancelled') {
     throw new Error('Cancelled invoices cannot be approved.');
+  }
+  if (invoice.status === 'refunded' || invoice.status === 'partially_refunded') {
+    throw new Error('Refunded invoices cannot be approved.');
   }
   if (invoice.service_type === 'vacation') {
     if (!invoice.check_in || !invoice.check_out || !invoice.recipient_email || !invoice.recipient_name) {
@@ -2016,34 +2048,51 @@ app.get('/api/admin/me', async (req, res) => {
   }
 });
 
+// Arbitrary constant used as the key for a Postgres advisory lock (see below).
+const ADMIN_REGISTRATION_LOCK_KEY = 918273645;
+
 app.post('/api/admin/register', async (req, res) => {
+  if (!pgPool) {
+    return res.status(503).json({ message: 'DATABASE_URL is not configured.' });
+  }
+
+  const fullName = clean(req.body?.name);
+  const email = clean(req.body?.email).toLowerCase();
+  const password = String(req.body?.password || '');
+  if (!fullName || !email || password.length < 8) {
+    return res.status(400).json({ message: 'Name, email, and an 8-character password are required.' });
+  }
+
+  const client = await pgPool.connect();
   try {
-    if (!pgPool) {
-      return res.status(503).json({ message: 'DATABASE_URL is not configured.' });
-    }
     await ensureAdminTables();
-    if (await adminUserCount()) {
+    await client.query('BEGIN');
+    // Serializes concurrent registration attempts on the "is this the first admin?"
+    // check: two simultaneous requests (with different emails, so the admin_users email
+    // unique constraint alone wouldn't stop them) could otherwise both see zero admins
+    // and both succeed. The second request here blocks until the first transaction
+    // commits or rolls back, then re-checks and correctly finds registration closed.
+    await client.query('SELECT pg_advisory_xact_lock($1)', [ADMIN_REGISTRATION_LOCK_KEY]);
+    const countResult = await client.query('SELECT COUNT(*)::int AS count FROM admin_users');
+    if (countResult.rows[0]?.count > 0) {
+      await client.query('ROLLBACK');
       return res.status(403).json({ message: 'Admin registration is closed.' });
     }
 
-    const fullName = clean(req.body?.name);
-    const email = clean(req.body?.email).toLowerCase();
-    const password = String(req.body?.password || '');
-
-    if (!fullName || !email || password.length < 8) {
-      return res.status(400).json({ message: 'Name, email, and an 8-character password are required.' });
-    }
-
-    const result = await pgPool.query(
+    const result = await client.query(
       'INSERT INTO admin_users (full_name, email, password_hash) VALUES ($1, $2, $3) RETURNING id',
       [fullName, email, hashPassword(password)],
     );
+    await client.query('COMMIT');
 
     await createAdminSession(res, result.rows[0].id);
     return res.status(201).json({ ok: true });
   } catch (error) {
+    await client.query('ROLLBACK').catch(() => undefined);
     console.error('Admin registration failed:', error);
     return res.status(500).json({ message: 'Could not create the admin account.' });
+  } finally {
+    client.release();
   }
 });
 
@@ -2114,8 +2163,10 @@ app.post('/api/admin/forgot-password', async (req, res) => {
         [user.id, tokenHash, expiresAt],
       );
 
-      const origin = buildOrigin(req);
-      const resetLink = passwordResetUrl(origin, token);
+      // Deliberately not buildOrigin(req): the Host header is attacker-controlled, and a
+      // password-reset link must always point at our own domain, not wherever the request
+      // claims to come from.
+      const resetLink = passwordResetUrl(`https://${canonicalHost}`, token);
       await sendResendEmail({
         to: user.email,
         replyTo: contactTo,
@@ -2248,8 +2299,9 @@ app.post('/api/admin/change-email-request', async (req, res) => {
       [admin.id, newEmail, tokenHash, expiresAt],
     );
 
-    const origin = buildOrigin(req);
-    const verifyLink = `${origin}/admin/confirm-email-change?token=${encodeURIComponent(token)}`;
+    // Same reasoning as the password-reset link: never trust the request's Host header
+    // for a security-sensitive URL.
+    const verifyLink = `https://${canonicalHost}/admin/confirm-email-change?token=${encodeURIComponent(token)}`;
     await sendResendEmail({
       to: newEmail,
       replyTo: contactTo,
@@ -3322,7 +3374,6 @@ app.post('/api/admin/invoices/refund', async (req, res) => {
     );
     const invoice = result.rows[0];
     if (!invoice) return res.status(404).json({ message: 'Invoice not found.' });
-    if (invoice.status === 'refunded') return res.json({ ok: true, alreadyRefunded: true });
     if (!invoice.stripe_session_id) {
       return res.status(400).json({ message: 'This invoice does not have a Stripe checkout session to refund.' });
     }
@@ -3332,32 +3383,74 @@ app.post('/api/admin/invoices/refund', async (req, res) => {
       return res.status(400).json({ message: 'This invoice has not been paid in Stripe yet.' });
     }
     const paidAmount = Number(session.amount_total || invoice.amount_total_cents || 0);
-    if (!Number.isFinite(amountCents) || amountCents <= 0 || amountCents > paidAmount) {
-      return res.status(400).json({ message: 'Refund amount must be greater than $0.00 and no more than the paid amount.' });
+    const alreadyRefundedAmount = Number(invoice.refunded_amount_cents || 0);
+    const remainingRefundable = paidAmount - alreadyRefundedAmount;
+    if (remainingRefundable <= 0) {
+      return res.json({ ok: true, alreadyRefunded: true });
+    }
+    if (!Number.isFinite(amountCents) || amountCents <= 0 || amountCents > remainingRefundable) {
+      return res.status(400).json({
+        message: `Refund amount must be greater than $0.00 and no more than the remaining refundable balance (${money(remainingRefundable, session.currency || invoice.currency || 'usd')}).`,
+      });
     }
 
-    const refund = await stripe.refunds.create({
-      payment_intent: typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent.id,
-      amount: amountCents,
-      metadata: {
-        type: 'invoice_refund',
-        invoiceId: String(id),
-        refundedBy: metadataValue(admin.email || ''),
+    // Reuse the same idempotency key if a refund for this exact amount was already
+    // claimed in the last 10 minutes - this is what makes a retry (after our server
+    // lost the response, or the admin clicked again) return the original Stripe refund
+    // instead of creating a second one. A different amount always gets a fresh key.
+    const now = Date.now();
+    const pendingStillFresh = invoice.pending_refund_key
+      && Number(invoice.pending_refund_amount_cents) === amountCents
+      && invoice.pending_refund_started_at
+      && now - new Date(invoice.pending_refund_started_at).getTime() < 10 * 60 * 1000;
+    const idempotencyKey = pendingStillFresh ? invoice.pending_refund_key : `invoice-refund-${id}-${crypto.randomUUID()}`;
+    if (!pendingStillFresh) {
+      await pgPool.query(
+        `UPDATE admin_invoices
+         SET pending_refund_key = $2, pending_refund_amount_cents = $3, pending_refund_started_at = NOW()
+         WHERE id = $1`,
+        [id, idempotencyKey, amountCents],
+      );
+    }
+
+    const refund = await stripe.refunds.create(
+      {
+        payment_intent: typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent.id,
+        amount: amountCents,
+        metadata: {
+          type: 'invoice_refund',
+          invoiceId: String(id),
+          refundedBy: metadataValue(admin.email || ''),
+        },
       },
-    });
+      { idempotencyKey },
+    );
+
+    const totalRefunded = alreadyRefundedAmount + amountCents;
+    const newStatus = totalRefunded >= paidAmount ? 'refunded' : 'partially_refunded';
 
     await pgPool.query(
       `UPDATE admin_invoices
-       SET status = 'refunded',
+       SET status = $2,
+           refunded_amount_cents = $3,
+           pending_refund_key = NULL,
+           pending_refund_amount_cents = NULL,
+           pending_refund_started_at = NULL,
            updated_at = NOW()
        WHERE id = $1`,
-      [id],
+      [id, newStatus, totalRefunded],
     );
     if (invoice.vacation_booking_id) {
-      await pgPool.query('UPDATE vacation_bookings SET status = $2 WHERE id = $1', [invoice.vacation_booking_id, 'refunded']);
+      await pgPool.query(
+        'UPDATE vacation_bookings SET status = $2, refunded_amount_cents = $3 WHERE id = $1',
+        [invoice.vacation_booking_id, newStatus, totalRefunded],
+      );
     }
     if (invoice.notary_request_id) {
-      await pgPool.query('UPDATE notary_requests SET status = $2 WHERE id = $1', [invoice.notary_request_id, 'refunded']);
+      await pgPool.query(
+        'UPDATE notary_requests SET status = $2, refunded_amount_cents = $3 WHERE id = $1',
+        [invoice.notary_request_id, newStatus, totalRefunded],
+      );
     }
     await sendRefundInvoiceConfirmation(invoice, refund, session);
     bookedCache = { at: 0, ranges: [] };

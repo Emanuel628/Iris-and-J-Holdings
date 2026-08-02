@@ -148,7 +148,7 @@ function AdminImagePicker({
               <input
                 id={tileInputId}
                 type="file"
-                accept=".png,.jpg,.jpeg,.webp,.gif,.svg,.avif,.heic,.heif,image/*"
+                accept=".png,.jpg,.jpeg,.webp,.gif,.avif,.heic,.heif,image/png,image/jpeg,image/webp,image/gif,image/avif,image/heic,image/heif"
                 multiple
                 className="admin-file-input"
                 onChange={(event) => {
