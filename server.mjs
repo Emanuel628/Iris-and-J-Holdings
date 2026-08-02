@@ -1177,8 +1177,11 @@ async function getManualBlockedRanges() {
   return result.rows;
 }
 
+// Returns { ranges, reliable }. `reliable: false` means an external calendar (Airbnb/
+// Booking.com) couldn't be checked at all - callers deciding whether to accept a real
+// booking should treat that as "don't know" rather than "nothing blocked".
 async function getRentalBlockedRanges(rentalId) {
-  if (!pgPool || !rentalId) return [];
+  if (!pgPool || !rentalId) return { ranges: [], reliable: true };
 
   const [externalCalendars, manual, bookingsResult] = await Promise.all([
     getBlockedRanges(booking.icalUrls),
@@ -1203,11 +1206,14 @@ async function getRentalBlockedRanges(rentalId) {
     ),
   ]);
 
-  return [
-    ...externalCalendars,
-    ...manual.rows,
-    ...bookingsResult.rows,
-  ];
+  return {
+    ranges: [
+      ...externalCalendars.ranges,
+      ...manual.rows,
+      ...bookingsResult.rows,
+    ],
+    reliable: externalCalendars.reliable,
+  };
 }
 
 async function getAllBlockedRanges() {
@@ -1216,7 +1222,10 @@ async function getAllBlockedRanges() {
     getWebsiteBookedRanges(),
     getManualBlockedRanges(),
   ]);
-  return [...airbnb, ...website, ...manual];
+  return {
+    ranges: [...airbnb.ranges, ...website, ...manual],
+    reliable: airbnb.reliable,
+  };
 }
 
 // The DB hold must outlive the Stripe Checkout Session (below) so a guest who is still
@@ -1813,6 +1822,22 @@ async function handleInvoicePaidFromSession(session) {
        WHERE id = $1`,
       [invoice.id],
     );
+  }
+}
+
+// Best-effort: invalidates a previous invoice Stripe Checkout Session so it can never be
+// paid again (e.g. because we're about to send a new link, or the invoice's amount/dates
+// just changed). A session that's already paid or already expired can't be re-expired,
+// so failures here are logged and swallowed rather than blocking the caller.
+async function expireOpenStripeCheckoutSession(sessionId) {
+  if (!stripe || !sessionId) return;
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    if (session.status === 'open') {
+      await stripe.checkout.sessions.expire(sessionId);
+    }
+  } catch (error) {
+    console.error('Could not expire previous invoice Stripe checkout session:', sessionId, error.message);
   }
 }
 
@@ -2731,6 +2756,9 @@ app.post('/api/admin/vacation-bookings/status', async (req, res) => {
     await pgPool.query('UPDATE vacation_bookings SET status = $2 WHERE id = $1 AND deleted_at IS NULL', [id, status]);
     return res.json({ ok: true });
   } catch (error) {
+    if (error?.code === '23P01') {
+      return res.status(409).json({ message: 'Those dates now conflict with another active booking or hold.' });
+    }
     console.error('Admin vacation booking status update failed:', error);
     return res.status(500).json({ message: 'Could not update vacation booking status.' });
   }
@@ -2749,7 +2777,7 @@ app.post('/api/admin/vacation-bookings/save', async (req, res) => {
     const checkIn = clean(req.body?.checkIn);
     const checkOut = clean(req.body?.checkOut);
     const status = clean(req.body?.status).toLowerCase();
-    if (!id || !guestName || !guestEmail || !isIsoDate(checkIn) || !isIsoDate(checkOut) || checkOut < checkIn) {
+    if (!id || !guestName || !guestEmail || !isIsoDate(checkIn) || !isIsoDate(checkOut) || checkOut <= checkIn) {
       return res.status(400).json({ message: 'Valid booking details are required.' });
     }
     if (!['paid', 'reviewed', 'cancel-requested', 'approved', 'cancelled'].includes(status)) {
@@ -2770,6 +2798,9 @@ app.post('/api/admin/vacation-bookings/save', async (req, res) => {
     );
     return res.json({ ok: true });
   } catch (error) {
+    if (error?.code === '23P01') {
+      return res.status(409).json({ message: 'Those dates now conflict with another active booking or hold.' });
+    }
     console.error('Admin vacation booking save failed:', error);
     return res.status(500).json({ message: 'Could not save vacation booking.' });
   }
@@ -3182,6 +3213,18 @@ app.post('/api/admin/invoices/save', async (req, res) => {
       return res.status(400).json({ message: 'Notary invoice appointment details are optional, but appointment date must be valid when entered.' });
     }
 
+    let previousUnpaidSessionId = null;
+    if (id > 0) {
+      const existingResult = await pgPool.query(
+        'SELECT status, stripe_session_id FROM admin_invoices WHERE id = $1 LIMIT 1',
+        [id],
+      );
+      const existing = existingResult.rows[0];
+      if (existing && ['draft', 'sent'].includes(existing.status) && existing.stripe_session_id) {
+        previousUnpaidSessionId = existing.stripe_session_id;
+      }
+    }
+
     const invoiceValues = [
       serviceType,
       recipientName,
@@ -3221,10 +3264,12 @@ app.post('/api/admin/invoices/save', async (req, res) => {
              appointment_time = $16,
              city = $17,
              document_type = $18,
+             stripe_session_id = CASE WHEN $19::text IS NOT NULL THEN NULL ELSE stripe_session_id END,
+             stripe_checkout_url = CASE WHEN $19::text IS NOT NULL THEN '' ELSE stripe_checkout_url END,
              updated_at = NOW()
          WHERE id = $1
          RETURNING id`,
-        [id, ...invoiceValues],
+        [id, ...invoiceValues, previousUnpaidSessionId],
       )
       : await pgPool.query(
         `INSERT INTO admin_invoices (
@@ -3242,6 +3287,12 @@ app.post('/api/admin/invoices/save', async (req, res) => {
       );
     if (!result.rows[0]) {
       return res.status(404).json({ message: 'Invoice not found.' });
+    }
+    if (previousUnpaidSessionId) {
+      // The amount/dates just changed under an already-sent, still-unpaid Stripe link -
+      // expire it so the old (now stale) price can never be paid. The admin has to hit
+      // "send" again to issue a fresh link with the corrected amount.
+      await expireOpenStripeCheckoutSession(previousUnpaidSessionId);
     }
     return res.json({ ok: true, id: result.rows[0].id });
   } catch (error) {
@@ -3267,6 +3318,10 @@ app.post('/api/admin/invoices/send', async (req, res) => {
     );
     const invoice = result.rows[0];
     if (!invoice) return res.status(404).json({ message: 'Invoice not found.' });
+
+    // A previous "send" (or a since-changed price/dates) may have left an older Stripe
+    // link outstanding - expire it first so only the newest link is ever payable.
+    await expireOpenStripeCheckoutSession(invoice.stripe_session_id);
 
     const session = await createInvoiceStripeSession(req, invoice);
     await pgPool.query(
@@ -3714,7 +3769,7 @@ app.get('/api/availability', async (req, res) => {
     if (!rental) {
       return res.status(404).json({ message: 'Rental not found.' });
     }
-    const blocked = await getRentalBlockedRanges(rentalId);
+    const { ranges: blocked } = await getRentalBlockedRanges(rentalId);
     return res.json({
       blocked,
       nightlyRateCents: rental.nightly_rate_cents,
@@ -3726,7 +3781,7 @@ app.get('/api/availability', async (req, res) => {
     });
   }
 
-  const blocked = await getAllBlockedRanges();
+  const { ranges: blocked } = await getAllBlockedRanges();
   res.json({
     blocked,
     nightlyRateCents: booking.nightlyRateCents,
@@ -3800,6 +3855,15 @@ app.post('/api/checkout', async (req, res) => {
       weekendRate = rental.weekend_rate_cents || rental.nightly_rate_cents;
       cleaningFee = rental.cleaning_fee_cents;
       rentalTitle = rental.title;
+    } else if (pgPool) {
+      // A booking with no rental_id is checked for conflicts against every rental
+      // combined (getAllBlockedRanges), not one specific rental's inventory - safe only
+      // when there's truly one undifferentiated inventory. Once real rental rows exist,
+      // requiring a specific one keeps every booking in the same conflict-checked group.
+      const anyActiveRental = await pgPool.query('SELECT id FROM rentals WHERE is_active = TRUE AND deleted_at IS NULL LIMIT 1');
+      if (anyActiveRental.rows[0]) {
+        return res.status(400).json({ message: 'Please select a specific property to book.' });
+      }
     }
 
     if (!(rentalRate > 0)) {
@@ -3810,7 +3874,13 @@ app.post('/api/checkout', async (req, res) => {
       return res.status(503).json({ message: "Online booking isn't available yet. Please join the interest list." });
     }
 
-    const blocked = rentalId > 0 ? await getRentalBlockedRanges(rentalId) : await getAllBlockedRanges();
+    const { ranges: blocked, reliable } = rentalId > 0 ? await getRentalBlockedRanges(rentalId) : await getAllBlockedRanges();
+    if (!reliable) {
+      // We couldn't reach the external calendar (Airbnb/Booking.com) and have no prior
+      // cached data to fall back on - refuse to sell dates we can't actually confirm are
+      // free, rather than silently treating "unknown" as "available".
+      return res.status(503).json({ message: "We couldn't confirm this property's full availability just now. Please try again in a few minutes." });
+    }
     if (overlapsBlocked(checkIn, checkOut, blocked)) {
       return res.status(409).json({ message: 'Some of those nights are no longer available. Please choose different dates.' });
     }

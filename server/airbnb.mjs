@@ -75,37 +75,50 @@ export function parseIcalRanges(ical) {
   return mergeRanges(ranges);
 }
 
+// `reliable: false` means we have no idea what's actually blocked on this calendar
+// (the very first fetch failed and there's no prior cache to fall back to) - callers
+// that are about to accept a real booking need to know that, rather than silently
+// treating "we couldn't check" the same as "nothing is blocked".
 async function getBlockedRangesForUrl(icalUrl) {
-  if (!icalUrl) return [];
+  if (!icalUrl) return { ranges: [], reliable: true };
 
   const now = Date.now();
   const cached = cache.get(icalUrl);
   if (cached && now - cached.at < CACHE_TTL_MS) {
-    return cached.ranges;
+    return { ranges: cached.ranges, reliable: true };
   }
 
   try {
-    const response = await fetch(icalUrl, { headers: { Accept: 'text/calendar' } });
+    const response = await fetch(icalUrl, {
+      headers: { Accept: 'text/calendar' },
+      signal: AbortSignal.timeout(10_000),
+    });
     if (!response.ok) {
       throw new Error(`iCal request failed: ${response.status}`);
     }
     const text = await response.text();
     const ranges = parseIcalRanges(text);
     cache.set(icalUrl, { at: now, ranges });
-    return ranges;
+    return { ranges, reliable: true };
   } catch (error) {
     console.error('Airbnb availability fetch failed:', error);
-    // Fall back to the last good data for this URL so the page still renders.
-    return cached?.ranges || [];
+    if (cached) {
+      // Stale, but it's real data from a previous successful fetch - better than nothing.
+      return { ranges: cached.ranges, reliable: true };
+    }
+    return { ranges: [], reliable: false };
   }
 }
 
 export async function getBlockedRanges(icalInput) {
   const urls = calendarUrls(icalInput);
-  if (urls.length === 0) return [];
+  if (urls.length === 0) return { ranges: [], reliable: true };
 
-  const ranges = await Promise.all(urls.map((url) => getBlockedRangesForUrl(url)));
-  return mergeRanges(ranges.flat());
+  const results = await Promise.all(urls.map((url) => getBlockedRangesForUrl(url)));
+  return {
+    ranges: mergeRanges(results.flatMap((result) => result.ranges)),
+    reliable: results.every((result) => result.reliable),
+  };
 }
 
 // True if [checkIn, checkOut) overlaps any blocked [start, end) range.
