@@ -437,13 +437,28 @@ Rental-specific availability uses that rental's manual blocks and website bookin
 
 ### Vacation Booking Persistence
 
+Before payment:
+
+- `POST /api/checkout` inserts a `pending_payment` hold row into `vacation_bookings`
+  for the requested dates before creating the Stripe Checkout Session. A `daterange`
+  exclusion constraint (`vacation_bookings_no_overlap`) on Postgres rejects a second
+  overlapping hold/booking outright, so two guests can never both pay for the same nights.
+- The Stripe session is created with a matching `expires_at` and an idempotency key
+  tied to the hold, so a network retry can't create a duplicate session for the same hold.
+
 After payment:
 
-- The Stripe webhook listens for `checkout.session.completed`.
-- Vacation sessions are persisted into `vacation_bookings`.
+- The Stripe webhook listens for `checkout.session.completed` and `checkout.session.expired`.
+- Each Stripe event id is recorded in `stripe_webhook_events` so a retried delivery
+  doesn't resend confirmation emails; a persistence failure returns a non-2xx response
+  so Stripe retries instead of silently losing the booking.
+- Vacation sessions are persisted into `vacation_bookings`, moving the hold to `paid`.
+- `checkout.session.expired` releases an abandoned hold immediately.
 - Admin and guest notification emails are sent.
 - A signed manage-booking link is included.
 - Recent paid Stripe sessions are also periodically synced to repair missed webhook persistence.
+- If a payment succeeds after its hold already expired and was resold, the conflicting
+  booking is flagged via an "ACTION NEEDED" email instead of silently double-booking.
 
 ---
 
@@ -743,7 +758,9 @@ The server also redirects the apex domain `irisjholdings.com` to `www.irisjholdi
 - `uploaded_media`
 - `blocked_dates`
 - `site_content`
-- `vacation_bookings`
+- `vacation_bookings` (holds and bookings; has a `daterange` exclusion constraint
+  preventing overlapping stays per rental)
+- `stripe_webhook_events` (dedupes Stripe webhook deliveries)
 - `notary_requests`
 - `admin_invoices`
 - `buyer_leads`

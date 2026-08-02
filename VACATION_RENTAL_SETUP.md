@@ -34,19 +34,27 @@ Notes:
 In the Stripe dashboard → Developers → Webhooks, add an endpoint:
 
 - URL: `https://<your-domain>/api/stripe/webhook`
-- Event: `checkout.session.completed`
+- Events: `checkout.session.completed` and `checkout.session.expired`
 
 Copy the signing secret into `STRIPE_WEBHOOK_SECRET`. When a booking is paid, the
 server emails the booking details to `CONTACT_TO_EMAIL` (see `EMAIL_SETUP.md`).
+`checkout.session.expired` is used to release a booking's date hold as soon as an
+abandoned Checkout Session expires, instead of waiting for the next checkout attempt.
 
 ## How it fits together
 
 1. `GET /api/availability` — fetches and caches the Airbnb iCal, returns blocked
    date ranges plus pricing for the calendar.
 2. `POST /api/checkout` — validates the dates, re-checks them against the Airbnb
-   calendar, then creates a Stripe Checkout Session and returns its URL.
-3. `POST /api/stripe/webhook` — verifies the Stripe signature and emails Daiana on
-   `checkout.session.completed`.
+   calendar, then places a `pending_payment` hold on those dates in Postgres (a
+   `daterange` exclusion constraint rejects a second overlapping hold outright) before
+   creating a Stripe Checkout Session and returning its URL. The hold and the Stripe
+   session share the same ~30 minute expiry.
+3. `POST /api/stripe/webhook` — verifies the Stripe signature, marks the hold `paid`
+   and emails Daiana on `checkout.session.completed`, or releases the hold on
+   `checkout.session.expired`. Each Stripe event id is recorded so a retried delivery
+   never sends a duplicate confirmation email, and a persistence failure returns a
+   non-2xx response so Stripe retries instead of silently losing the booking.
 4. `/booking-success` — confirmation page shown after a successful payment.
 
 ## Mobile notary checkout (Stripe)

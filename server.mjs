@@ -121,19 +121,58 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
 
+    // Fulfillment (writing the booking/invoice row) must succeed before we tell Stripe
+    // we're done - a non-2xx response here is what makes Stripe retry a failed write.
+    // We only claim the event (for email-dedup purposes) after fulfillment succeeds, so
+    // a retry following a persistence failure still runs fulfillment again.
     try {
       if (session.metadata?.type === 'notary') {
         await persistNotaryRequest(session);
-        await notifyNotaryBookingV2(session);
       } else if (session.metadata?.type === 'invoice') {
         await handleInvoicePaidFromSession(session);
       } else {
         bookedCache = { at: 0, ranges: [] }; // vacation booking - refresh website/Airbnb availability merge
         await persistVacationBooking(session);
-        await notifyBookingV2(session);
       }
-    } catch (notifyError) {
-      console.error('Checkout notification failed:', notifyError);
+    } catch (persistError) {
+      if (persistError?.code === '23P01') {
+        // Exclusion-constraint violation: this payment's dates were resold to someone
+        // else (e.g. the guest paid after their hold expired). Retrying won't fix this -
+        // it needs a human to refund or manually resolve, so we alert and ack the event.
+        console.error('Booking conflict on paid Stripe session (needs manual review):', session.id, persistError.message);
+        await notifyBookingConflict(session, persistError).catch((alertError) => {
+          console.error('Failed to send booking-conflict alert email:', alertError);
+        });
+        return res.json({ received: true, conflict: true });
+      }
+      console.error('Booking fulfillment failed, Stripe will retry this event:', persistError);
+      return res.status(500).json({ message: 'Fulfillment failed.' });
+    }
+
+    const isFirstDelivery = await claimWebhookEvent(event).catch((claimError) => {
+      console.error('Could not record webhook event (continuing to send notification once):', claimError);
+      return true;
+    });
+
+    if (isFirstDelivery) {
+      try {
+        if (session.metadata?.type === 'notary') {
+          await notifyNotaryBookingV2(session);
+        } else if (session.metadata?.type !== 'invoice') {
+          await notifyBookingV2(session);
+        }
+      } catch (notifyError) {
+        console.error('Checkout confirmation email failed:', notifyError);
+      }
+    }
+  } else if (event.type === 'checkout.session.expired') {
+    const session = event.data.object;
+    if (!session.metadata?.type || session.metadata.type === 'vacation') {
+      try {
+        await releaseVacationHold(session.id, 'expired');
+      } catch (releaseError) {
+        console.error('Could not release expired booking hold:', releaseError);
+      }
     }
   }
 
@@ -216,10 +255,10 @@ async function sendVacationCalendar(req, res, suppliedKey) {
         created_at
       FROM vacation_bookings
       WHERE deleted_at IS NULL
-      AND status NOT IN ('cancelled', 'refunded')
+      AND status IN ('paid', 'approved', 'reviewed')
       ORDER BY check_in ASC`,
       ),
-      
+
       pgPool.query(
         `SELECT
         id,
@@ -657,6 +696,43 @@ async function ensureAdminTables() {
     );
   `);
   await pgPool.query(`ALTER TABLE vacation_bookings ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;`);
+  await pgPool.query(`ALTER TABLE vacation_bookings ADD COLUMN IF NOT EXISTS hold_expires_at TIMESTAMPTZ;`);
+  // Prevents two bookings (or a hold + a booking) for the same rental from ever
+  // having overlapping date ranges while both are in a "live" status. Statuses that
+  // free up the calendar (cancelled/refunded/expired) are excluded from the check.
+  // Requires btree_gist for the integer equality operator class in a GiST exclusion index.
+  await pgPool.query(`CREATE EXTENSION IF NOT EXISTS btree_gist;`).catch((error) => {
+    console.error('Could not create btree_gist extension (exclusion constraint will be skipped):', error.message);
+  });
+  await pgPool.query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'vacation_bookings_no_overlap'
+      ) THEN
+        ALTER TABLE vacation_bookings
+          ADD CONSTRAINT vacation_bookings_no_overlap
+          EXCLUDE USING gist (
+            COALESCE(rental_id, 0) WITH =,
+            daterange(check_in, check_out, '[)') WITH &&
+          ) WHERE (status NOT IN ('cancelled', 'refunded', 'expired'));
+      END IF;
+    END $$;
+  `).catch((error) => {
+    console.error('Could not add vacation_bookings_no_overlap exclusion constraint:', error.message);
+  });
+  await pgPool.query(`
+    CREATE INDEX IF NOT EXISTS vacation_bookings_hold_sweep_idx
+      ON vacation_bookings (hold_expires_at)
+      WHERE status = 'pending_payment';
+  `);
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS stripe_webhook_events (
+      id TEXT PRIMARY KEY,
+      event_type TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
   await pgPool.query(`
     CREATE TABLE IF NOT EXISTS notary_requests (
       id SERIAL PRIMARY KEY,
@@ -1042,7 +1118,9 @@ async function getWebsiteBookedRanges() {
     const result = await pgPool.query(
       `SELECT check_in::text AS start, check_out::text AS end
        FROM vacation_bookings
-       WHERE deleted_at IS NULL AND status NOT IN ('cancelled', 'refunded')
+       WHERE deleted_at IS NULL
+         AND status NOT IN ('cancelled', 'refunded', 'expired')
+         AND (status <> 'pending_payment' OR hold_expires_at > NOW())
        ORDER BY check_in ASC`,
     );
     return result.rows;
@@ -1101,7 +1179,8 @@ async function getRentalBlockedRanges(rentalId) {
        FROM vacation_bookings
        WHERE rental_id = $1
          AND deleted_at IS NULL
-         AND status NOT IN ('cancelled', 'refunded')
+         AND status NOT IN ('cancelled', 'refunded', 'expired')
+         AND (status <> 'pending_payment' OR hold_expires_at > NOW())
        ORDER BY check_in ASC`,
       [rentalId],
     ),
@@ -1121,6 +1200,44 @@ async function getAllBlockedRanges() {
     getManualBlockedRanges(),
   ]);
   return [...airbnb, ...website, ...manual];
+}
+
+// The DB hold must outlive the Stripe Checkout Session (below) so a guest who is still
+// on the Stripe payment page never has their hold swept while their session is still valid.
+const VACATION_HOLD_TTL_MS = 35 * 60 * 1000;
+// Stripe requires expires_at to be at least 30 minutes out; the extra minute absorbs
+// request latency between when we compute this and when Stripe's server checks it.
+const STRIPE_CHECKOUT_TTL_SECONDS = 31 * 60;
+
+// Lets truly-expired holds fall out of the exclusion constraint's blocking set so a
+// new hold can be placed on the same dates. Runs opportunistically before every new
+// hold is inserted rather than on a timer/cron.
+async function sweepExpiredVacationHolds() {
+  if (!pgPool) return;
+  await pgPool.query(
+    `UPDATE vacation_bookings SET status = 'expired' WHERE status = 'pending_payment' AND hold_expires_at < NOW()`,
+  );
+}
+
+async function releaseVacationHold(stripeSessionId, nextStatus) {
+  if (!pgPool) return;
+  await pgPool.query(
+    `UPDATE vacation_bookings SET status = $2 WHERE stripe_session_id = $1 AND status = 'pending_payment'`,
+    [stripeSessionId, nextStatus],
+  );
+  bookedCache = { at: 0, ranges: [] };
+}
+
+// Claims a Stripe event for processing so a webhook retry (or Stripe redelivering the
+// same event) can't send duplicate confirmation emails or re-run fulfillment side effects.
+// Returns true if this call is the first to see the event.
+async function claimWebhookEvent(event) {
+  if (!pgPool) return true;
+  const result = await pgPool.query(
+    `INSERT INTO stripe_webhook_events (id, event_type) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING RETURNING id`,
+    [event.id, event.type],
+  );
+  return result.rowCount > 0;
 }
 
 async function notifyBooking(session) {
@@ -1156,6 +1273,38 @@ async function notifyBooking(session) {
         `<p>- Iris &amp; J Holdings</p>`,
     });
   }
+}
+
+// Sent when a Stripe payment succeeded but the booking's dates were already taken by
+// the time the webhook was processed (e.g. the guest's hold expired and someone else
+// booked those nights first). Needs a human to refund or manually accommodate the guest.
+async function notifyBookingConflict(session, error) {
+  const { checkIn = '', checkOut = '' } = session.metadata || {};
+  const guestEmail = session.customer_details?.email || session.customer_email || session.metadata?.email || '';
+  const amount = money(session.amount_total ?? 0, session.currency || 'usd');
+
+  await sendResendEmail({
+    to: contactTo,
+    subject: `ACTION NEEDED: paid booking conflicts with existing dates - ${checkIn} to ${checkOut}`,
+    text:
+      `A guest paid for a vacation rental booking, but those dates are already booked by someone else.\n\n` +
+      `This can happen if the guest's checkout hold expired and the dates were resold before they finished paying.\n\n` +
+      `Dates: ${checkIn} to ${checkOut}\n` +
+      `Guest: ${guestEmail || 'unknown'}\n` +
+      `Amount paid: ${amount}\n` +
+      `Stripe session: ${session.id}\n` +
+      `Details: ${error?.message || 'unknown conflict'}\n\n` +
+      `Please review both bookings in the admin dashboard and refund or contact the guest as needed.`,
+    html:
+      `<h2>Action needed: paid booking conflict</h2>` +
+      `<p>A guest paid for a vacation rental booking, but those dates are already booked by someone else. ` +
+      `This can happen if the guest's checkout hold expired and the dates were resold before they finished paying.</p>` +
+      `<p><strong>Dates:</strong> ${escapeHtml(checkIn)} to ${escapeHtml(checkOut)}<br>` +
+      `<strong>Guest:</strong> ${escapeHtml(guestEmail || 'unknown')}<br>` +
+      `<strong>Amount paid:</strong> ${escapeHtml(amount)}<br>` +
+      `<strong>Stripe session:</strong> ${escapeHtml(session.id)}</p>` +
+      `<p>Please review both bookings in the admin dashboard and refund or contact the guest as needed.</p>`,
+  });
 }
 
 async function notifyNotaryBooking(session) {
@@ -1821,12 +1970,20 @@ async function syncRecentPaidCheckoutSessions(force = false) {
   const sessions = await stripe.checkout.sessions.list({ limit: 100 });
   for (const session of sessions.data) {
     if (session.payment_status !== 'paid') continue;
-    if (session.metadata?.type === 'notary') {
-      await persistNotaryRequest(session);
-    } else if (session.metadata?.type === 'invoice') {
-      await handleInvoicePaidFromSession(session);
-    } else if (session.metadata?.type === 'vacation') {
-      await persistVacationBooking(session);
+    try {
+      if (session.metadata?.type === 'notary') {
+        await persistNotaryRequest(session);
+      } else if (session.metadata?.type === 'invoice') {
+        await handleInvoicePaidFromSession(session);
+      } else if (session.metadata?.type === 'vacation') {
+        await persistVacationBooking(session);
+      }
+    } catch (persistError) {
+      if (persistError?.code !== '23P01') throw persistError;
+      console.error('Booking conflict on paid Stripe session (needs manual review):', session.id, persistError.message);
+      await notifyBookingConflict(session, persistError).catch((alertError) => {
+        console.error('Failed to send booking-conflict alert email:', alertError);
+      });
     }
   }
 
@@ -2163,7 +2320,7 @@ app.get('/api/admin/dashboard', async (req, res) => {
     const [rentals, blockedDates, vacationBookings, notaryRequests, siteContent] = await Promise.all([
       pgPool.query('SELECT COUNT(*)::int AS count FROM rentals WHERE deleted_at IS NULL'),
       pgPool.query('SELECT COUNT(*)::int AS count FROM blocked_dates'),
-      pgPool.query('SELECT COUNT(*)::int AS count FROM vacation_bookings WHERE deleted_at IS NULL'),
+      pgPool.query(`SELECT COUNT(*)::int AS count FROM vacation_bookings WHERE deleted_at IS NULL AND status NOT IN ('pending_payment', 'expired')`),
       pgPool.query('SELECT COUNT(*)::int AS count FROM notary_requests WHERE deleted_at IS NULL'),
       pgPool.query(`SELECT page_key, title, hero_image_url, updated_at FROM site_content ORDER BY page_key ASC LIMIT 12`),
     ]);
@@ -3556,6 +3713,10 @@ app.post('/api/checkout', async (req, res) => {
       return res.status(503).json({ message: "Pricing isn't set up yet. Please join the interest list." });
     }
 
+    if (!pgPool) {
+      return res.status(503).json({ message: "Online booking isn't available yet. Please join the interest list." });
+    }
+
     const blocked = rentalId > 0 ? await getRentalBlockedRanges(rentalId) : await getAllBlockedRanges();
     if (overlapsBlocked(checkIn, checkOut, blocked)) {
       return res.status(409).json({ message: 'Some of those nights are no longer available. Please choose different dates.' });
@@ -3588,31 +3749,88 @@ app.post('/api/checkout', async (req, res) => {
     }
 
     const guestList = summarizeGuestList({ fullName: primaryName, email, phone: primaryPhone }, additionalGuests);
+    const amountTotalCents = stayRates.subtotal + (cleaningFee > 0 ? cleaningFee : 0);
 
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      line_items: lineItems,
-      success_url: booking.successUrl || `${origin}/booking-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: booking.cancelUrl || `${origin}/vacation-rentals`,
-      customer_email: email,
-      payment_intent_data: { receipt_email: email },
-      metadata: {
-        type: 'vacation',
-        origin: metadataValue(origin),
-        checkIn,
-        checkOut,
-        nights: String(stay.nights),
-        email: metadataValue(email),
-        primaryName: metadataValue(primaryName),
-        primaryPhone: metadataValue(primaryPhone),
-        guestCount: String(guestCount),
-        guestList: metadataValue(guestList),
-        houseRulesAgreed: 'true',
-        termsAgreed: 'true',
-        rentalId: String(rentalId || ''),
-        rentalTitle: metadataValue(rentalTitle),
-      },
-    });
+    // Reserve the dates in our own database before talking to Stripe at all. This hold
+    // (not the getRentalBlockedRanges() check above, which is only a fast pre-check) is
+    // what actually stops two guests racing for the same nights: the exclusion
+    // constraint on vacation_bookings rejects a second overlapping hold outright.
+    await sweepExpiredVacationHolds();
+    const holdId = crypto.randomUUID();
+    const holdExpiresAt = new Date(Date.now() + VACATION_HOLD_TTL_MS);
+    let holdRowId;
+    try {
+      const holdResult = await pgPool.query(
+        `INSERT INTO vacation_bookings (
+          stripe_session_id, rental_id, guest_name, guest_email, guest_phone, guest_count,
+          guest_list_text, check_in, check_out, amount_total_cents, currency, status, hold_expires_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8::date, $9::date, $10, $11, 'pending_payment', $12)
+        RETURNING id`,
+        [
+          `hold-${holdId}`,
+          rentalId || null,
+          primaryName,
+          email,
+          primaryPhone,
+          guestCount,
+          guestList,
+          checkIn,
+          checkOut,
+          amountTotalCents,
+          booking.currency,
+          holdExpiresAt,
+        ],
+      );
+      holdRowId = holdResult.rows[0].id;
+    } catch (holdError) {
+      if (holdError?.code === '23P01') {
+        return res.status(409).json({ message: 'Some of those nights are no longer available. Please choose different dates.' });
+      }
+      throw holdError;
+    }
+    bookedCache = { at: 0, ranges: [] };
+
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create(
+        {
+          mode: 'payment',
+          line_items: lineItems,
+          expires_at: Math.floor(Date.now() / 1000) + STRIPE_CHECKOUT_TTL_SECONDS,
+          success_url: booking.successUrl || `${origin}/booking-success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: booking.cancelUrl || `${origin}/vacation-rentals`,
+          customer_email: email,
+          payment_intent_data: { receipt_email: email },
+          metadata: {
+            type: 'vacation',
+            origin: metadataValue(origin),
+            checkIn,
+            checkOut,
+            nights: String(stay.nights),
+            email: metadataValue(email),
+            primaryName: metadataValue(primaryName),
+            primaryPhone: metadataValue(primaryPhone),
+            guestCount: String(guestCount),
+            guestList: metadataValue(guestList),
+            houseRulesAgreed: 'true',
+            termsAgreed: 'true',
+            rentalId: String(rentalId || ''),
+            rentalTitle: metadataValue(rentalTitle),
+            holdId,
+          },
+        },
+        { idempotencyKey: `vacation-hold-${holdId}` },
+      );
+    } catch (stripeError) {
+      await pgPool.query(`DELETE FROM vacation_bookings WHERE id = $1 AND status = 'pending_payment'`, [holdRowId]).catch((cleanupError) => {
+        console.error('Could not release booking hold after Stripe session creation failed:', cleanupError);
+      });
+      bookedCache = { at: 0, ranges: [] };
+      throw stripeError;
+    }
+
+    await pgPool.query(`UPDATE vacation_bookings SET stripe_session_id = $2 WHERE id = $1`, [holdRowId, session.id]);
 
     return res.json({ url: session.url });
   } catch (error) {
@@ -3706,7 +3924,15 @@ app.get('/api/checkout-session', async (req, res) => {
       } else if (session.metadata?.type === 'invoice') {
         await handleInvoicePaidFromSession(session);
       } else if (session.metadata?.type === 'vacation') {
-        await persistVacationBooking(session);
+        try {
+          await persistVacationBooking(session);
+        } catch (persistError) {
+          if (persistError?.code !== '23P01') throw persistError;
+          console.error('Booking conflict on paid Stripe session (needs manual review):', session.id, persistError.message);
+          await notifyBookingConflict(session, persistError).catch((alertError) => {
+            console.error('Failed to send booking-conflict alert email:', alertError);
+          });
+        }
       }
     }
     return res.json({

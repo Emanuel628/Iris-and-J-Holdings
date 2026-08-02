@@ -65,7 +65,7 @@ function AdminControlCenter() {
 
     const today = todayIso();
     const upcomingVacation = vacationPayload.bookings
-      .filter((booking: VacationBookingRecord) => booking.check_in >= today && booking.status !== 'cancelled')
+      .filter((booking: VacationBookingRecord) => booking.check_in >= today && !['cancelled', 'pending_payment', 'expired'].includes(booking.status))
       .slice(0, 4)
       .map((booking: VacationBookingRecord) => ({
         id: booking.id,
