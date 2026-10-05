@@ -904,6 +904,32 @@ async function seedControlCenterData() {
     );
     await upsertAppSetting('initial_rental_seeded', 'true');
   }
+
+  // Correct the legacy bed-count amenity if it is still present in an existing rental record.
+  await pgPool.query(`
+    UPDATE rentals
+    SET amenities = (
+      SELECT COALESCE(
+        jsonb_agg(
+          CASE
+            WHEN lower(btrim(replace(amenity.value, '•', ' '))) = '7 comfortable beds'
+              THEN to_jsonb('5 Beds — 1 King + 4 Queen'::text)
+            ELSE to_jsonb(amenity.value)
+          END
+          ORDER BY amenity.ordinality
+        ),
+        '[]'::jsonb
+      )
+      FROM jsonb_array_elements_text(rentals.amenities) WITH ORDINALITY AS amenity(value, ordinality)
+    )
+    WHERE deleted_at IS NULL
+      AND EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements_text(rentals.amenities) AS amenity(value)
+        WHERE lower(btrim(replace(amenity.value, '•', ' '))) = '7 comfortable beds'
+      )
+  `);
+
   const defaultPages = [
     ['home', 'Home'],
     ['buy', 'Buy'],
